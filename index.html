@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Generator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>Invoice Generator</h1>
+      <p class="subtitle">Create professional invoices in seconds</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ======== FORM PANEL ======== -->
+    <section class="form-panel" id="formPanel">
+      <h2 class="section-title">Invoice Details</h2>
+
+      <!-- Your Company -->
+      <fieldset>
+        <legend>Your Company</legend>
+        <div class="field">
+          <label for="companyLogo">Logo</label>
+          <input type="file" id="companyLogo" accept="image/*" />
+          <img id="logoPreview" class="logo-preview hidden" alt="logo" />
+        </div>
+        <div class="row">
+          <div class="field"><label>Company Name</label><input type="text" id="companyName" placeholder="Acme Inc." /></div>
+          <div class="field"><label>Email</label><input type="email" id="companyEmail" placeholder="hello@acme.com" /></div>
+        </div>
+        <div class="field"><label>Address</label><textarea id="companyAddress" rows="2" placeholder="123 Main St, City, State, ZIP"></textarea></div>
+        <div class="row">
+          <div class="field"><label>Phone</label><input type="text" id="companyPhone" placeholder="+1 234 567 890" /></div>
+          <div class="field"><label>GST / Tax ID</label><input type="text" id="companyTax" placeholder="GSTIN / VAT / EIN" /></div>
+        </div>
+      </fieldset>
+
+      <!-- Client -->
+      <fieldset>
+        <legend>Bill To</legend>
+        <div class="row">
+          <div class="field"><label>Client Name</label><input type="text" id="clientName" placeholder="Client Corp." /></div>
+          <div class="field"><label>Client Email</label><input type="email" id="clientEmail" placeholder="client@corp.com" /></div>
+        </div>
+        <div class="field"><label>Client Address</label><textarea id="clientAddress" rows="2" placeholder="456 Park Ave, City, State, ZIP"></textarea></div>
+      </fieldset>
+
+      <!-- Invoice Meta -->
+      <fieldset>
+        <legend>Invoice Info</legend>
+        <div class="row three">
+          <div class="field"><label>Invoice #</label><input type="text" id="invoiceNumber" placeholder="INV-001" /></div>
+          <div class="field"><label>Issue Date</label><input type="date" id="invoiceDate" /></div>
+          <div class="field"><label>Due Date</label><input type="date" id="dueDate" /></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Currency</label>
+            <select id="currency">
+              <option value="₹">₹ INR</option>
+              <option value="$">$ USD</option>
+              <option value="€">€ EUR</option>
+              <option value="£">£ GBP</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tax Rate (%)</label>
+            <input type="number" id="taxRate" value="18" min="0" step="0.01" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Line Items -->
+      <fieldset>
+        <legend>Items</legend>
+        <div class="items-table-wrapper">
+          <table class="items-table" id="itemsTable">
+            <thead>
+              <tr>
+                <th class="col-desc">Description</th>
+                <th class="col-qty">Qty</th>
+                <th class="col-rate">Rate</th>
+                <th class="col-amt">Amount</th>
+                <th class="col-del"></th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-secondary" id="addItemBtn">+ Add Item</button>
+      </fieldset>
+
+      <!-- Notes -->
+      <fieldset>
+        <legend>Additional</legend>
+        <div class="field"><label>Notes</label><textarea id="notes" rows="2" placeholder="Thank you for your business!"></textarea></div>
+        <div class="field"><label>Terms &amp; Conditions</label><textarea id="terms" rows="2" placeholder="Payment due within 30 days."></textarea></div>
+        <div class="field"><label>Bank Details / Payment Info</label><textarea id="bankDetails" rows="2" placeholder="Bank: XYZ | A/C: 123456 | IFSC: ABC0001234"></textarea></div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="previewBtn">Preview Invoice</button>
+      </div>
+    </section>
+
+    <!-- ======== PREVIEW PANEL ======== -->
+    <section class="preview-panel hidden" id="previewPanel">
+      <div class="preview-actions">
+        <button class="btn btn-secondary" id="editBtn">← Edit</button>
+        <button class="btn btn-primary" id="downloadBtn">Download PDF</button>
+        <button class="btn btn-secondary" id="printBtn">Print</button>
+      </div>
+      <div class="invoice-paper" id="invoicePaper">
+        <!-- Filled by JS -->
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
