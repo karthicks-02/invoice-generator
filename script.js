@@ -1,29 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
 
-  // ── Set default dates ──
-  const today = new Date();
-  $('invoiceDate').value = formatDate(today);
-  const due = new Date(today);
-  due.setDate(due.getDate() + 30);
-  $('dueDate').value = formatDate(due);
+  // ── Company details (pre-filled) ──
+  const COMPANY = {
+    name: 'KARTHICK INDUSTRIES',
+    address: 'Regd.office No. C 19, Mogappair West, Ambattur\nNear Srinivasa Perumal Temple, Chennai-600 037, Tamil Nadu, India.',
+    email: 'karthickindustries18@gmail.com',
+    phone: '9003291274',
+    gstin: '33AKKPR0176Q1ZK'
+  };
 
-  // ── Logo handling ──
-  let logoDataUrl = null;
-  $('companyLogo').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      logoDataUrl = ev.target.result;
-      $('logoPreview').src = logoDataUrl;
-      $('logoPreview').classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+  // ── Set default date ──
+  const today = new Date();
+  $('invoiceDate').value = today.toISOString().split('T')[0];
+
+  // ── Same-as-buyer toggle ──
+  $('sameAsBuyer').addEventListener('change', e => {
+    $('consigneeFields').classList.toggle('hidden', e.target.checked);
   });
 
   // ── Items management ──
-  let items = [{ description: '', qty: 1, rate: 0 }];
+  let items = [{ description: '', hsn: '', packages: '', qty: 0, rate: 0 }];
 
   function renderItems() {
     const tbody = $('itemsBody');
@@ -32,10 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const amount = item.qty * item.rate;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" placeholder="Item description" /></td>
+        <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" placeholder="SQ WELD NUT M10 X 1.25MM" /></td>
+        <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" placeholder="73181600" /></td>
+        <td><input type="text" value="${esc(item.packages)}" data-i="${i}" data-f="packages" placeholder="1 Bag" /></td>
         <td><input type="number" value="${item.qty}" data-i="${i}" data-f="qty" min="0" step="1" /></td>
         <td><input type="number" value="${item.rate}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
-        <td><div class="amount-display">${fmtMoney(amount)}</div></td>
+        <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
         <td><button type="button" class="btn-delete" data-i="${i}" title="Remove">&times;</button></td>
       `;
       tbody.appendChild(tr);
@@ -46,12 +45,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const inp = e.target;
     const i = +inp.dataset.i;
     const f = inp.dataset.f;
-    if (f === 'description') items[i].description = inp.value;
-    else if (f === 'qty') items[i].qty = parseFloat(inp.value) || 0;
-    else if (f === 'rate') items[i].rate = parseFloat(inp.value) || 0;
+    if (!f) return;
+    if (f === 'description' || f === 'hsn' || f === 'packages') {
+      items[i][f] = inp.value;
+    } else if (f === 'qty') {
+      items[i].qty = parseFloat(inp.value) || 0;
+    } else if (f === 'rate') {
+      items[i].rate = parseFloat(inp.value) || 0;
+    }
     if (f === 'qty' || f === 'rate') {
       const amtDiv = inp.closest('tr').querySelector('.amount-display');
-      amtDiv.textContent = fmtMoney(items[i].qty * items[i].rate);
+      amtDiv.textContent = '₹' + fmtNum(items[i].qty * items[i].rate);
     }
   });
 
@@ -63,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('addItemBtn').addEventListener('click', () => {
-    items.push({ description: '', qty: 1, rate: 0 });
+    items.push({ description: '', hsn: '', packages: '', qty: 0, rate: 0 });
     renderItems();
     const rows = $('itemsBody').querySelectorAll('tr');
     rows[rows.length - 1].querySelector('input').focus();
@@ -84,96 +88,181 @@ document.addEventListener('DOMContentLoaded', () => {
     $('formPanel').classList.remove('hidden');
   });
 
-  // ── Build the invoice HTML ──
+  // ── Build Invoice HTML ──
   function buildInvoice() {
-    const currency = $('currency').value;
-    const taxRate = parseFloat($('taxRate').value) || 0;
+    const gstRate = parseFloat($('gstRate').value) || 0;
+    const gstType = $('gstType').value;
+    const invoiceDate = $('invoiceDate').value;
+    const shortDate = invoiceDate ? formatShortDate(invoiceDate) : '';
+
+    const consigneeName = $('sameAsBuyer').checked ? $('buyerName').value : $('consigneeName').value;
+    const consigneeAddr = $('sameAsBuyer').checked ? $('buyerAddress').value : $('consigneeAddress').value;
 
     let subtotal = 0;
-    const rowsHtml = items.map((item, i) => {
+    const itemRows = items.map((item, i) => {
       const amt = item.qty * item.rate;
       subtotal += amt;
       return `<tr>
-        <td>${i + 1}</td>
-        <td>${esc(item.description) || '—'}</td>
+        <td class="center">${i + 1}</td>
+        <td>${esc(item.description).toUpperCase() || '—'}</td>
+        <td class="center">${esc(item.hsn)}</td>
+        <td class="center">${esc(item.packages)}</td>
         <td class="right">${item.qty}</td>
-        <td class="right">${currency}${fmtNum(item.rate)}</td>
-        <td class="right">${currency}${fmtNum(amt)}</td>
+        <td class="right">${fmtNum(item.rate)}</td>
+        <td class="right">${fmtNum(amt)}</td>
       </tr>`;
     }).join('');
 
-    const taxAmt = subtotal * (taxRate / 100);
-    const total = subtotal + taxAmt;
+    let taxHtml = '';
+    let totalTax = 0;
+    if (gstType === 'intra') {
+      const cgst = subtotal * (gstRate / 100);
+      const sgst = subtotal * (gstRate / 100);
+      totalTax = cgst + sgst;
+      taxHtml = `
+        <tr><td class="tax-label">CGST @ ${gstRate}%</td><td class="tax-value">${fmtNum(cgst)}</td></tr>
+        <tr><td class="tax-label">SGST @ ${gstRate}%</td><td class="tax-value">${fmtNum(sgst)}</td></tr>
+        <tr class="tax-total-row"><td class="tax-label">TAX AMOUNT: GST</td><td class="tax-value">${fmtNum(totalTax)}</td></tr>`;
+    } else {
+      const igst = subtotal * ((gstRate * 2) / 100);
+      totalTax = igst;
+      taxHtml = `
+        <tr><td class="tax-label">IGST @ ${gstRate * 2}%</td><td class="tax-value">${fmtNum(igst)}</td></tr>
+        <tr class="tax-total-row"><td class="tax-label">TAX AMOUNT: GST</td><td class="tax-value">${fmtNum(totalTax)}</td></tr>`;
+    }
 
-    const logoHtml = logoDataUrl
-      ? `<img src="${logoDataUrl}" class="inv-logo" alt="Logo" />`
-      : '';
-
-    const notesHtml = $('notes').value.trim()
-      ? `<div class="inv-footer-section"><div class="inv-footer-label">Notes</div><p>${esc($('notes').value)}</p></div>` : '';
-
-    const termsHtml = $('terms').value.trim()
-      ? `<div class="inv-footer-section"><div class="inv-footer-label">Terms & Conditions</div><p>${esc($('terms').value)}</p></div>` : '';
-
-    const bankHtml = $('bankDetails').value.trim()
-      ? `<div class="inv-footer-section"><div class="inv-footer-label">Payment Details</div><p>${esc($('bankDetails').value)}</p></div>` : '';
+    const grandTotal = subtotal + totalTax;
+    const totalInWords = numberToWords(Math.round(grandTotal));
 
     $('invoicePaper').innerHTML = `
-      <div class="inv-header">
-        <div>
-          ${logoHtml}
-          <div class="inv-title">${esc($('companyName').value) || 'Your Company'}</div>
+      <div class="inv-wrapper">
+        <!-- Company Header -->
+        <div class="inv-company-header">
+          <div class="inv-company-name">${COMPANY.name}</div>
+          <div class="inv-company-addr">${COMPANY.address.replace(/\n/g, '<br>')}</div>
+          <div class="inv-company-contact">Email.Id. ${COMPANY.email} / Ph.No. ${COMPANY.phone}</div>
         </div>
-        <div class="inv-meta">
-          <p style="font-size:1.3rem;font-weight:700;color:var(--primary);margin-bottom:.4rem;">INVOICE</p>
-          <p><strong>Invoice #:</strong> ${esc($('invoiceNumber').value) || '—'}</p>
-          <p><strong>Date:</strong> ${displayDate($('invoiceDate').value)}</p>
-          <p><strong>Due:</strong> ${displayDate($('dueDate').value)}</p>
-        </div>
-      </div>
 
-      <div class="inv-parties">
-        <div class="inv-party">
-          <div class="inv-party-label">From</div>
-          <div class="inv-party-name">${esc($('companyName').value) || '—'}</div>
-          <p>${esc($('companyAddress').value)}</p>
-          ${$('companyPhone').value ? `<p>${esc($('companyPhone').value)}</p>` : ''}
-          ${$('companyEmail').value ? `<p>${esc($('companyEmail').value)}</p>` : ''}
-          ${$('companyTax').value ? `<p>Tax ID: ${esc($('companyTax').value)}</p>` : ''}
-        </div>
-        <div class="inv-party">
-          <div class="inv-party-label">Bill To</div>
-          <div class="inv-party-name">${esc($('clientName').value) || '—'}</div>
-          <p>${esc($('clientAddress').value)}</p>
-          ${$('clientEmail').value ? `<p>${esc($('clientEmail').value)}</p>` : ''}
-        </div>
-      </div>
-
-      <table class="inv-table">
-        <thead>
+        <!-- GSTIN & Copy Type Row -->
+        <table class="inv-info-table">
           <tr>
-            <th style="width:6%">#</th>
-            <th>Description</th>
-            <th class="right" style="width:10%">Qty</th>
-            <th class="right" style="width:16%">Rate</th>
-            <th class="right" style="width:16%">Amount</th>
+            <td class="inv-gstin"><strong>GSTIN : ${COMPANY.gstin}</strong></td>
+            <td class="inv-copy-type"><strong>${esc($('copyType').value)}</strong></td>
           </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-
-      <div class="inv-totals">
-        <table>
-          <tr><td>Subtotal</td><td>${currency}${fmtNum(subtotal)}</td></tr>
-          <tr><td>Tax (${taxRate}%)</td><td>${currency}${fmtNum(taxAmt)}</td></tr>
-          <tr class="grand-total"><td>Total</td><td>${currency}${fmtNum(total)}</td></tr>
         </table>
-      </div>
 
-      <div class="inv-footer">
-        ${bankHtml}
-        ${notesHtml}
-        ${termsHtml}
+        <!-- Buyer & Invoice Details -->
+        <table class="inv-details-table">
+          <tr>
+            <td class="inv-buyer-section" rowspan="4">
+              <div class="inv-small-label">Details of Buyer ( Billed To) :</div>
+              <div class="inv-buyer-name"><strong>${esc($('buyerName').value).toUpperCase()}</strong></div>
+              <div class="inv-buyer-addr">${esc($('buyerAddress').value).replace(/\n/g, '<br>')}</div>
+              <div class="inv-small-label" style="margin-top:4px;">GSTIN : ${esc($('buyerGstin').value)}</div>
+            </td>
+            <td colspan="2" class="center inv-tax-title"><strong>TAX INVOICE</strong></td>
+          </tr>
+          <tr>
+            <td class="inv-meta-label"><strong>INVOICE NO. :</strong></td>
+            <td class="inv-meta-value"><strong>${esc($('invoiceNumber').value)}</strong></td>
+          </tr>
+          <tr>
+            <td class="inv-meta-label"><strong>DATE :</strong></td>
+            <td class="inv-meta-value"><strong>${shortDate}</strong></td>
+          </tr>
+        </table>
+
+        <!-- Consignee / Shipped to -->
+        <table class="inv-consignee-table">
+          <tr>
+            <td colspan="6" class="inv-small-label">Details of Consignee / shipped to :</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="inv-consignee-name"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
+            <td class="inv-field-label">P.Order No.</td>
+            <td class="inv-field-label">What'up</td>
+            <td class="inv-field-label">Date :</td>
+          </tr>
+          <tr>
+            <td>Contact:${esc($('contactPerson').value).toUpperCase()}</td>
+            <td class="inv-field-label">Bank name</td>
+            <td>${esc($('bankName').value)}</td>
+            <td>${esc($('poNumber').value)}</td>
+            <td>${esc($('whatsapp').value)}</td>
+            <td>${shortDate}</td>
+          </tr>
+          <tr>
+            <td>Contact:${esc($('contactPhone').value)}</td>
+            <td class="inv-field-label">Account<br>Number</td>
+            <td>${esc($('accountNumber').value)}</td>
+            <td class="inv-field-label">IFSC</td>
+            <td colspan="2">${esc($('ifscCode').value)}</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="inv-field-label">Branch</td>
+            <td colspan="2">${esc($('bankBranch').value)}</td>
+          </tr>
+        </table>
+
+        <!-- Items Table -->
+        <table class="inv-items-table">
+          <thead>
+            <tr>
+              <th class="center" style="width:6%">SL.No.</th>
+              <th style="width:30%">NAME OF THE COMMODITY / SERVICE</th>
+              <th class="center" style="width:10%">HSN CODE</th>
+              <th class="center" style="width:10%">No.Of<br>Packages</th>
+              <th class="center" style="width:10%">Total Qty IN<br>NOS</th>
+              <th class="center" style="width:10%">Rate Per No.</th>
+              <th class="right" style="width:14%">GOODS VALUE (in<br>Rs.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+        </table>
+
+        <!-- Transport & Totals -->
+        <table class="inv-totals-table">
+          <tr>
+            <td class="inv-transport-label">Mode Of Transport :</td>
+            <td class="inv-transport-value">${esc($('transportMode').value)}</td>
+            <td class="tax-label">TOTAL AMOUNT BEFORE<br>TAX</td>
+            <td class="tax-value">${fmtNum(subtotal)}</td>
+          </tr>
+          ${taxHtml}
+          <tr>
+            <td class="inv-words-label"><strong>INVOICE Value :</strong></td>
+            <td class="inv-words-value" colspan="1"><strong>Rupees</strong> ${totalInWords} Only</td>
+            <td class="tax-label"><strong>TOTAL AMOUNT<br>AFTER TAX</strong></td>
+            <td class="tax-value"><strong>${fmtNum(grandTotal)}</strong></td>
+          </tr>
+        </table>
+
+        <!-- Footer -->
+        <table class="inv-footer-table">
+          <tr>
+            <td class="inv-cert-text">
+              Certified that the particulars given above are true and correct and the amount
+              indicated represents the price actually charged and that is no flow of additional
+              consideration directly or indirectly from the Buyer.
+            </td>
+            <td class="inv-signature-section" rowspan="2">
+              <div>For ${COMPANY.name}</div>
+              <div class="inv-sig-space"></div>
+              <div>Authorised Signatory</div>
+            </td>
+          </tr>
+          <tr>
+            <td class="inv-received-text">
+              The goods Mentioned in the invoice is received in<br>
+              good condition &amp; Completely
+            </td>
+          </tr>
+        </table>
       </div>
     `;
   }
@@ -183,11 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const element = $('invoicePaper');
     const invNum = $('invoiceNumber').value || 'invoice';
     const opt = {
-      margin:       [0.4, 0.4, 0.4, 0.4],
-      filename:     `${invNum}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      margin:      [0.3, 0.3, 0.3, 0.3],
+      filename:    `${invNum}.pdf`,
+      image:       { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF:       { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
     html2pdf().set(opt).from(element).save();
   });
@@ -206,18 +295,30 @@ document.addEventListener('DOMContentLoaded', () => {
     return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function fmtMoney(n) {
-    const currency = $('currency').value;
-    return currency + fmtNum(n);
-  }
-
-  function formatDate(d) {
-    return d.toISOString().split('T')[0];
-  }
-
-  function displayDate(dateStr) {
-    if (!dateStr) return '—';
+  function formatShortDate(dateStr) {
+    if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  function numberToWords(num) {
+    if (num === 0) return 'Zero';
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    function convert(n) {
+      if (n < 20) return ones[n];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+      if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
+      if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
+      if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '');
+      return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + convert(n % 10000000) : '');
+    }
+
+    return convert(num);
   }
 });
