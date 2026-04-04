@@ -312,9 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const amount = item.qty * item.rate;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" placeholder="SQ WELD NUT M10 X 1.25MM" /></td>
-        <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" placeholder="73181600" /></td>
-        <td><input type="number" value="${item.packages || ''}" data-i="${i}" data-f="packages" min="0" step="1" placeholder="1" /></td>
+        <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" /></td>
+        <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" /></td>
+        <td><input type="number" value="${item.packages || ''}" data-i="${i}" data-f="packages" min="0" step="1" /></td>
         <td><input type="number" value="${item.qty}" data-i="${i}" data-f="qty" min="0" step="1" /></td>
         <td><input type="number" value="${item.rate}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
