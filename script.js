@@ -251,7 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
       items: items.map(it => ({ ...it })),
       transportMode: $('transportMode').value.trim(),
       gstRate: parseFloat($('gstRate').value) || 0,
-      gstType: $('gstType').value
+      gstType: $('gstType').value,
+      reminderDate: $('invoiceReminder').value || ''
     };
   }
 
@@ -272,6 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
       editingInvoiceId = data.id;
     }
     saveInvoices();
+
+    if (data.reminderDate) {
+      setReminder(data.id || editingInvoiceId, data.reminderDate, 'Payment reminder');
+    }
   }
 
   function loadInvoiceIntoForm(inv) {
@@ -296,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('transportMode').value = inv.transportMode || '';
     $('gstRate').value = inv.gstRate || 0;
     $('gstType').value = inv.gstType || 'intra';
+    $('invoiceReminder').value = inv.reminderDate || '';
 
     items = (inv.items && inv.items.length) ? inv.items.map(it => ({ ...it })) : [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
     renderItems();
@@ -331,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('transportMode').value = 'By Road';
     $('gstRate').value = 9;
     $('gstType').value = 'intra';
+    $('invoiceReminder').value = '';
     items = [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
     renderItems();
     document.querySelectorAll('.copyType').forEach(cb => {
