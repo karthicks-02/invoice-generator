@@ -15,16 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
     $('homePanel').classList.remove('hidden');
   }
 
-  document.querySelectorAll('.home-card').forEach(card => {
-    card.addEventListener('click', () => showView(card.dataset.view));
-  });
-
   $('custBackBtn').addEventListener('click', goHome);
   $('prodBackBtn').addEventListener('click', goHome);
   $('invBackBtn').addEventListener('click', () => {
     $('previewPanel').classList.add('hidden');
     $('formPanel').classList.remove('hidden');
     goHome();
+  });
+  $('invListBackBtn').addEventListener('click', goHome);
+
+  document.querySelectorAll('.home-card').forEach(card => {
+    card.addEventListener('click', () => {
+      showView(card.dataset.view);
+      if (card.dataset.view === 'invoiceListView') renderInvoiceList();
+      if (card.dataset.view === 'invoiceView') editingInvoiceId = null;
+    });
   });
 
   // ══════════════════════════════════════
@@ -197,6 +202,181 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderProducts();
+
+  // ══════════════════════════════════════
+  // ── Invoice Storage ──
+  // ══════════════════════════════════════
+  let invoices = JSON.parse(localStorage.getItem('ki_invoices') || '[]');
+  let editingInvoiceId = null;
+
+  function saveInvoices() {
+    localStorage.setItem('ki_invoices', JSON.stringify(invoices));
+  }
+
+  function collectInvoiceData() {
+    return {
+      invoiceNumber: $('invoiceNumber').value.trim(),
+      invoiceDate: $('invoiceDate').value,
+      copyTypes: getSelectedCopyTypes('copyType'),
+      buyerName: $('buyerName').value.trim(),
+      buyerGstin: $('buyerGstin').value.trim(),
+      buyerAddress: $('buyerAddress').value.trim(),
+      sameAsBuyer: $('sameAsBuyer').checked,
+      consigneeName: $('consigneeName').value.trim(),
+      consigneeAddress: $('consigneeAddress').value.trim(),
+      contactPerson: $('contactPerson').value.trim(),
+      contactPhone: $('contactPhone').value.trim(),
+      poNumber: $('poNumber').value.trim(),
+      poDate: $('poDate').value,
+      bankName: $('bankName').value.trim(),
+      bankBranch: $('bankBranch').value.trim(),
+      accountNumber: $('accountNumber').value.trim(),
+      ifscCode: $('ifscCode').value.trim(),
+      items: items.map(it => ({ ...it })),
+      transportMode: $('transportMode').value.trim(),
+      gstRate: parseFloat($('gstRate').value) || 0,
+      gstType: $('gstType').value
+    };
+  }
+
+  function saveCurrentInvoice() {
+    const data = collectInvoiceData();
+    if (editingInvoiceId) {
+      const idx = invoices.findIndex(inv => inv.id === editingInvoiceId);
+      if (idx >= 0) {
+        data.id = editingInvoiceId;
+        data.createdAt = invoices[idx].createdAt;
+        data.updatedAt = new Date().toISOString();
+        invoices[idx] = data;
+      }
+    } else {
+      data.id = Date.now().toString();
+      data.createdAt = new Date().toISOString();
+      invoices.push(data);
+      editingInvoiceId = data.id;
+    }
+    saveInvoices();
+  }
+
+  function loadInvoiceIntoForm(inv) {
+    editingInvoiceId = inv.id;
+    $('invoiceNumber').value = inv.invoiceNumber || '';
+    $('invoiceDate').value = inv.invoiceDate || '';
+    $('buyerName').value = inv.buyerName || '';
+    $('buyerGstin').value = inv.buyerGstin || '';
+    $('buyerAddress').value = inv.buyerAddress || '';
+    $('sameAsBuyer').checked = inv.sameAsBuyer !== false;
+    $('consigneeFields').classList.toggle('hidden', inv.sameAsBuyer !== false);
+    $('consigneeName').value = inv.consigneeName || '';
+    $('consigneeAddress').value = inv.consigneeAddress || '';
+    $('contactPerson').value = inv.contactPerson || '';
+    $('contactPhone').value = inv.contactPhone || '';
+    $('poNumber').value = inv.poNumber || '';
+    $('poDate').value = inv.poDate || '';
+    $('bankName').value = inv.bankName || '';
+    $('bankBranch').value = inv.bankBranch || '';
+    $('accountNumber').value = inv.accountNumber || '';
+    $('ifscCode').value = inv.ifscCode || '';
+    $('transportMode').value = inv.transportMode || '';
+    $('gstRate').value = inv.gstRate || 0;
+    $('gstType').value = inv.gstType || 'intra';
+
+    items = (inv.items && inv.items.length) ? inv.items.map(it => ({ ...it })) : [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
+    renderItems();
+
+    if (inv.copyTypes && inv.copyTypes.length) {
+      document.querySelectorAll('.copyType').forEach(cb => {
+        cb.checked = inv.copyTypes.includes(cb.value);
+      });
+    }
+  }
+
+  function computeGrandTotal(inv) {
+    let subtotal = 0;
+    (inv.items || []).forEach(it => { subtotal += (it.qty || 0) * (it.rate || 0); });
+    const rate = inv.gstRate || 0;
+    const tax = inv.gstType === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
+    return subtotal + tax;
+  }
+
+  // ── Invoice List rendering + filtering ──
+  function renderInvoiceList() {
+    const tbody = $('invListBody');
+    const query = ($('invSearch').value || '').trim().toLowerCase();
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+
+    const filtered = invoices.filter(inv => {
+      if (query) {
+        const productNames = (inv.items || []).map(it => (it.description || '').toLowerCase()).join(' ');
+        const haystack = [inv.invoiceNumber, inv.buyerName, productNames].join(' ').toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (from && inv.invoiceDate < from) return false;
+      if (to && inv.invoiceDate > to) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    tbody.innerHTML = '';
+    $('invListEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('invListTable').style.display = filtered.length ? 'table' : 'none';
+
+    filtered.forEach(inv => {
+      const tr = document.createElement('tr');
+      const total = computeGrandTotal(inv);
+      tr.innerHTML = `
+        <td>${escHtml(inv.invoiceNumber)}</td>
+        <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
+        <td>${escHtml(inv.buyerName)}</td>
+        <td class="r">₹${fmtNum(total)}</td>
+        <td class="actions">
+          <button class="btn-edit" data-inv-id="${inv.id}">Edit</button>
+          <button class="btn-print" data-inv-id="${inv.id}">Print</button>
+          <button class="btn-del" data-inv-id="${inv.id}">Delete</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  $('invSearch').addEventListener('input', renderInvoiceList);
+  $('invDateFrom').addEventListener('change', renderInvoiceList);
+  $('invDateTo').addEventListener('change', renderInvoiceList);
+
+  $('invListBody').addEventListener('click', e => {
+    const id = e.target.dataset.invId;
+    if (!id) return;
+
+    if (e.target.classList.contains('btn-edit')) {
+      const inv = invoices.find(x => x.id === id);
+      if (!inv) return;
+      loadInvoiceIntoForm(inv);
+      showView('invoiceView');
+      $('formPanel').classList.remove('hidden');
+      $('previewPanel').classList.add('hidden');
+    }
+
+    if (e.target.classList.contains('btn-print')) {
+      const inv = invoices.find(x => x.id === id);
+      if (!inv) return;
+      loadInvoiceIntoForm(inv);
+      syncCopyChecks('copyType', 'copyTypePreview');
+      buildAllInvoices();
+      showView('invoiceView');
+      $('formPanel').classList.add('hidden');
+      $('previewPanel').classList.remove('hidden');
+      setTimeout(() => window.print(), 300);
+    }
+
+    if (e.target.classList.contains('btn-del')) {
+      if (confirm('Delete this invoice?')) {
+        invoices = invoices.filter(x => x.id !== id);
+        saveInvoices();
+        renderInvoiceList();
+      }
+    }
+  });
 
   function escHtml(str) {
     const d = document.createElement('div');
@@ -413,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Preview ──
   $('previewBtn').addEventListener('click', () => {
     syncCopyChecks('copyType', 'copyTypePreview');
+    saveCurrentInvoice();
     buildAllInvoices();
     $('formPanel').classList.add('hidden');
     $('previewPanel').classList.remove('hidden');

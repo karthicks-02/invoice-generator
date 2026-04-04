@@ -321,7 +321,7 @@ legend {
 .home-panel { padding: 2rem 0; }
 .home-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
 }
 .home-card {
@@ -375,6 +375,28 @@ legend {
   color: var(--text);
 }
 
+/* ===== Filter Row ===== */
+.filter-row {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.filter-input {
+  flex: 1;
+  min-width: 200px;
+  padding: .55rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: .9rem;
+}
+.filter-date {
+  padding: .55rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: .9rem;
+}
+
 /* ===== Data Tables (Customer/Product) ===== */
 .data-table-wrap {
   background: var(--surface);
@@ -405,7 +427,8 @@ legend {
 .data-table tbody tr:hover { background: #f8fafc; }
 .data-table .actions { display: flex; gap: .5rem; }
 .data-table .btn-edit,
-.data-table .btn-del {
+.data-table .btn-del,
+.data-table .btn-print {
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -417,6 +440,8 @@ legend {
 }
 .data-table .btn-edit { color: var(--primary); }
 .data-table .btn-edit:hover { background: #eef4fb; }
+.data-table .btn-print { color: #059669; }
+.data-table .btn-print:hover { background: #ecfdf5; }
 .data-table .btn-del { color: var(--danger); }
 .data-table .btn-del:hover { background: #fef2f2; }
 .empty-msg {
@@ -515,7 +540,7 @@ legend {
 }
 @media print {
   body { background: #fff; margin: 0; padding: 0; }
-  header, .form-panel, .preview-actions, .home-panel, .view-header { display: none !important; }
+  header, .form-panel, .preview-actions, .home-panel, .view-header, #invoiceListView, .filter-row { display: none !important; }
   .copy-separator { border: none !important; margin: 0 !important; }
   .preview-panel { display: block !important; padding: 0; margin: 0; }
   .invoice-paper { box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; }

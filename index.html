@@ -35,8 +35,42 @@
           <h3>Invoice</h3>
           <p>Generate tax invoices</p>
         </div>
+        <div class="home-card" data-view="invoiceListView">
+          <div class="home-card-icon">A</div>
+          <h3>All Invoices</h3>
+          <p>View &amp; manage invoices</p>
+        </div>
       </div>
     </section>
+
+    <!-- ======== INVOICE LIST VIEW ======== -->
+    <div id="invoiceListView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="invListBackBtn">← Back</button>
+        <h2>All Invoices</h2>
+        <div></div>
+      </div>
+      <div class="filter-row">
+        <input type="text" id="invSearch" class="filter-input" placeholder="Search by invoice no, customer, or product..." />
+        <input type="date" id="invDateFrom" class="filter-date" title="From date" />
+        <input type="date" id="invDateTo" class="filter-date" title="To date" />
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table" id="invListTable">
+          <thead>
+            <tr>
+              <th>Invoice No.</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="invListBody"></tbody>
+        </table>
+        <p id="invListEmpty" class="empty-msg">No invoices saved yet.</p>
+      </div>
+    </div>
 
     <!-- ======== CUSTOMER VIEW ======== -->
     <div id="customerView" class="view hidden">
@@ -262,6 +296,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js?v=20"></script>
+  <script src="script.js?v=21"></script>
 </body>
 </html>
