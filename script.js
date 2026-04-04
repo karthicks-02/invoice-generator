@@ -124,15 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const sgst = subtotal * (gstRate / 100);
       totalTax = cgst + sgst;
       taxRows = `
-        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgst)}</td></tr>
-        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
-        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+        <tr><td colspan="2" class="empty-cell"></td><td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgst)}</td></tr>
+        <tr><td colspan="2" class="empty-cell"></td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
+        <tr><td colspan="2" class="empty-cell"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
     } else {
       const igst = subtotal * ((gstRate * 2) / 100);
       totalTax = igst;
       taxRows = `
-        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
-        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+        <tr><td colspan="2" class="empty-cell"></td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
+        <tr><td colspan="2" class="empty-cell"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
     }
 
     const grandTotal = subtotal + totalTax;
@@ -255,8 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           ${taxRows}
           <tr>
-            <td class="inv-flbl bld">INVOICE Value :</td>
-            <td><strong>Rupees</strong> ${totalInWords} Only</td>
+            <td class="inv-words-lbl"><strong>INVOICE Value :</strong><br>Rupees</td>
+            <td class="c"><strong>Rupees ${totalInWords}</strong><br><strong>Only</strong></td>
             <td class="r bld">TOTAL AMOUNT<br>AFTER TAX</td>
             <td class="r bld">${fmtNum(grandTotal)}</td>
           </tr>

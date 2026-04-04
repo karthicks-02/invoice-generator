@@ -218,8 +218,8 @@ legend {
 .inv .l { text-align: left; }
 .inv .r { text-align: right; }
 .inv .bld { font-weight: 700; }
-.inv .bl-none { border-left: none; }
-.inv .br-none { border-right: none; }
+.inv .empty-cell { border-left: 1px solid #000; border-right: none; }
+.inv-words-lbl { font-size: 10px; text-align: center; vertical-align: middle; }
 
 /* ── Company Header ── */
 .inv-hdr {
