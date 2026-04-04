@@ -97,7 +97,7 @@ legend {
 }
 
 /* ===== Items Table (Form) ===== */
-.items-table-wrapper { overflow-x: auto; }
+.items-table-wrapper { overflow: visible; }
 
 .items-table {
   width: 100%;
