@@ -832,11 +832,16 @@ document.addEventListener('DOMContentLoaded', () => {
       list.classList.remove('hidden');
     }
 
-    input.addEventListener('input', () => {
+    function showSuggestions() {
       const val = input.value.trim().toLowerCase();
-      if (!val) { list.classList.add('hidden'); return; }
-      show(getItems(val));
-    });
+      if (val) {
+        show(getItems(val));
+      } else {
+        show(getItems('').slice(0, 5));
+      }
+    }
+
+    input.addEventListener('input', showSuggestions);
 
     input.addEventListener('keydown', e => {
       const items = list.querySelectorAll('.ac-item');
@@ -859,10 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => list.classList.add('hidden'), 150);
     });
 
-    input.addEventListener('focus', () => {
-      const val = input.value.trim().toLowerCase();
-      if (val) show(getItems(val));
-    });
+    input.addEventListener('focus', showSuggestions);
   }
 
   // ══════════════════════════════════════
