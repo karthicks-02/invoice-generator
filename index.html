@@ -12,13 +12,40 @@
     <div class="header-inner">
       <h1>Karthick Industries</h1>
       <p class="subtitle">Business Management</p>
+      <div class="user-bar hidden" id="userBar">
+        <span id="userEmail"></span>
+        <button class="btn btn-sm btn-logout" id="logoutBtn">Logout</button>
+      </div>
     </div>
   </header>
 
   <main class="container">
 
+    <!-- ======== AUTH PANEL ======== -->
+    <section id="authPanel" class="auth-panel hidden">
+      <div class="auth-box">
+        <div class="auth-icon">₹</div>
+        <h2>Sign In</h2>
+        <p class="auth-subtitle">Access your business data</p>
+        <div class="field"><label>Email</label><input type="email" id="authEmail" /></div>
+        <div class="field"><label>Password</label><input type="password" id="authPass" /></div>
+        <p id="authError" class="auth-error hidden"></p>
+        <div class="auth-actions">
+          <button class="btn btn-primary" id="loginBtn">Sign In</button>
+          <button class="btn btn-secondary" id="registerBtn">Create Account</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== LOADING PANEL ======== -->
+    <section id="loadingPanel" class="auth-panel">
+      <div class="auth-box" style="text-align:center">
+        <p>Loading...</p>
+      </div>
+    </section>
+
     <!-- ======== HOME PANEL ======== -->
-    <section id="homePanel" class="home-panel">
+    <section id="homePanel" class="home-panel hidden">
       <div class="home-cards">
         <div class="home-card" data-view="customerView">
           <div class="home-card-icon">C</div>
@@ -397,7 +424,12 @@
 
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="db.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js?v=23"></script>
+  <script src="script.js?v=24"></script>
 </body>
 </html>

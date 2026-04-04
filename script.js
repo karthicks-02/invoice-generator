@@ -2,6 +2,81 @@ document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
 
   // ══════════════════════════════════════
+  // ── Auth: Login / Register / Logout ──
+  // ══════════════════════════════════════
+  $('loginBtn').addEventListener('click', async () => {
+    const email = $('authEmail').value.trim();
+    const pass = $('authPass').value;
+    $('authError').classList.add('hidden');
+    if (!email || !pass) { showAuthError('Enter email and password'); return; }
+    try {
+      await auth.signInWithEmailAndPassword(email, pass);
+    } catch (e) {
+      showAuthError(e.message);
+    }
+  });
+
+  $('registerBtn').addEventListener('click', async () => {
+    const email = $('authEmail').value.trim();
+    const pass = $('authPass').value;
+    $('authError').classList.add('hidden');
+    if (!email || !pass) { showAuthError('Enter email and password'); return; }
+    if (pass.length < 6) { showAuthError('Password must be at least 6 characters'); return; }
+    try {
+      await auth.createUserWithEmailAndPassword(email, pass);
+    } catch (e) {
+      showAuthError(e.message);
+    }
+  });
+
+  $('logoutBtn').addEventListener('click', () => auth.signOut());
+
+  $('authPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('loginBtn').click();
+  });
+
+  function showAuthError(msg) {
+    $('authError').textContent = msg;
+    $('authError').classList.remove('hidden');
+  }
+
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      db.setUser(user.uid);
+      $('userEmail').textContent = user.email;
+      $('userBar').classList.remove('hidden');
+      $('authPanel').classList.add('hidden');
+      $('loadingPanel').classList.remove('hidden');
+
+      await db.migrateFromLocalStorage();
+
+      customers = await db.loadCustomers();
+      products = await db.loadProducts();
+      invoices = await db.loadInvoices();
+      payments = await db.loadPayments();
+
+      renderCustomers();
+      renderProducts();
+      checkReminders();
+
+      $('loadingPanel').classList.add('hidden');
+      goHome();
+    } else {
+      customers = [];
+      products = [];
+      invoices = [];
+      payments = {};
+      db.setUser(null);
+
+      $('userBar').classList.add('hidden');
+      $('loadingPanel').classList.add('hidden');
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      $('homePanel').classList.add('hidden');
+      $('authPanel').classList.remove('hidden');
+    }
+  });
+
+  // ══════════════════════════════════════
   // ── Navigation: Home ↔ Views ──
   // ══════════════════════════════════════
   function showView(viewId) {
@@ -51,11 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════
   // ── Customer List CRUD ──
   // ══════════════════════════════════════
-  let customers = JSON.parse(localStorage.getItem('ki_customers') || '[]');
+  let customers = [];
   let editCustIdx = -1;
 
   function saveCustomers() {
-    localStorage.setItem('ki_customers', JSON.stringify(customers));
+    db.saveCustomers(customers);
   }
 
   function renderCustomers() {
@@ -135,16 +210,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  renderCustomers();
-
   // ══════════════════════════════════════
   // ── Product List CRUD ──
   // ══════════════════════════════════════
-  let products = JSON.parse(localStorage.getItem('ki_products') || '[]');
+  let products = [];
   let editProdIdx = -1;
 
   function saveProducts() {
-    localStorage.setItem('ki_products', JSON.stringify(products));
+    db.saveProducts(products);
   }
 
   function renderProducts() {
@@ -217,16 +290,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  renderProducts();
-
   // ══════════════════════════════════════
   // ── Invoice Storage ──
   // ══════════════════════════════════════
-  let invoices = JSON.parse(localStorage.getItem('ki_invoices') || '[]');
+  let invoices = [];
   let editingInvoiceId = null;
 
   function saveInvoices() {
-    localStorage.setItem('ki_invoices', JSON.stringify(invoices));
+    db.saveInvoices(invoices);
   }
 
   function collectInvoiceData() {
@@ -439,10 +510,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════
   // ── Payment Tracking ──
   // ══════════════════════════════════════
-  let payments = JSON.parse(localStorage.getItem('ki_payments') || '{}');
+  let payments = {};
 
   function savePayments() {
-    localStorage.setItem('ki_payments', JSON.stringify(payments));
+    db.savePayments(payments);
   }
 
   function getPaymentRecord(invoiceId) {
@@ -789,8 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-
-  checkReminders();
 
   function escHtml(str) {
     const d = document.createElement('div');

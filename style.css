@@ -733,6 +733,81 @@ legend {
   margin-top: 1rem;
 }
 
+/* ===== Auth Panel ===== */
+.auth-panel {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 0;
+}
+.auth-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 2rem 1.5rem;
+  width: 380px;
+  max-width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+.auth-box h2 {
+  text-align: center;
+  font-size: 1.3rem;
+  margin-bottom: .25rem;
+}
+.auth-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: .9rem;
+  margin-bottom: 1.25rem;
+}
+.auth-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #1a3a5c, #2d5a87);
+  color: #fff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.auth-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: 1rem;
+}
+.auth-actions .btn { flex: 1; justify-content: center; }
+.auth-error {
+  color: var(--danger);
+  font-size: .85rem;
+  text-align: center;
+  margin-top: .5rem;
+}
+
+/* ===== User Bar ===== */
+.user-bar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .75rem;
+  justify-content: center;
+}
+.user-bar span {
+  font-size: .85rem;
+  opacity: .9;
+}
+.btn-sm {
+  padding: .35rem .75rem;
+  font-size: .78rem;
+}
+.btn-logout {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.3);
+}
+.btn-logout:hover { background: rgba(255,255,255,.25); }
+
 /* ===== Utility ===== */
 .hidden { display: none !important; }
 .center { text-align: center; }
@@ -754,7 +829,7 @@ legend {
 }
 @media print {
   body { background: #fff; margin: 0; padding: 0; }
-  header, .form-panel, .preview-actions, .home-panel, .view-header, #invoiceListView, #paymentView, .filter-row { display: none !important; }
+  header, .form-panel, .preview-actions, .home-panel, .view-header, #invoiceListView, #paymentView, .filter-row, .auth-panel, #loadingPanel { display: none !important; }
   .copy-separator { border: none !important; margin: 0 !important; }
   .preview-panel { display: block !important; padding: 0; margin: 0; }
   .invoice-paper { box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; }
