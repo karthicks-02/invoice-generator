@@ -118,25 +118,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
 
     let totalTax = 0;
-    let taxRows = '';
+    let totalsRows = '';
     if (gstType === 'intra') {
       const cgst = subtotal * (gstRate / 100);
       const sgst = subtotal * (gstRate / 100);
       totalTax = cgst + sgst;
-      taxRows = `
+      totalsRows = `
         <tr><td>&nbsp;</td><td>&nbsp;</td><td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgst)}</td></tr>
-        <tr><td>&nbsp;</td><td>&nbsp;</td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
-        <tr><td>&nbsp;</td><td>&nbsp;</td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+        <tr><td class="c" rowspan="2"><strong>INVOICE Value :</strong><br>Rupees</td><td class="c" rowspan="2"><strong>Rupees ${numberToWords(Math.round(subtotal + cgst + sgst))}<br>Only</strong></td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
+        <tr><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
     } else {
       const igst = subtotal * ((gstRate * 2) / 100);
       totalTax = igst;
-      taxRows = `
-        <tr><td>&nbsp;</td><td>&nbsp;</td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
-        <tr><td>&nbsp;</td><td>&nbsp;</td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+      totalsRows = `
+        <tr><td class="c" rowspan="2"><strong>INVOICE Value :</strong><br>Rupees</td><td class="c" rowspan="2"><strong>Rupees ${numberToWords(Math.round(subtotal + igst))}<br>Only</strong></td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
+        <tr><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
     }
 
     const grandTotal = subtotal + totalTax;
-    const totalInWords = numberToWords(Math.round(grandTotal));
 
     $('invoicePaper').innerHTML = `
       <div class="inv">
@@ -247,34 +246,29 @@ document.addEventListener('DOMContentLoaded', () => {
             <td style="width:30%" class="r">TOTAL AMOUNT BEFORE TAX</td>
             <td style="width:20%" class="r">${fmtNum(subtotal)}</td>
           </tr>
-          ${taxRows}
-          <tr>
-            <td class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
-            <td class="c"><strong>Rupees ${totalInWords}<br>Only</strong></td>
-            <td class="r bld">TOTAL AMOUNT AFTER TAX</td>
-            <td class="r bld">${fmtNum(grandTotal)}</td>
-          </tr>
+          ${totalsRows}
         </table>
 
         <!-- ─── Footer ─── -->
-        <table class="inv-tbl inv-footer">
-          <colgroup><col style="width:55%"><col style="width:45%"></colgroup>
+        <table class="inv-footer-tbl">
           <tr>
-            <td class="inv-cert">
+            <td style="width:50%" rowspan="2" class="inv-cert">
               Certified that the particulars given above are true and correct and the amount
               indicated represents the price actually charged and that is no flow of additional
               consideration directly or indirectly from the Buyer.
+              <div style="margin-top:10px">
+                The goods Mentioned in the invoice is received in
+                good condition &amp; Completely
+              </div>
             </td>
-            <td class="inv-sig" rowspan="2">
+            <td style="width:30%" class="r bld">TOTAL AMOUNT<br>AFTER TAX</td>
+            <td style="width:20%" class="r bld">${fmtNum(grandTotal)}</td>
+          </tr>
+          <tr>
+            <td colspan="2" class="inv-sig">
               <div>For ${COMPANY.name}</div>
               <div class="inv-sig-space"></div>
               <div>Authorised Signatory</div>
-            </td>
-          </tr>
-          <tr>
-            <td class="inv-recv">
-              The goods Mentioned in the invoice is received in<br>
-              good condition &amp; Completely
             </td>
           </tr>
         </table>
