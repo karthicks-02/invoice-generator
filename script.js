@@ -864,9 +864,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     input.addEventListener('focus', showSuggestions);
-
-    input.focus();
-    showSuggestions();
   }
 
   // ══════════════════════════════════════
@@ -1005,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((inp.dataset.f === 'description' || inp.dataset.f === 'hsn') && !inp.dataset.acInit) {
       inp.dataset.acInit = '1';
       createAutocomplete(inp, matchProducts, p => fillProduct(inp, p));
+      inp.focus();
     }
   });
 
