@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const COMPANY = {
     name: 'KARTHICK INDUSTRIES',
     address: 'No. 61, SSOA Complex, Natesan Nagar, Vanagaram Road,\nAthipet, Chennai - 600 058.',
-    email: 'karthickindustries18@gmail.com, sundram1969@yahoo.co.in',
+    email: 'karthickindustries18@gmail.com',
     phone: '9003291274',
     gstin: '33AKKPR0176Q1ZK'
   };
