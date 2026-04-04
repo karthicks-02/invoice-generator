@@ -312,6 +312,10 @@ legend {
   vertical-align: top !important;
 }
 .inv-sig-space { height: 50px; }
+.inv-recv {
+  font-size: 10px;
+  vertical-align: middle !important;
+}
 
 /* ===== Utility ===== */
 .hidden { display: none !important; }

@@ -234,23 +234,27 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Bottom Section (Totals + Footer) ─── -->
         <table class="inv-tbl inv-bottom">
           <colgroup>
-            <col style="width:50%">
+            <col style="width:18%">
+            <col style="width:32%">
             <col style="width:30%">
             <col style="width:20%">
           </colgroup>
           <tr>
-            <td><strong>Mode Of Transport :</strong> &nbsp; ${esc($('transportMode').value)}</td>
+            <td><strong>Mode Of Transport :</strong></td>
+            <td>${esc($('transportMode').value)}</td>
             <td class="r">TOTAL AMOUNT BEFORE TAX</td>
             <td class="r">${fmtNum(subtotal)}</td>
           </tr>
           ${gstType === 'intra' ? `
           <tr>
             <td>&nbsp;</td>
+            <td>&nbsp;</td>
             <td class="r">CGST @ ${gstRate}%</td>
             <td class="r">${fmtNum(cgstAmt)}</td>
           </tr>
           <tr>
-            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees<br><br><strong>Rupees ${wordsStr}<br>Only</strong></td>
+            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
+            <td rowspan="2" class="c"><strong>Rupees ${wordsStr}<br>Only</strong></td>
             <td class="r">SGST @ ${gstRate}%</td>
             <td class="r">${fmtNum(sgstAmt)}</td>
           </tr>
@@ -260,7 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           ` : `
           <tr>
-            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees<br><br><strong>Rupees ${wordsStr}<br>Only</strong></td>
+            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
+            <td rowspan="2" class="c"><strong>Rupees ${wordsStr}<br>Only</strong></td>
             <td class="r">IGST @ ${gstRate * 2}%</td>
             <td class="r">${fmtNum(igstAmt)}</td>
           </tr>
@@ -270,14 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           `}
           <tr>
-            <td rowspan="2" class="inv-cert">
+            <td colspan="2" rowspan="2" class="inv-cert">
               Certified that the particulars given above are true and correct and the amount
               indicated represents the price actually charged and that is no flow of additional
               consideration directly or indirectly from the Buyer.
-              <div style="margin-top:10px">
-                The goods Mentioned in the invoice is received in
-                good condition &amp; Completely
-              </div>
             </td>
             <td class="r"><strong>TOTAL AMOUNT<br>AFTER TAX</strong></td>
             <td class="r"><strong>${fmtNum(grandTotal)}</strong></td>
@@ -285,6 +286,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr>
             <td colspan="2" class="inv-sig">
               <div>For ${COMPANY.name}</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" class="inv-recv">
+              The goods Mentioned in the invoice is received in
+              good condition &amp; Completely
+            </td>
+            <td colspan="2" class="inv-sig">
               <div class="inv-sig-space"></div>
               <div>Authorised Signatory</div>
             </td>
