@@ -426,6 +426,32 @@ legend {
   font-size: .9rem;
 }
 
+/* ===== Autocomplete ===== */
+.ac-wrap { position: relative; }
+.ac-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 6px 16px rgba(0,0,0,.1);
+}
+.ac-item {
+  padding: .55rem .75rem;
+  font-size: .85rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.active { background: #eef4fb; }
+.ac-item small { color: var(--text-muted); margin-left: .5rem; }
+
 /* ===== Utility ===== */
 .hidden { display: none !important; }
 .center { text-align: center; }

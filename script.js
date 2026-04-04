@@ -205,6 +205,72 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ══════════════════════════════════════
+  // ── Autocomplete Helper ──
+  // ══════════════════════════════════════
+  function createAutocomplete(input, getItems, onSelect) {
+    const wrap = document.createElement('div');
+    wrap.className = 'ac-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    const list = document.createElement('div');
+    list.className = 'ac-list hidden';
+    wrap.appendChild(list);
+
+    let activeIdx = -1;
+
+    function show(items) {
+      list.innerHTML = '';
+      activeIdx = -1;
+      if (!items.length) { list.classList.add('hidden'); return; }
+      items.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'ac-item';
+        div.innerHTML = item.label;
+        div.addEventListener('mousedown', e => {
+          e.preventDefault();
+          onSelect(item.data);
+          list.classList.add('hidden');
+        });
+        list.appendChild(div);
+      });
+      list.classList.remove('hidden');
+    }
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim().toLowerCase();
+      if (!val) { list.classList.add('hidden'); return; }
+      show(getItems(val));
+    });
+
+    input.addEventListener('keydown', e => {
+      const items = list.querySelectorAll('.ac-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, items.length - 1);
+        items.forEach((it, i) => it.classList.toggle('active', i === activeIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, 0);
+        items.forEach((it, i) => it.classList.toggle('active', i === activeIdx));
+      } else if (e.key === 'Enter' && activeIdx >= 0) {
+        e.preventDefault();
+        items[activeIdx].dispatchEvent(new Event('mousedown'));
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => list.classList.add('hidden'), 150);
+    });
+
+    input.addEventListener('focus', () => {
+      const val = input.value.trim().toLowerCase();
+      if (val) show(getItems(val));
+    });
+  }
+
+  // ══════════════════════════════════════
   // ── Invoice Generator ──
   // ══════════════════════════════════════
   const COMPANY = {
@@ -292,6 +358,42 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderItems();
+
+  // ── Customer Autocomplete on Buyer Name ──
+  createAutocomplete(
+    $('buyerName'),
+    val => customers
+      .filter(c => c.name.toLowerCase().includes(val))
+      .map(c => ({ label: `${escHtml(c.name)}<small>${escHtml(c.gstin)}</small>`, data: c })),
+    c => {
+      $('buyerName').value = c.name;
+      $('buyerGstin').value = c.gstin;
+      $('buyerAddress').value = c.address;
+      $('contactPerson').value = c.contact;
+      $('contactPhone').value = c.phone;
+    }
+  );
+
+  // ── Product Autocomplete on Item Descriptions ──
+  $('itemsBody').addEventListener('focusin', e => {
+    const inp = e.target;
+    if (inp.dataset.f !== 'description' || inp.dataset.acInit) return;
+    inp.dataset.acInit = '1';
+    createAutocomplete(
+      inp,
+      val => products
+        .filter(p => p.name.toLowerCase().includes(val))
+        .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p })),
+      p => {
+        const i = +inp.dataset.i;
+        inp.value = p.name;
+        items[i].description = p.name;
+        items[i].hsn = p.hsn;
+        items[i].rate = p.rate;
+        renderItems();
+      }
+    );
+  });
 
   // ── Preview ──
   $('previewBtn').addEventListener('click', () => {
