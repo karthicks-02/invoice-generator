@@ -386,25 +386,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   );
 
-  // ── Product Autocomplete on Item Descriptions ──
+  // ── Product Autocomplete on Item Description & HSN fields ──
+  function matchProducts(val) {
+    return products
+      .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val))
+      .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p }));
+  }
+
+  function fillProduct(inp, p) {
+    const i = +inp.dataset.i;
+    items[i].description = p.name;
+    items[i].hsn = p.hsn;
+    items[i].rate = p.rate;
+    renderItems();
+  }
+
   $('itemsBody').addEventListener('focusin', e => {
     const inp = e.target;
-    if (inp.dataset.f !== 'description' || inp.dataset.acInit) return;
-    inp.dataset.acInit = '1';
-    createAutocomplete(
-      inp,
-      val => products
-        .filter(p => p.name.toLowerCase().includes(val))
-        .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p })),
-      p => {
-        const i = +inp.dataset.i;
-        inp.value = p.name;
-        items[i].description = p.name;
-        items[i].hsn = p.hsn;
-        items[i].rate = p.rate;
-        renderItems();
-      }
-    );
+    if ((inp.dataset.f === 'description' || inp.dataset.f === 'hsn') && !inp.dataset.acInit) {
+      inp.dataset.acInit = '1';
+      createAutocomplete(inp, matchProducts, p => fillProduct(inp, p));
+    }
   });
 
   // ── Preview ──
