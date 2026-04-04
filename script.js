@@ -190,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
               <div style="font-weight:700;margin-bottom:4px">${esc(consigneeName).toUpperCase()}</div>
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
+              ${$('contactPerson').value.trim() ? `<div style="margin-bottom:4px">Contact Name:${esc($('contactPerson').value).toUpperCase()}</div>` : ''}
               <div style="margin-bottom:4px">Contact:${esc($('contactPhone').value)}</div>
               <div>GSTIN : ${esc($('buyerGstin').value)}</div>
             </td>
