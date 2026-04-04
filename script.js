@@ -283,8 +283,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           <tr>
             <td colspan="2" class="inv-recv">
-              The goods Mentioned in the invoice is received in
-              good condition &amp; Completely
+              <strong>The goods Mentioned in the invoice is received in
+              good condition &amp; Completely</strong>
             </td>
             <td colspan="2" class="inv-sig inv-sig-combined">
               <div>For ${COMPANY.name}</div>
