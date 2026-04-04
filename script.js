@@ -212,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.className = 'ac-wrap';
     input.parentNode.insertBefore(wrap, input);
     wrap.appendChild(input);
+    input.focus();
 
     const list = document.createElement('div');
     list.className = 'ac-list hidden';
