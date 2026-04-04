@@ -434,18 +434,32 @@ legend {
 }
 
 /* ===== Copy Type Checkboxes ===== */
+.copy-type-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: .85rem;
+}
+.copy-type-label {
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
 .copy-checks {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: center;
 }
 .copy-check {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: .88rem;
+  font-size: .9rem;
   cursor: pointer;
   white-space: nowrap;
+  color: var(--text);
 }
 .preview-copy-checks { align-items: center; }
 
