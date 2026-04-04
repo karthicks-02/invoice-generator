@@ -117,22 +117,22 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`;
     }).join('');
 
-    let taxRows = '';
     let totalTax = 0;
+    let taxLines = '';
     if (gstType === 'intra') {
       const cgst = subtotal * (gstRate / 100);
       const sgst = subtotal * (gstRate / 100);
       totalTax = cgst + sgst;
-      taxRows = `
-        <tr><td colspan="2" class="empty-cell"></td><td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgst)}</td></tr>
-        <tr><td colspan="2" class="empty-cell"></td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
-        <tr><td colspan="2" class="empty-cell"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+      taxLines = `
+        <div class="tax-row"><span>CGST @ ${gstRate}%</span><span>${fmtNum(cgst)}</span></div>
+        <div class="tax-row"><span>SGST @ ${gstRate}%</span><span>${fmtNum(sgst)}</span></div>
+        <div class="tax-row bld"><span>TAX AMOUNT: GST</span><span>${fmtNum(totalTax)}</span></div>`;
     } else {
       const igst = subtotal * ((gstRate * 2) / 100);
       totalTax = igst;
-      taxRows = `
-        <tr><td colspan="2" class="empty-cell"></td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
-        <tr><td colspan="2" class="empty-cell"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+      taxLines = `
+        <div class="tax-row"><span>IGST @ ${gstRate * 2}%</span><span>${fmtNum(igst)}</span></div>
+        <div class="tax-row bld"><span>TAX AMOUNT: GST</span><span>${fmtNum(totalTax)}</span></div>`;
     }
 
     const grandTotal = subtotal + totalTax;
@@ -240,27 +240,23 @@ document.addEventListener('DOMContentLoaded', () => {
         </table>
 
         <!-- ─── Totals ─── -->
-        <table class="inv-tbl inv-totals">
-          <colgroup>
-            <col style="width:18%">
-            <col style="width:32%">
-            <col style="width:30%">
-            <col style="width:20%">
-          </colgroup>
-          <tr>
-            <td class="inv-flbl">Mode Of Transport :</td>
-            <td>${esc($('transportMode').value)}</td>
-            <td class="r">TOTAL AMOUNT BEFORE<br>TAX</td>
-            <td class="r">${fmtNum(subtotal)}</td>
-          </tr>
-          ${taxRows}
-          <tr>
-            <td class="inv-words-lbl"><strong>INVOICE Value :</strong><br>Rupees</td>
-            <td class="c"><strong>Rupees ${totalInWords}</strong><br><strong>Only</strong></td>
-            <td class="r bld">TOTAL AMOUNT<br>AFTER TAX</td>
-            <td class="r bld">${fmtNum(grandTotal)}</td>
-          </tr>
-        </table>
+        <div class="inv-totals">
+          <div class="inv-totals-left">
+            <div class="inv-totals-transport">
+              <span class="inv-flbl">Mode Of Transport :</span>
+              <span>${esc($('transportMode').value)}</span>
+            </div>
+            <div class="inv-totals-words">
+              <span class="inv-flbl bld">INVOICE Value :<br>Rupees</span>
+              <span class="c"><strong>Rupees ${totalInWords}<br>Only</strong></span>
+            </div>
+          </div>
+          <div class="inv-totals-right">
+            <div class="tax-row"><span>TOTAL AMOUNT BEFORE TAX</span><span>${fmtNum(subtotal)}</span></div>
+            ${taxLines}
+            <div class="tax-row bld tax-grand"><span>TOTAL AMOUNT AFTER TAX</span><span>${fmtNum(grandTotal)}</span></div>
+          </div>
+        </div>
 
         <!-- ─── Footer ─── -->
         <table class="inv-tbl inv-footer">

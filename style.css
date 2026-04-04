@@ -218,8 +218,50 @@ legend {
 .inv .l { text-align: left; }
 .inv .r { text-align: right; }
 .inv .bld { font-weight: 700; }
-.inv .empty-cell { border-left: 1px solid #000; border-right: none; }
-.inv-words-lbl { font-size: 10px; text-align: center; vertical-align: middle; }
+/* ── Totals Section ── */
+.inv-totals {
+  display: flex;
+  border-top: 1px solid #000;
+}
+.inv-totals-left {
+  width: 50%;
+  border-right: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+}
+.inv-totals-transport {
+  display: flex;
+  padding: 6px 8px;
+  border-bottom: 1px solid #000;
+  font-size: 11px;
+  gap: 12px;
+  flex: 1;
+}
+.inv-totals-words {
+  display: flex;
+  padding: 8px 8px;
+  font-size: 11px;
+  gap: 12px;
+  align-items: center;
+}
+.inv-totals-words .c {
+  text-align: center;
+  flex: 1;
+}
+.inv-totals-right {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+}
+.tax-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-bottom: 1px solid #000;
+  font-size: 11px;
+}
+.tax-row:last-child { border-bottom: none; }
+.tax-grand { border-top: 1px solid #000; }
 
 /* ── Company Header ── */
 .inv-hdr {
@@ -287,11 +329,7 @@ legend {
 }
 .inv-items td { padding: 5px 6px; }
 
-/* ── Totals ── */
-.inv-totals td {
-  padding: 4px 8px;
-  font-size: 11px;
-}
+/* (totals styles moved above) */
 
 /* ── Footer ── */
 .inv-cert {
