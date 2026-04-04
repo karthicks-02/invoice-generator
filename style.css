@@ -426,6 +426,30 @@ legend {
   font-size: .9rem;
 }
 
+/* ===== Copy Type Checkboxes ===== */
+.copy-checks {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.copy-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .85rem;
+  cursor: pointer;
+  padding: .4rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fafbfc;
+  transition: border-color .2s, background .2s;
+}
+.copy-check:has(input:checked) {
+  border-color: var(--primary);
+  background: #eef4fb;
+}
+.preview-copy-checks { align-items: center; }
+
 /* ===== Autocomplete ===== */
 .ac-wrap { position: relative; }
 .ac-list {

@@ -412,7 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Preview ──
   $('previewBtn').addEventListener('click', () => {
-    buildInvoice();
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
     $('formPanel').classList.add('hidden');
     $('previewPanel').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -423,8 +424,36 @@ document.addEventListener('DOMContentLoaded', () => {
     $('formPanel').classList.remove('hidden');
   });
 
+  // ── Copy type helpers ──
+  function getSelectedCopyTypes(cls) {
+    return Array.from(document.querySelectorAll('.' + cls + ':checked')).map(cb => cb.value);
+  }
+
+  function syncCopyChecks(fromCls, toCls) {
+    const selected = getSelectedCopyTypes(fromCls);
+    document.querySelectorAll('.' + toCls).forEach(cb => {
+      cb.checked = selected.includes(cb.value);
+    });
+  }
+
+  document.querySelectorAll('.copyType').forEach(cb => {
+    cb.addEventListener('change', () => syncCopyChecks('copyType', 'copyTypePreview'));
+  });
+  document.querySelectorAll('.copyTypePreview').forEach(cb => {
+    cb.addEventListener('change', () => {
+      syncCopyChecks('copyTypePreview', 'copyType');
+      buildAllInvoices();
+    });
+  });
+
+  function buildAllInvoices() {
+    const types = getSelectedCopyTypes('copyType');
+    if (!types.length) types.push('');
+    $('invoicePaper').innerHTML = types.map(t => buildInvoice(t)).join('<div style="page-break-after:always;margin:20px 0;border-top:2px dashed #ccc"></div>');
+  }
+
   // ── Build Invoice HTML ──
-  function buildInvoice() {
+  function buildInvoice(copyType) {
     const gstRate = parseFloat($('gstRate').value) || 0;
     const gstType = $('gstType').value;
     const invoiceDate = $('invoiceDate').value;
@@ -462,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const grandTotal = subtotal + totalTax;
     const wordsStr = numberToWords(Math.round(grandTotal));
 
-    $('invoicePaper').innerHTML = `
+    return `
       <div class="inv">
         <!-- ─── Company Header ─── -->
         <div class="inv-hdr">
@@ -474,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── GSTIN Row ─── -->
         <div class="inv-row inv-gstin-row">
           <span><strong>GSTIN : ${COMPANY.gstin}</strong></span>
-          <span><strong>${esc($('copyType').value)}</strong></span>
+          <span><strong>${esc(copyType)}</strong></span>
         </div>
 
         <!-- ─── Buyer + TAX INVOICE ─── -->
