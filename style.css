@@ -436,20 +436,21 @@ legend {
 /* ===== Copy Type Checkboxes ===== */
 .copy-checks {
   display: flex;
-  gap: .75rem;
-  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
 }
 .copy-check {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: .85rem;
+  gap: 4px;
+  font-size: .8rem;
   cursor: pointer;
-  padding: .4rem .6rem;
+  padding: .3rem .5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: #fafbfc;
   transition: border-color .2s, background .2s;
+  white-space: nowrap;
 }
 .copy-check:has(input:checked) {
   border-color: var(--primary);
