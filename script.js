@@ -179,10 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Consignee ─── -->
         <table class="inv-tbl inv-con">
           <colgroup>
-            <col style="width:36%">
-            <col style="width:12%">
-            <col style="width:20%">
-            <col style="width:10%">
+            <col style="width:34%">
+            <col style="width:11%">
+            <col style="width:22%">
+            <col style="width:11%">
             <col style="width:22%">
           </colgroup>
           <tr>

@@ -284,7 +284,7 @@ legend {
 
 /* ── Consignee ── */
 .inv-con td { font-size: 11px; padding: 6px 10px; }
-.inv-flbl { font-size: 10px; font-weight: 600; color: #333; }
+.inv-flbl { font-size: 10px; font-weight: 600; color: #333; white-space: nowrap; }
 
 /* ── Items ── */
 .inv-items th {
