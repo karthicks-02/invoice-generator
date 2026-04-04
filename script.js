@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildAllInvoices() {
     const types = getSelectedCopyTypes('copyType');
     if (!types.length) types.push('');
-    $('invoicePaper').innerHTML = types.map(t => buildInvoice(t)).join('<div style="page-break-after:always;margin:20px 0;border-top:2px dashed #ccc"></div>');
+    $('invoicePaper').innerHTML = types.map(t => buildInvoice(t)).join('<div class="copy-separator"></div>');
   }
 
   // ── Build Invoice HTML ──
