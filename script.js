@@ -282,12 +282,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="r"><strong>${fmtNum(grandTotal)}</strong></td>
           </tr>
           <tr>
-            <td colspan="2" rowspan="2" class="inv-recv">
+            <td colspan="2" class="inv-sig">
+              <div>For ${COMPANY.name}</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" class="inv-recv">
               The goods Mentioned in the invoice is received in
               good condition &amp; Completely
             </td>
             <td colspan="2" class="inv-sig">
-              <div>For ${COMPANY.name}</div>
               <div class="inv-sig-space"></div>
               <div>Authorised Signatory</div>
             </td>
