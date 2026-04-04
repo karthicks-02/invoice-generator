@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
 
-  // ── Company details (pre-filled) ──
   const COMPANY = {
     name: 'KARTHICK INDUSTRIES',
     address: 'Regd.office No. C 19, Mogappair West, Ambattur\nNear Srinivasa Perumal Temple, Chennai-600 037, Tamil Nadu, India.',
@@ -10,17 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     gstin: '33AKKPR0176Q1ZK'
   };
 
-  // ── Set default date ──
   const today = new Date();
   $('invoiceDate').value = today.toISOString().split('T')[0];
 
-  // ── Same-as-buyer toggle ──
   $('sameAsBuyer').addEventListener('change', e => {
     $('consigneeFields').classList.toggle('hidden', e.target.checked);
   });
 
   // ── Items management ──
-  let items = [{ description: '', hsn: '', packages: '', qty: 0, rate: 0 }];
+  let items = [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
+
+  function formatBags(n) {
+    if (!n || n <= 0) return '';
+    return n === 1 ? '1 Bag' : n + ' Bags';
+  }
 
   function renderItems() {
     const tbody = $('itemsBody');
@@ -31,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
         <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" placeholder="SQ WELD NUT M10 X 1.25MM" /></td>
         <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" placeholder="73181600" /></td>
-        <td><input type="text" value="${esc(item.packages)}" data-i="${i}" data-f="packages" placeholder="1 Bag" /></td>
+        <td><input type="number" value="${item.packages || ''}" data-i="${i}" data-f="packages" min="0" step="1" placeholder="1" /></td>
         <td><input type="number" value="${item.qty}" data-i="${i}" data-f="qty" min="0" step="1" /></td>
         <td><input type="number" value="${item.rate}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
@@ -46,8 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const i = +inp.dataset.i;
     const f = inp.dataset.f;
     if (!f) return;
-    if (f === 'description' || f === 'hsn' || f === 'packages') {
+    if (f === 'description' || f === 'hsn') {
       items[i][f] = inp.value;
+    } else if (f === 'packages') {
+      items[i].packages = parseInt(inp.value) || 0;
     } else if (f === 'qty') {
       items[i].qty = parseFloat(inp.value) || 0;
     } else if (f === 'rate') {
@@ -67,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('addItemBtn').addEventListener('click', () => {
-    items.push({ description: '', hsn: '', packages: '', qty: 0, rate: 0 });
+    items.push({ description: '', hsn: '', packages: 0, qty: 0, rate: 0 });
     renderItems();
     const rows = $('itemsBody').querySelectorAll('tr');
     rows[rows.length - 1].querySelector('input').focus();
@@ -94,9 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const gstType = $('gstType').value;
     const invoiceDate = $('invoiceDate').value;
     const shortDate = invoiceDate ? formatShortDate(invoiceDate) : '';
+    const poDate = $('poDate').value ? formatShortDate($('poDate').value) : '';
 
     const consigneeName = $('sameAsBuyer').checked ? $('buyerName').value : $('consigneeName').value;
-    const consigneeAddr = $('sameAsBuyer').checked ? $('buyerAddress').value : $('consigneeAddress').value;
 
     let subtotal = 0;
     const itemRows = items.map((item, i) => {
@@ -106,29 +110,49 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="center">${i + 1}</td>
         <td>${esc(item.description).toUpperCase() || '—'}</td>
         <td class="center">${esc(item.hsn)}</td>
-        <td class="center">${esc(item.packages)}</td>
+        <td class="center">${formatBags(item.packages)}</td>
         <td class="right">${item.qty}</td>
         <td class="right">${fmtNum(item.rate)}</td>
         <td class="right">${fmtNum(amt)}</td>
       </tr>`;
     }).join('');
 
-    let taxHtml = '';
+    let taxRows = '';
     let totalTax = 0;
     if (gstType === 'intra') {
       const cgst = subtotal * (gstRate / 100);
       const sgst = subtotal * (gstRate / 100);
       totalTax = cgst + sgst;
-      taxHtml = `
-        <tr><td class="tax-label">CGST @ ${gstRate}%</td><td class="tax-value">${fmtNum(cgst)}</td></tr>
-        <tr><td class="tax-label">SGST @ ${gstRate}%</td><td class="tax-value">${fmtNum(sgst)}</td></tr>
-        <tr class="tax-total-row"><td class="tax-label">TAX AMOUNT: GST</td><td class="tax-value">${fmtNum(totalTax)}</td></tr>`;
+      taxRows = `
+        <tr>
+          <td colspan="2"></td>
+          <td class="tax-label">CGST @ ${gstRate}%</td>
+          <td class="tax-value">${fmtNum(cgst)}</td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+          <td class="tax-label">SGST @ ${gstRate}%</td>
+          <td class="tax-value">${fmtNum(sgst)}</td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+          <td class="tax-label tax-total-cell">TAX AMOUNT: GST</td>
+          <td class="tax-value tax-total-cell">${fmtNum(totalTax)}</td>
+        </tr>`;
     } else {
       const igst = subtotal * ((gstRate * 2) / 100);
       totalTax = igst;
-      taxHtml = `
-        <tr><td class="tax-label">IGST @ ${gstRate * 2}%</td><td class="tax-value">${fmtNum(igst)}</td></tr>
-        <tr class="tax-total-row"><td class="tax-label">TAX AMOUNT: GST</td><td class="tax-value">${fmtNum(totalTax)}</td></tr>`;
+      taxRows = `
+        <tr>
+          <td colspan="2"></td>
+          <td class="tax-label">IGST @ ${gstRate * 2}%</td>
+          <td class="tax-value">${fmtNum(igst)}</td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+          <td class="tax-label tax-total-cell">TAX AMOUNT: GST</td>
+          <td class="tax-value tax-total-cell">${fmtNum(totalTax)}</td>
+        </tr>`;
     }
 
     const grandTotal = subtotal + totalTax;
@@ -175,35 +199,34 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Consignee / Shipped to -->
         <table class="inv-consignee-table">
           <tr>
-            <td colspan="6" class="inv-small-label">Details of Consignee / shipped to :</td>
+            <td colspan="5" class="inv-small-label">Details of Consignee / shipped to :</td>
           </tr>
           <tr>
-            <td colspan="3" class="inv-consignee-name"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
+            <td colspan="2" class="inv-consignee-name"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
             <td class="inv-field-label">P.Order No.</td>
-            <td class="inv-field-label">What'up</td>
+            <td class="inv-field-label">P.O. Date</td>
             <td class="inv-field-label">Date :</td>
           </tr>
           <tr>
-            <td>Contact:${esc($('contactPerson').value).toUpperCase()}</td>
+            <td>Name: ${esc($('contactPerson').value).toUpperCase()}</td>
             <td class="inv-field-label">Bank name</td>
-            <td>${esc($('bankName').value)}</td>
             <td>${esc($('poNumber').value)}</td>
-            <td>${esc($('whatsapp').value)}</td>
+            <td>${poDate}</td>
             <td>${shortDate}</td>
           </tr>
           <tr>
-            <td>Contact:${esc($('contactPhone').value)}</td>
-            <td class="inv-field-label">Account<br>Number</td>
+            <td>Contact No: ${esc($('contactPhone').value)}</td>
+            <td class="inv-field-label">Account Number</td>
             <td>${esc($('accountNumber').value)}</td>
             <td class="inv-field-label">IFSC</td>
-            <td colspan="2">${esc($('ifscCode').value)}</td>
+            <td>${esc($('ifscCode').value)}</td>
           </tr>
           <tr>
             <td></td>
-            <td></td>
+            <td>${esc($('bankName').value)}</td>
             <td></td>
             <td class="inv-field-label">Branch</td>
-            <td colspan="2">${esc($('bankBranch').value)}</td>
+            <td>${esc($('bankBranch').value)}</td>
           </tr>
         </table>
 
@@ -212,12 +235,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <thead>
             <tr>
               <th class="center" style="width:6%">SL.No.</th>
-              <th style="width:30%">NAME OF THE COMMODITY / SERVICE</th>
+              <th style="width:28%">NAME OF THE COMMODITY / SERVICE</th>
               <th class="center" style="width:10%">HSN CODE</th>
-              <th class="center" style="width:10%">No.Of<br>Packages</th>
-              <th class="center" style="width:10%">Total Qty IN<br>NOS</th>
+              <th class="center" style="width:10%">No.Of Packages</th>
+              <th class="center" style="width:10%">Total Qty IN NOS</th>
               <th class="center" style="width:10%">Rate Per No.</th>
-              <th class="right" style="width:14%">GOODS VALUE (in<br>Rs.)</th>
+              <th class="right" style="width:16%">GOODS VALUE (in Rs.)</th>
             </tr>
           </thead>
           <tbody>
@@ -225,19 +248,19 @@ document.addEventListener('DOMContentLoaded', () => {
           </tbody>
         </table>
 
-        <!-- Transport & Totals -->
+        <!-- Totals Section -->
         <table class="inv-totals-table">
           <tr>
             <td class="inv-transport-label">Mode Of Transport :</td>
             <td class="inv-transport-value">${esc($('transportMode').value)}</td>
-            <td class="tax-label">TOTAL AMOUNT BEFORE<br>TAX</td>
+            <td class="tax-label">TOTAL AMOUNT BEFORE TAX</td>
             <td class="tax-value">${fmtNum(subtotal)}</td>
           </tr>
-          ${taxHtml}
+          ${taxRows}
           <tr>
             <td class="inv-words-label"><strong>INVOICE Value :</strong></td>
-            <td class="inv-words-value" colspan="1"><strong>Rupees</strong> ${totalInWords} Only</td>
-            <td class="tax-label"><strong>TOTAL AMOUNT<br>AFTER TAX</strong></td>
+            <td class="inv-words-value"><strong>Rupees</strong> ${totalInWords} Only</td>
+            <td class="tax-label"><strong>TOTAL AMOUNT AFTER TAX</strong></td>
             <td class="tax-value"><strong>${fmtNum(grandTotal)}</strong></td>
           </tr>
         </table>
@@ -281,7 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
     html2pdf().set(opt).from(element).save();
   });
 
-  // ── Print ──
   $('printBtn').addEventListener('click', () => window.print());
 
   // ── Helpers ──

@@ -351,7 +351,7 @@ legend {
   width: 22%;
   font-weight: 600;
 }
-.inv-totals-table .tax-total-row td {
+.inv-totals-table .tax-total-cell {
   border-top: 2px solid #000;
 }
 .inv-words-label {
