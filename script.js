@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${gstType === 'intra' ? `
           <tr>
             <td rowspan="3" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
-            <td rowspan="3" class="c"><strong>Rupees ${wordsStr}<br>Only</strong></td>
+            <td rowspan="3" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
             <td class="r">CGST @ ${gstRate}%</td>
             <td class="r">${fmtNum(cgstAmt)}</td>
           </tr>
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ` : `
           <tr>
             <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
-            <td rowspan="2" class="c"><strong>Rupees ${wordsStr}<br>Only</strong></td>
+            <td rowspan="2" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
             <td class="r">IGST @ ${gstRate * 2}%</td>
             <td class="r">${fmtNum(igstAmt)}</td>
           </tr>
