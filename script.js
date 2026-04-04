@@ -187,10 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </colgroup>
           <tr><td colspan="5" class="inv-lbl">Details of Consignee / shipped to :</td></tr>
           <tr>
-            <td rowspan="3" style="vertical-align:top">
-              <strong>${esc(consigneeName).toUpperCase()}</strong><br>
-              Contact:${esc($('contactPhone').value)}<br>
-              GSTIN : ${esc($('buyerGstin').value)}
+            <td rowspan="3" style="vertical-align:top;padding:8px 10px">
+              <div style="font-weight:700;margin-bottom:6px">${esc(consigneeName).toUpperCase()}</div>
+              <div style="margin-bottom:6px">Contact:${esc($('contactPhone').value)}</div>
+              <div>GSTIN : ${esc($('buyerGstin').value)}</div>
             </td>
             <td class="inv-flbl">P.Order No.</td>
             <td>${esc($('poNumber').value)}</td>
