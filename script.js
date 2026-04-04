@@ -188,15 +188,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr>
             <td colspan="2"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
             <td class="inv-flbl">P.Order No.</td>
-            <td class="inv-flbl">P.O. Date</td>
-            <td class="inv-flbl">Date :</td>
+            <td colspan="2" class="inv-flbl">P.O. Date</td>
           </tr>
           <tr>
             <td>Name:${esc($('contactPerson').value).toUpperCase()}</td>
             <td class="inv-flbl">Bank name</td>
+            <td>${esc($('bankName').value)}</td>
             <td>${esc($('poNumber').value)}</td>
             <td>${poDate}</td>
-            <td>${shortDate}</td>
           </tr>
           <tr>
             <td>Contact No:${esc($('contactPhone').value)}</td>
@@ -207,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           <tr>
             <td></td>
-            <td>${esc($('bankName').value)}</td>
+            <td></td>
             <td></td>
             <td class="inv-flbl">Branch</td>
             <td>${esc($('bankBranch').value)}</td>
