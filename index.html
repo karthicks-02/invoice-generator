@@ -118,6 +118,23 @@
         <p id="payEmpty" class="empty-msg">No outstanding invoices.</p>
       </div>
 
+      <h3 class="section-title" id="paidSectionTitle" style="display:none">Paid Invoices</h3>
+      <div class="data-table-wrap" id="paidTableWrap" style="display:none">
+        <table class="data-table" id="paidTable">
+          <thead>
+            <tr>
+              <th>Invoice No.</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="paidBody"></tbody>
+        </table>
+      </div>
+
       <!-- Add Payment Overlay -->
       <div id="payFormOverlay" class="overlay hidden">
         <div class="overlay-box">

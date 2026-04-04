@@ -553,10 +553,62 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>`;
       tbody.appendChild(tr);
     });
+
+    // Paid invoices table
+    const paidInvs = invoices.filter(inv => {
+      const rec = payments[inv.id];
+      if (!rec || rec.status !== 'paid') return false;
+      if (query) {
+        const hay = [inv.invoiceNumber, inv.buyerName].join(' ').toLowerCase();
+        if (!hay.includes(query)) return false;
+      }
+      if (custFilter && inv.buyerName !== custFilter) return false;
+      return true;
+    });
+
+    paidInvs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    const showPaid = paidInvs.length > 0;
+    $('paidSectionTitle').style.display = showPaid ? '' : 'none';
+    $('paidTableWrap').style.display = showPaid ? '' : 'none';
+
+    const paidTbody = $('paidBody');
+    paidTbody.innerHTML = '';
+    paidInvs.forEach(inv => {
+      const total = computeGrandTotal(inv);
+      const rec = payments[inv.id];
+      const paid = rec ? rec.totalPaid : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escHtml(inv.invoiceNumber)}</td>
+        <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
+        <td>${escHtml(inv.buyerName)}</td>
+        <td class="r">₹${fmtNum(total)}</td>
+        <td class="r">₹${fmtNum(paid)}</td>
+        <td class="actions">
+          <button class="btn-unpaid" data-inv-id="${inv.id}">Mark Unpaid</button>
+        </td>`;
+      paidTbody.appendChild(tr);
+    });
   }
 
   $('paySearch').addEventListener('input', renderPaymentView);
   $('payCustomerFilter').addEventListener('change', renderPaymentView);
+
+  $('paidBody').addEventListener('click', e => {
+    const id = e.target.dataset.invId;
+    if (!id) return;
+    if (e.target.classList.contains('btn-unpaid')) {
+      const rec = payments[id];
+      if (rec) {
+        rec.status = 'unpaid';
+        rec.payments = [];
+        rec.totalPaid = 0;
+        savePayments();
+        renderPaymentView();
+      }
+    }
+  });
 
   // ── Payment table actions ──
   let payFormInvoiceId = null;

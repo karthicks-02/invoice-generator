@@ -629,6 +629,26 @@ legend {
 
 .row-overdue { background: #fef2f2 !important; }
 
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 1.25rem 0 .5rem;
+}
+
+.data-table .btn-unpaid {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .3rem .6rem;
+  font-size: .78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+  color: #d97706;
+}
+.data-table .btn-unpaid:hover { background: #fffbeb; }
+
 /* ===== Overlay ===== */
 .overlay {
   position: fixed;
