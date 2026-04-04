@@ -185,9 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <col style="width:12%">
             <col style="width:24%">
           </colgroup>
-          <tr><td colspan="5" class="inv-lbl">Details of Consignee / shipped to :</td></tr>
           <tr>
             <td rowspan="3" style="vertical-align:top;padding:8px 10px">
+              <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
               <div style="font-weight:700;margin-bottom:6px">${esc(consigneeName).toUpperCase()}</div>
               <div style="margin-bottom:6px">Contact:${esc($('contactPhone').value)}</div>
               <div>GSTIN : ${esc($('buyerGstin').value)}</div>
