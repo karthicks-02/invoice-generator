@@ -99,40 +99,49 @@
 
       <div id="companySummaryCards" class="company-cards"></div>
 
-      <div class="data-table-wrap">
-        <table class="data-table" id="payTable">
-          <thead>
-            <tr>
-              <th>Invoice No.</th>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Outstanding</th>
-              <th>Days</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="payBody"></tbody>
-        </table>
-        <p id="payEmpty" class="empty-msg">No outstanding invoices.</p>
+      <div class="pay-tabs">
+        <button class="pay-tab active" data-tab="unpaid">Unpaid <span class="tab-count" id="unpaidCount">0</span></button>
+        <button class="pay-tab" data-tab="paid">Paid <span class="tab-count" id="paidCount">0</span></button>
       </div>
 
-      <h3 class="section-title" id="paidSectionTitle" style="display:none">Paid Invoices</h3>
-      <div class="data-table-wrap" id="paidTableWrap" style="display:none">
-        <table class="data-table" id="paidTable">
-          <thead>
-            <tr>
-              <th>Invoice No.</th>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="paidBody"></tbody>
-        </table>
+      <div id="unpaidPanel" class="tab-panel">
+        <div class="data-table-wrap">
+          <table class="data-table" id="payTable">
+            <thead>
+              <tr>
+                <th>Invoice No.</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Outstanding</th>
+                <th>Days</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="payBody"></tbody>
+          </table>
+          <p id="payEmpty" class="empty-msg">No outstanding invoices.</p>
+        </div>
+      </div>
+
+      <div id="paidPanel" class="tab-panel hidden">
+        <div class="data-table-wrap">
+          <table class="data-table" id="paidTable">
+            <thead>
+              <tr>
+                <th>Invoice No.</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="paidBody"></tbody>
+          </table>
+          <p id="paidEmpty" class="empty-msg">No paid invoices.</p>
+        </div>
       </div>
 
       <!-- Add Payment Overlay -->
@@ -388,6 +397,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js?v=22"></script>
+  <script src="script.js?v=23"></script>
 </body>
 </html>

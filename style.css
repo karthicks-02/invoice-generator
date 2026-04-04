@@ -641,11 +641,48 @@ legend {
 
 .row-overdue { background: #fef2f2 !important; }
 
-.section-title {
-  font-size: 1rem;
+/* ===== Payment Tabs ===== */
+.pay-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+.pay-tab {
+  padding: .6rem 1.25rem;
+  font-family: inherit;
+  font-size: .9rem;
   font-weight: 600;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
   color: var(--text-muted);
-  margin: 1.25rem 0 .5rem;
+  transition: color .2s, border-color .2s;
+}
+.pay-tab:hover { color: var(--text); }
+.pay-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: .72rem;
+  font-weight: 700;
+  border-radius: 10px;
+  background: var(--border);
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+.pay-tab.active .tab-count {
+  background: var(--primary);
+  color: #fff;
 }
 
 .data-table .btn-unpaid {

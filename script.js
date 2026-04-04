@@ -574,9 +574,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     paidInvs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
-    const showPaid = paidInvs.length > 0;
-    $('paidSectionTitle').style.display = showPaid ? '' : 'none';
-    $('paidTableWrap').style.display = showPaid ? '' : 'none';
+    $('unpaidCount').textContent = unpaid.length;
+    $('paidCount').textContent = paidInvs.length;
+
+    $('paidTable').style.display = paidInvs.length ? 'table' : 'none';
+    $('paidEmpty').style.display = paidInvs.length ? 'none' : 'block';
 
     const paidTbody = $('paidBody');
     paidTbody.innerHTML = '';
@@ -601,6 +603,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('paySearch').addEventListener('input', renderPaymentView);
   $('payCustomerFilter').addEventListener('change', renderPaymentView);
+
+  // Tab switching
+  document.querySelectorAll('.pay-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $('unpaidPanel').classList.toggle('hidden', tab.dataset.tab !== 'unpaid');
+      $('paidPanel').classList.toggle('hidden', tab.dataset.tab !== 'paid');
+    });
+  });
 
   $('paidBody').addEventListener('click', e => {
     const id = e.target.dataset.invId;
