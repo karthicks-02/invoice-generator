@@ -374,6 +374,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   );
 
+  // ── Customer Autocomplete on Consignee Name ──
+  createAutocomplete(
+    $('consigneeName'),
+    val => customers
+      .filter(c => c.name.toLowerCase().includes(val))
+      .map(c => ({ label: `${escHtml(c.name)}<small>${escHtml(c.gstin)}</small>`, data: c })),
+    c => {
+      $('consigneeName').value = c.name;
+      $('consigneeAddress').value = c.address;
+    }
+  );
+
   // ── Product Autocomplete on Item Descriptions ──
   $('itemsBody').addEventListener('focusin', e => {
     const inp = e.target;
