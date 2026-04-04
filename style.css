@@ -608,6 +608,18 @@ legend {
   cursor: pointer;
   transition: background .15s;
 }
+.data-table .btn-view {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .3rem .6rem;
+  font-size: .78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+  color: #6366f1;
+}
+.data-table .btn-view:hover { background: #eef2ff; }
 .data-table .btn-pay { color: var(--primary); }
 .data-table .btn-pay:hover { background: #eef4fb; }
 .data-table .btn-remind { color: #d97706; }

@@ -16,13 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let cameFromInvoiceList = false;
+  let cameFromPayment = false;
 
   $('custBackBtn').addEventListener('click', goHome);
   $('prodBackBtn').addEventListener('click', goHome);
   $('invBackBtn').addEventListener('click', () => {
     $('previewPanel').classList.add('hidden');
     $('formPanel').classList.remove('hidden');
-    if (cameFromInvoiceList) {
+    if (cameFromPayment) {
+      cameFromPayment = false;
+      showView('paymentView');
+      renderPaymentView();
+    } else if (cameFromInvoiceList) {
       cameFromInvoiceList = false;
       showView('invoiceListView');
       renderInvoiceList();
@@ -38,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
       if (card.dataset.view === 'invoiceListView') renderInvoiceList();
-      if (card.dataset.view === 'invoiceView') { editingInvoiceId = null; cameFromInvoiceList = false; }
+      if (card.dataset.view === 'invoiceView') { editingInvoiceId = null; cameFromInvoiceList = false; cameFromPayment = false; }
       if (card.dataset.view === 'paymentView') renderPaymentView();
     });
   });
@@ -547,6 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="r"><strong>₹${fmtNum(outstanding)}</strong></td>
         <td class="c">${days}</td>
         <td class="actions">
+          <button class="btn-view" data-inv-id="${inv.id}">View</button>
           <button class="btn-pay" data-inv-id="${inv.id}">+ Pay</button>
           <button class="btn-remind" data-inv-id="${inv.id}">Remind</button>
           <button class="btn-markpaid" data-inv-id="${inv.id}">Paid</button>
@@ -586,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="r">₹${fmtNum(total)}</td>
         <td class="r">₹${fmtNum(paid)}</td>
         <td class="actions">
+          <button class="btn-view" data-inv-id="${inv.id}">View</button>
           <button class="btn-unpaid" data-inv-id="${inv.id}">Mark Unpaid</button>
         </td>`;
       paidTbody.appendChild(tr);
@@ -598,6 +605,9 @@ document.addEventListener('DOMContentLoaded', () => {
   $('paidBody').addEventListener('click', e => {
     const id = e.target.dataset.invId;
     if (!id) return;
+    if (e.target.classList.contains('btn-view')) {
+      viewInvoiceFromPayment(id);
+    }
     if (e.target.classList.contains('btn-unpaid')) {
       const rec = payments[id];
       if (rec) {
@@ -614,9 +624,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let payFormInvoiceId = null;
   let reminderInvoiceId = null;
 
+  function viewInvoiceFromPayment(id) {
+    const inv = invoices.find(x => x.id === id);
+    if (!inv) return;
+    cameFromPayment = true;
+    loadInvoiceIntoForm(inv);
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
+    showView('invoiceView');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+  }
+
   $('payBody').addEventListener('click', e => {
     const id = e.target.dataset.invId;
     if (!id) return;
+
+    if (e.target.classList.contains('btn-view')) {
+      viewInvoiceFromPayment(id);
+    }
 
     if (e.target.classList.contains('btn-pay')) {
       payFormInvoiceId = id;
