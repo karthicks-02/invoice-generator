@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('custBackBtn').addEventListener('click', () => {
     if (!$('custFormWrap').classList.contains('hidden')) {
-      $('custFormWrap').classList.add('hidden');
+      hideCustForm();
     } else {
       goHome();
     }
@@ -151,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custEmpty').style.display = customers.length ? 'none' : 'block';
     $('custTable').style.display = customers.length ? 'table' : 'none';
     customers.forEach((c, i) => {
+      const conCount = c.consignees ? c.consignees.length : 0;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
@@ -158,12 +159,72 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${escHtml(c.gstin)}</td>
         <td>${escHtml(c.contact)}</td>
         <td>${escHtml(c.phone)}</td>
+        <td>${conCount}</td>
         <td class="actions">
           <button class="btn-edit" data-i="${i}">Edit</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
       tbody.appendChild(tr);
     });
+  }
+
+  let tempConsignees = [];
+
+  function renderConsigneeList() {
+    const wrap = $('consigneeList');
+    wrap.innerHTML = '';
+    tempConsignees.forEach((con, i) => {
+      const div = document.createElement('div');
+      div.className = 'consignee-item';
+      div.innerHTML = `
+        <div class="consignee-item-info">
+          <div class="consignee-item-name">${escHtml(con.name)}</div>
+          <div class="consignee-item-addr">${escHtml(con.address)}</div>
+        </div>
+        <button class="btn-del" data-ci="${i}">&times;</button>`;
+      wrap.appendChild(div);
+    });
+  }
+
+  function resetConsigneeForm() {
+    $('conName').value = '';
+    $('conAddress').value = '';
+    $('consigneeFormRow').classList.add('hidden');
+  }
+
+  $('addConsigneeBtn').addEventListener('click', () => {
+    resetConsigneeForm();
+    $('consigneeFormRow').classList.remove('hidden');
+  });
+
+  $('cancelConsigneeBtn').addEventListener('click', () => {
+    resetConsigneeForm();
+  });
+
+  $('saveConsigneeBtn').addEventListener('click', () => {
+    const name = $('conName').value.trim();
+    const address = $('conAddress').value.trim();
+    if (!name) { alert('Consignee Name is required'); return; }
+    tempConsignees.push({ name, address });
+    renderConsigneeList();
+    resetConsigneeForm();
+  });
+
+  $('consigneeList').addEventListener('click', e => {
+    if (e.target.classList.contains('btn-del')) {
+      const ci = +e.target.dataset.ci;
+      tempConsignees.splice(ci, 1);
+      renderConsigneeList();
+    }
+  });
+
+  function showCustForm() {
+    $('custFormWrap').classList.remove('hidden');
+    $('custTableWrap').classList.add('hidden');
+  }
+  function hideCustForm() {
+    $('custFormWrap').classList.add('hidden');
+    $('custTableWrap').classList.remove('hidden');
   }
 
   $('addCustBtn').addEventListener('click', () => {
@@ -174,11 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custAddress').value = '';
     $('custContact').value = '';
     $('custPhone').value = '';
-    $('custFormWrap').classList.remove('hidden');
+    tempConsignees = [];
+    renderConsigneeList();
+    resetConsigneeForm();
+    showCustForm();
   });
 
   $('cancelCustBtn').addEventListener('click', () => {
-    $('custFormWrap').classList.add('hidden');
+    hideCustForm();
   });
 
   $('saveCustBtn').addEventListener('click', () => {
@@ -187,7 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
       gstin: $('custGstin').value.trim(),
       address: $('custAddress').value.trim(),
       contact: $('custContact').value.trim(),
-      phone: $('custPhone').value.trim()
+      phone: $('custPhone').value.trim(),
+      consignees: [...tempConsignees]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
     if (editCustIdx >= 0) {
@@ -197,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     saveCustomers();
     renderCustomers();
-    $('custFormWrap').classList.add('hidden');
+    hideCustForm();
   });
 
   $('custBody').addEventListener('click', e => {
@@ -211,7 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custAddress').value = c.address;
       $('custContact').value = c.contact;
       $('custPhone').value = c.phone;
-      $('custFormWrap').classList.remove('hidden');
+      tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
+      renderConsigneeList();
+      resetConsigneeForm();
+      showCustForm();
     }
     if (e.target.classList.contains('btn-del')) {
       if (confirm('Delete this customer?')) {
@@ -947,6 +1015,39 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('focus', showSuggestions);
   }
 
+  // ── Customer Form: Autocomplete on Company Name & GSTIN ──
+  createAutocomplete(
+    $('custName'),
+    val => customers
+      .filter((c, i) => i !== editCustIdx && c.name.toLowerCase().includes(val))
+      .map(c => ({ label: `${escHtml(c.name)}<small>${escHtml(c.gstin)}</small>`, data: c })),
+    c => {
+      $('custName').value = c.name;
+      $('custGstin').value = c.gstin;
+      $('custAddress').value = c.address;
+      $('custContact').value = c.contact;
+      $('custPhone').value = c.phone;
+      tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
+      renderConsigneeList();
+    }
+  );
+
+  createAutocomplete(
+    $('custGstin'),
+    val => customers
+      .filter((c, i) => i !== editCustIdx && c.gstin.toLowerCase().includes(val))
+      .map(c => ({ label: `${escHtml(c.gstin)}<small>${escHtml(c.name)}</small>`, data: c })),
+    c => {
+      $('custName').value = c.name;
+      $('custGstin').value = c.gstin;
+      $('custAddress').value = c.address;
+      $('custContact').value = c.contact;
+      $('custPhone').value = c.phone;
+      tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
+      renderConsigneeList();
+    }
+  );
+
   // ══════════════════════════════════════
   // ── Invoice Generator ──
   // ══════════════════════════════════════
@@ -1051,15 +1152,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   );
 
-  // ── Customer Autocomplete on Consignee Name ──
+  // ── Consignee Autocomplete: show consignees of the selected buyer ──
   createAutocomplete(
     $('consigneeName'),
-    val => customers
-      .filter(c => c.name.toLowerCase().includes(val))
-      .map(c => ({ label: `${escHtml(c.name)}<small>${escHtml(c.gstin)}</small>`, data: c })),
-    c => {
-      $('consigneeName').value = c.name;
-      $('consigneeAddress').value = c.address;
+    val => {
+      const buyerName = $('buyerName').value.trim().toLowerCase();
+      const buyer = customers.find(c => c.name.toLowerCase() === buyerName);
+      const list = buyer && buyer.consignees ? buyer.consignees : [];
+      return list
+        .filter(con => con.name.toLowerCase().includes(val))
+        .map(con => ({ label: `${escHtml(con.name)}<small>${escHtml(con.address)}</small>`, data: con }));
+    },
+    con => {
+      $('consigneeName').value = con.name;
+      $('consigneeAddress').value = con.address;
     }
   );
 
