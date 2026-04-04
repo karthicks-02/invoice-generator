@@ -950,7 +950,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════
   // ── Autocomplete Helper ──
   // ══════════════════════════════════════
-  function createAutocomplete(input, getItems, onSelect) {
+  function createAutocomplete(input, getItems, onSelect, opts) {
+    const showOnEmpty = opts && opts.showOnEmpty !== undefined ? opts.showOnEmpty : true;
     const wrap = document.createElement('div');
     wrap.className = 'ac-wrap';
     input.parentNode.insertBefore(wrap, input);
@@ -984,8 +985,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const val = input.value.trim().toLowerCase();
       if (val) {
         show(getItems(val));
-      } else {
+      } else if (showOnEmpty) {
         show(getItems('').slice(0, 5));
+      } else {
+        list.classList.add('hidden');
       }
     }
 
@@ -1015,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('focus', showSuggestions);
   }
 
-  // ── Customer Form: Autocomplete on Company Name & GSTIN ──
+  // ── Customer Form: Autocomplete on Company Name & GSTIN (only on typing) ──
   createAutocomplete(
     $('custName'),
     val => customers
@@ -1029,7 +1032,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
-    }
+    },
+    { showOnEmpty: false }
   );
 
   createAutocomplete(
@@ -1045,7 +1049,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
-    }
+    },
+    { showOnEmpty: false }
   );
 
   // ══════════════════════════════════════
