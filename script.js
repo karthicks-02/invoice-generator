@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
       if (card.dataset.view === 'invoiceListView') renderInvoiceList();
-      if (card.dataset.view === 'invoiceView') { editingInvoiceId = null; cameFromInvoiceList = false; cameFromPayment = false; }
+      if (card.dataset.view === 'invoiceView') { resetInvoiceForm(); }
       if (card.dataset.view === 'paymentView') renderPaymentView();
     });
   });
@@ -305,6 +305,39 @@ document.addEventListener('DOMContentLoaded', () => {
         cb.checked = inv.copyTypes.includes(cb.value);
       });
     }
+  }
+
+  function resetInvoiceForm() {
+    editingInvoiceId = null;
+    cameFromInvoiceList = false;
+    cameFromPayment = false;
+    $('invoiceNumber').value = '';
+    $('invoiceDate').value = new Date().toISOString().split('T')[0];
+    $('buyerName').value = '';
+    $('buyerGstin').value = '';
+    $('buyerAddress').value = '';
+    $('sameAsBuyer').checked = true;
+    $('consigneeFields').classList.add('hidden');
+    $('consigneeName').value = '';
+    $('consigneeAddress').value = '';
+    $('contactPerson').value = '';
+    $('contactPhone').value = '';
+    $('poNumber').value = '';
+    $('poDate').value = '';
+    $('bankName').value = 'Bank of Baroda';
+    $('bankBranch').value = 'Noothancheri Branch';
+    $('accountNumber').value = '69550200000025';
+    $('ifscCode').value = 'BARBOVJNOOT';
+    $('transportMode').value = 'By Road';
+    $('gstRate').value = 9;
+    $('gstType').value = 'intra';
+    items = [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
+    renderItems();
+    document.querySelectorAll('.copyType').forEach(cb => {
+      cb.checked = cb.value === 'ORIGINAL FOR BUYER';
+    });
+    $('formPanel').classList.remove('hidden');
+    $('previewPanel').classList.add('hidden');
   }
 
   function computeGrandTotal(inv) {
