@@ -93,8 +93,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let cameFromInvoiceList = false;
   let cameFromPayment = false;
 
-  $('custBackBtn').addEventListener('click', goHome);
-  $('prodBackBtn').addEventListener('click', goHome);
+  $('custBackBtn').addEventListener('click', () => {
+    if (!$('custFormWrap').classList.contains('hidden')) {
+      $('custFormWrap').classList.add('hidden');
+    } else {
+      goHome();
+    }
+  });
+  $('prodBackBtn').addEventListener('click', () => {
+    if (!$('prodFormWrap').classList.contains('hidden')) {
+      $('prodFormWrap').classList.add('hidden');
+    } else {
+      goHome();
+    }
+  });
   $('invBackBtn').addEventListener('click', () => {
     $('previewPanel').classList.add('hidden');
     $('formPanel').classList.remove('hidden');
