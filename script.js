@@ -288,9 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="r"><strong>${fmtNum(grandTotal)}</strong></td>
           </tr>
           <tr>
-            <td colspan="2" class="inv-recv">
+            <td colspan="2" class="inv-recv" style="vertical-align:top;padding:8px 10px">
               <strong>The goods Mentioned in the invoice is received in
               good condition &amp; Completely</strong>
+              <div style="margin-top:20px">Receivers Name :</div>
+              <div style="margin-top:20px">Receivers Signature :</div>
             </td>
             <td colspan="2" class="inv-sig inv-sig-combined">
               <div>For ${COMPANY.name}</div>
