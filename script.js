@@ -186,32 +186,18 @@ document.addEventListener('DOMContentLoaded', () => {
           </colgroup>
           <tr><td colspan="5" class="inv-lbl">Details of Consignee / shipped to :</td></tr>
           <tr>
-            <td><strong>${esc(consigneeName).toUpperCase()}</strong></td>
-            <td></td>
-            <td></td>
+            <td><strong>${esc(consigneeName).toUpperCase()}</strong><br>Name:${esc($('contactPerson').value).toUpperCase()}</td>
+            <td class="inv-flbl">Bank name</td>
+            <td>${esc($('bankName').value)}</td>
             <td class="inv-flbl">P.Order No.</td>
             <td>${esc($('poNumber').value)}</td>
           </tr>
           <tr>
-            <td>Name:${esc($('contactPerson').value).toUpperCase()}</td>
-            <td class="inv-flbl">Bank name</td>
-            <td>${esc($('bankName').value)}</td>
+            <td>Contact No:${esc($('contactPhone').value)}</td>
+            <td class="inv-flbl">Account Number<br>IFSC<br>Branch</td>
+            <td>${esc($('accountNumber').value)}<br>${esc($('ifscCode').value)}<br>${esc($('bankBranch').value)}</td>
             <td class="inv-flbl">P.O. Date</td>
             <td>${poDate}</td>
-          </tr>
-          <tr>
-            <td>Contact No:${esc($('contactPhone').value)}</td>
-            <td class="inv-flbl">Account<br>Number</td>
-            <td>${esc($('accountNumber').value)}</td>
-            <td class="inv-flbl">IFSC</td>
-            <td>${esc($('ifscCode').value)}</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td class="inv-flbl">Branch</td>
-            <td>${esc($('bankBranch').value)}</td>
           </tr>
         </table>
 
