@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td class="inv-flbl">P.Order No.</td>
             <td>${esc($('poNumber').value)}</td>
-            <td class="inv-flbl">Date :</td>
+            <td class="inv-flbl">P.O. Date</td>
             <td>${poDate}</td>
           </tr>
           <tr>
