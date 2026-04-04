@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('consigneeFields').classList.toggle('hidden', e.target.checked);
   });
 
+  $('gstType').addEventListener('change', e => {
+    if (e.target.value === 'inter') {
+      $('gstRate').value = 18;
+    } else {
+      $('gstRate').value = 9;
+    }
+  });
+
   // ── Items management ──
   let items = [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
 
@@ -124,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sgstAmt = subtotal * (gstRate / 100);
       totalTax = cgstAmt + sgstAmt;
     } else {
-      igstAmt = subtotal * ((gstRate * 2) / 100);
+      igstAmt = subtotal * (gstRate / 100);
       totalTax = igstAmt;
     }
     const grandTotal = subtotal + totalTax;
@@ -264,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr>
             <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
             <td rowspan="2" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
-            <td class="r">IGST @ ${gstRate * 2}%</td>
+            <td class="r">IGST @ ${gstRate}%</td>
             <td class="r">${fmtNum(igstAmt)}</td>
           </tr>
           <tr>
