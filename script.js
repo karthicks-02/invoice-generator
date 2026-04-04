@@ -190,13 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <td></td>
             <td></td>
             <td class="inv-flbl">P.Order No.</td>
-            <td class="inv-flbl">P.O. Date</td>
+            <td>${esc($('poNumber').value)}</td>
           </tr>
           <tr>
             <td>Name:${esc($('contactPerson').value).toUpperCase()}</td>
             <td class="inv-flbl">Bank name</td>
             <td>${esc($('bankName').value)}</td>
-            <td>${esc($('poNumber').value)}</td>
+            <td class="inv-flbl">P.O. Date</td>
             <td>${poDate}</td>
           </tr>
           <tr>
