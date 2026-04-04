@@ -211,15 +211,11 @@ legend {
   box-sizing: border-box;
 }
 
-.inv-items-wrap {
+.inv-spacer {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  border-left: 1px solid #000;
+  border-right: 1px solid #000;
 }
-.inv-items-wrap .inv-items {
-  flex: 1;
-}
-.inv-items tbody { vertical-align: top; }
 
 /* ── Shared Table Styles ── */
 .inv-tbl { width: 100%; border-collapse: collapse; }

@@ -215,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </table>
 
         <!-- ─── Items ─── -->
-        <div class="inv-items-wrap">
         <table class="inv-tbl inv-items">
           <colgroup>
             <col style="width:5%">
@@ -239,7 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </thead>
           <tbody>${itemRows}</tbody>
         </table>
-        </div>
+
+        <div class="inv-spacer"></div>
 
         <!-- ─── Bottom Section (Totals + Footer) ─── -->
         <table class="inv-tbl inv-bottom">
