@@ -15,12 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     $('homePanel').classList.remove('hidden');
   }
 
+  let cameFromInvoiceList = false;
+
   $('custBackBtn').addEventListener('click', goHome);
   $('prodBackBtn').addEventListener('click', goHome);
   $('invBackBtn').addEventListener('click', () => {
     $('previewPanel').classList.add('hidden');
     $('formPanel').classList.remove('hidden');
-    goHome();
+    if (cameFromInvoiceList) {
+      cameFromInvoiceList = false;
+      showView('invoiceListView');
+      renderInvoiceList();
+    } else {
+      goHome();
+    }
   });
   $('invListBackBtn').addEventListener('click', goHome);
 
@@ -28,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
       if (card.dataset.view === 'invoiceListView') renderInvoiceList();
-      if (card.dataset.view === 'invoiceView') editingInvoiceId = null;
+      if (card.dataset.view === 'invoiceView') { editingInvoiceId = null; cameFromInvoiceList = false; }
     });
   });
 
@@ -351,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.classList.contains('btn-edit')) {
       const inv = invoices.find(x => x.id === id);
       if (!inv) return;
+      cameFromInvoiceList = true;
       loadInvoiceIntoForm(inv);
       showView('invoiceView');
       $('formPanel').classList.remove('hidden');
@@ -360,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.classList.contains('btn-print')) {
       const inv = invoices.find(x => x.id === id);
       if (!inv) return;
+      cameFromInvoiceList = true;
       loadInvoiceIntoForm(inv);
       syncCopyChecks('copyType', 'copyTypePreview');
       buildAllInvoices();
