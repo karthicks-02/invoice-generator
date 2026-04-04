@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Karthick Industries – Tax Invoice Generator</title>
+  <title>Karthick Industries</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
@@ -11,140 +11,252 @@
   <header>
     <div class="header-inner">
       <h1>Karthick Industries</h1>
-      <p class="subtitle">GST Tax Invoice Generator</p>
+      <p class="subtitle">Business Management</p>
     </div>
   </header>
 
   <main class="container">
-    <!-- ======== FORM PANEL ======== -->
-    <section class="form-panel" id="formPanel">
 
-      <!-- Invoice Meta -->
-      <fieldset>
-        <legend>Invoice Info</legend>
-        <div class="row three">
-          <div class="field"><label>Invoice No.</label><input type="text" id="invoiceNumber" placeholder="B2B-1685" /></div>
-          <div class="field"><label>Date</label><input type="date" id="invoiceDate" /></div>
-          <div class="field">
-            <label>Copy Type</label>
-            <select id="copyType">
-              <option value="ORIGINAL FOR BUYER">Original for Buyer</option>
-              <option value="DUPLICATE FOR TRANSPORTER">Duplicate for Transporter</option>
-              <option value="TRIPLICATE FOR SUPPLIER">Triplicate for Supplier</option>
-            </select>
-          </div>
+    <!-- ======== HOME PANEL ======== -->
+    <section id="homePanel" class="home-panel">
+      <div class="home-cards">
+        <div class="home-card" data-view="customerView">
+          <div class="home-card-icon">C</div>
+          <h3>Customer List</h3>
+          <p>Manage your customers</p>
         </div>
-      </fieldset>
-
-      <!-- Buyer Details -->
-      <fieldset>
-        <legend>Buyer Details (Billed To)</legend>
-        <div class="row">
-          <div class="field"><label>Company Name</label><input type="text" id="buyerName" placeholder="RR AUTOPLAST" /></div>
-          <div class="field"><label>GSTIN</label><input type="text" id="buyerGstin" placeholder="33ESJPS3128C1ZV" /></div>
+        <div class="home-card" data-view="productView">
+          <div class="home-card-icon">P</div>
+          <h3>Product List</h3>
+          <p>Manage your products</p>
         </div>
-        <div class="field"><label>Address</label><textarea id="buyerAddress" rows="2" placeholder="Plot No:92, Mangalpuri Nagar&#10;Thirumudivakkam, Chennai-600044"></textarea></div>
-      </fieldset>
-
-      <!-- Consignee / Shipped To -->
-      <fieldset>
-        <legend>Consignee / Shipped To</legend>
-        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:12px"><input type="checkbox" id="sameAsBuyer" checked /> Same as Buyer</label>
-        <div id="consigneeFields" class="hidden">
-          <div class="field"><label>Company Name</label><input type="text" id="consigneeName" /></div>
-          <div class="field"><label>Address</label><textarea id="consigneeAddress" rows="2"></textarea></div>
+        <div class="home-card" data-view="invoiceView">
+          <div class="home-card-icon">I</div>
+          <h3>Invoice</h3>
+          <p>Generate tax invoices</p>
         </div>
-        <div class="row">
-          <div class="field"><label>Name</label><input type="text" id="contactPerson" placeholder="RAGAVANN" /></div>
-          <div class="field"><label>Contact Number</label><input type="text" id="contactPhone" placeholder="7010996016" /></div>
-        </div>
-      </fieldset>
-
-      <!-- Order & Bank Details -->
-      <fieldset>
-        <legend>Order &amp; Bank Details</legend>
-        <div class="row">
-          <div class="field"><label>P.Order No.</label><input type="text" id="poNumber" placeholder="" /></div>
-          <div class="field"><label>P.O. Date</label><input type="date" id="poDate" /></div>
-        </div>
-        <div class="row">
-          <div class="field"><label>Bank Name</label><input type="text" id="bankName" value="Bank of Baroda" /></div>
-          <div class="field"><label>Branch</label><input type="text" id="bankBranch" value="Noothancheri Branch" /></div>
-        </div>
-        <div class="row">
-          <div class="field"><label>Account Number</label><input type="text" id="accountNumber" value="69550200000025" /></div>
-          <div class="field"><label>IFSC Code</label><input type="text" id="ifscCode" value="BARBOVJNOOT" /></div>
-        </div>
-      </fieldset>
-
-      <!-- Line Items -->
-      <fieldset>
-        <legend>Items</legend>
-        <div class="items-table-wrapper">
-          <table class="items-table" id="itemsTable">
-            <thead>
-              <tr>
-                <th class="col-desc">Commodity / Service</th>
-                <th class="col-hsn">HSN Code</th>
-                <th class="col-pkg">No. of Bags</th>
-                <th class="col-qty">Qty</th>
-                <th class="col-rate">Rate</th>
-                <th class="col-amt">Amount</th>
-                <th class="col-del"></th>
-              </tr>
-            </thead>
-            <tbody id="itemsBody"></tbody>
-          </table>
-        </div>
-        <button type="button" class="btn btn-secondary" id="addItemBtn">+ Add Item</button>
-      </fieldset>
-
-      <!-- Transport & Tax -->
-      <fieldset>
-        <legend>Transport &amp; Tax</legend>
-        <div class="row three">
-          <div class="field">
-            <label>Mode of Transport</label>
-            <select id="transportMode">
-              <option value="By Road">By Road</option>
-              <option value="By Rail">By Rail</option>
-              <option value="By Air">By Air</option>
-              <option value="By Ship">By Ship</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>GST Rate (%)</label>
-            <input type="number" id="gstRate" value="9" min="0" step="0.5" />
-          </div>
-          <div class="field">
-            <label>GST Type</label>
-            <select id="gstType">
-              <option value="intra">Intra-State (CGST + SGST)</option>
-              <option value="inter">Inter-State (IGST)</option>
-            </select>
-          </div>
-        </div>
-      </fieldset>
-
-      <div class="form-actions">
-        <button type="button" class="btn btn-primary" id="previewBtn">Preview Invoice</button>
       </div>
     </section>
 
-    <!-- ======== PREVIEW PANEL ======== -->
-    <section class="preview-panel hidden" id="previewPanel">
-      <div class="preview-actions">
-        <button class="btn btn-secondary" id="editBtn">← Edit</button>
-        <button class="btn btn-primary" id="downloadBtn">Download PDF</button>
-        <button class="btn btn-secondary" id="printBtn">Print</button>
+    <!-- ======== CUSTOMER VIEW ======== -->
+    <div id="customerView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="custBackBtn">← Back</button>
+        <h2>Customer List</h2>
+        <button class="btn btn-primary" id="addCustBtn">+ Add Customer</button>
       </div>
-      <div class="invoice-paper" id="invoicePaper">
-        <!-- Filled by JS -->
+
+      <!-- Customer Form (hidden by default) -->
+      <div id="custFormWrap" class="hidden">
+        <fieldset>
+          <legend id="custFormTitle">Add Customer</legend>
+          <div class="row">
+            <div class="field"><label>Company Name</label><input type="text" id="custName" /></div>
+            <div class="field"><label>GSTIN</label><input type="text" id="custGstin" /></div>
+          </div>
+          <div class="field"><label>Address</label><textarea id="custAddress" rows="2"></textarea></div>
+          <div class="row">
+            <div class="field"><label>Contact Person</label><input type="text" id="custContact" /></div>
+            <div class="field"><label>Phone</label><input type="text" id="custPhone" /></div>
+          </div>
+          <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btn-primary" id="saveCustBtn">Save</button>
+            <button class="btn btn-secondary" id="cancelCustBtn">Cancel</button>
+          </div>
+        </fieldset>
       </div>
-    </section>
+
+      <!-- Customer Table -->
+      <div class="data-table-wrap">
+        <table class="data-table" id="custTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Company Name</th>
+              <th>GSTIN</th>
+              <th>Contact Person</th>
+              <th>Phone</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="custBody"></tbody>
+        </table>
+        <p id="custEmpty" class="empty-msg">No customers added yet.</p>
+      </div>
+    </div>
+
+    <!-- ======== PRODUCT VIEW ======== -->
+    <div id="productView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="prodBackBtn">← Back</button>
+        <h2>Product List</h2>
+        <button class="btn btn-primary" id="addProdBtn">+ Add Product</button>
+      </div>
+
+      <!-- Product Form (hidden by default) -->
+      <div id="prodFormWrap" class="hidden">
+        <fieldset>
+          <legend id="prodFormTitle">Add Product</legend>
+          <div class="row three">
+            <div class="field"><label>Product Name</label><input type="text" id="prodName" /></div>
+            <div class="field"><label>HSN Code</label><input type="text" id="prodHsn" /></div>
+            <div class="field"><label>Rate</label><input type="number" id="prodRate" min="0" step="0.01" /></div>
+          </div>
+          <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btn-primary" id="saveProdBtn">Save</button>
+            <button class="btn btn-secondary" id="cancelProdBtn">Cancel</button>
+          </div>
+        </fieldset>
+      </div>
+
+      <!-- Product Table -->
+      <div class="data-table-wrap">
+        <table class="data-table" id="prodTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product Name</th>
+              <th>HSN Code</th>
+              <th>Rate</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="prodBody"></tbody>
+        </table>
+        <p id="prodEmpty" class="empty-msg">No products added yet.</p>
+      </div>
+    </div>
+
+    <!-- ======== INVOICE VIEW ======== -->
+    <div id="invoiceView" class="view hidden">
+      <div class="view-header" style="margin-bottom:1.25rem">
+        <button class="btn btn-secondary" id="invBackBtn">← Back</button>
+        <h2>Invoice Generator</h2>
+        <div></div>
+      </div>
+
+      <!-- FORM PANEL -->
+      <section class="form-panel" id="formPanel">
+        <fieldset>
+          <legend>Invoice Info</legend>
+          <div class="row three">
+            <div class="field"><label>Invoice No.</label><input type="text" id="invoiceNumber" placeholder="B2B-1685" /></div>
+            <div class="field"><label>Date</label><input type="date" id="invoiceDate" /></div>
+            <div class="field">
+              <label>Copy Type</label>
+              <select id="copyType">
+                <option value="ORIGINAL FOR BUYER">Original for Buyer</option>
+                <option value="DUPLICATE FOR TRANSPORTER">Duplicate for Transporter</option>
+                <option value="TRIPLICATE FOR SUPPLIER">Triplicate for Supplier</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Buyer Details (Billed To)</legend>
+          <div class="row">
+            <div class="field"><label>Company Name</label><input type="text" id="buyerName" placeholder="RR AUTOPLAST" /></div>
+            <div class="field"><label>GSTIN</label><input type="text" id="buyerGstin" placeholder="33ESJPS3128C1ZV" /></div>
+          </div>
+          <div class="field"><label>Address</label><textarea id="buyerAddress" rows="2" placeholder="Plot No:92, Mangalpuri Nagar&#10;Thirumudivakkam, Chennai-600044"></textarea></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Consignee / Shipped To</legend>
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:12px"><input type="checkbox" id="sameAsBuyer" checked /> Same as Buyer</label>
+          <div id="consigneeFields" class="hidden">
+            <div class="field"><label>Company Name</label><input type="text" id="consigneeName" /></div>
+            <div class="field"><label>Address</label><textarea id="consigneeAddress" rows="2"></textarea></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Name</label><input type="text" id="contactPerson" placeholder="RAGAVANN" /></div>
+            <div class="field"><label>Contact Number</label><input type="text" id="contactPhone" placeholder="7010996016" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Order &amp; Bank Details</legend>
+          <div class="row">
+            <div class="field"><label>P.Order No.</label><input type="text" id="poNumber" /></div>
+            <div class="field"><label>P.O. Date</label><input type="date" id="poDate" /></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Bank Name</label><input type="text" id="bankName" value="Bank of Baroda" /></div>
+            <div class="field"><label>Branch</label><input type="text" id="bankBranch" value="Noothancheri Branch" /></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Account Number</label><input type="text" id="accountNumber" value="69550200000025" /></div>
+            <div class="field"><label>IFSC Code</label><input type="text" id="ifscCode" value="BARBOVJNOOT" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Items</legend>
+          <div class="items-table-wrapper">
+            <table class="items-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th class="col-desc">Commodity / Service</th>
+                  <th class="col-hsn">HSN Code</th>
+                  <th class="col-pkg">No. of Bags</th>
+                  <th class="col-qty">Qty</th>
+                  <th class="col-rate">Rate</th>
+                  <th class="col-amt">Amount</th>
+                  <th class="col-del"></th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-secondary" id="addItemBtn">+ Add Item</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Transport &amp; Tax</legend>
+          <div class="row three">
+            <div class="field">
+              <label>Mode of Transport</label>
+              <select id="transportMode">
+                <option value="By Road">By Road</option>
+                <option value="By Rail">By Rail</option>
+                <option value="By Air">By Air</option>
+                <option value="By Ship">By Ship</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>GST Rate (%)</label>
+              <input type="number" id="gstRate" value="9" min="0" step="0.5" />
+            </div>
+            <div class="field">
+              <label>GST Type</label>
+              <select id="gstType">
+                <option value="intra">Intra-State (CGST + SGST)</option>
+                <option value="inter">Inter-State (IGST)</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="previewBtn">Preview Invoice</button>
+        </div>
+      </section>
+
+      <!-- PREVIEW PANEL -->
+      <section class="preview-panel hidden" id="previewPanel">
+        <div class="preview-actions">
+          <button class="btn btn-secondary" id="editBtn">← Edit</button>
+          <button class="btn btn-primary" id="downloadBtn">Download PDF</button>
+          <button class="btn btn-secondary" id="printBtn">Print</button>
+        </div>
+        <div class="invoice-paper" id="invoicePaper"></div>
+      </section>
+    </div>
+
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js?v=19"></script>
+  <script src="script.js?v=20"></script>
 </body>
 </html>

@@ -1,6 +1,212 @@
 document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
 
+  // ══════════════════════════════════════
+  // ── Navigation: Home ↔ Views ──
+  // ══════════════════════════════════════
+  function showView(viewId) {
+    $('homePanel').classList.add('hidden');
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $(viewId).classList.remove('hidden');
+  }
+
+  function goHome() {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.remove('hidden');
+  }
+
+  document.querySelectorAll('.home-card').forEach(card => {
+    card.addEventListener('click', () => showView(card.dataset.view));
+  });
+
+  $('custBackBtn').addEventListener('click', goHome);
+  $('prodBackBtn').addEventListener('click', goHome);
+  $('invBackBtn').addEventListener('click', () => {
+    $('previewPanel').classList.add('hidden');
+    $('formPanel').classList.remove('hidden');
+    goHome();
+  });
+
+  // ══════════════════════════════════════
+  // ── Customer List CRUD ──
+  // ══════════════════════════════════════
+  let customers = JSON.parse(localStorage.getItem('ki_customers') || '[]');
+  let editCustIdx = -1;
+
+  function saveCustomers() {
+    localStorage.setItem('ki_customers', JSON.stringify(customers));
+  }
+
+  function renderCustomers() {
+    const tbody = $('custBody');
+    tbody.innerHTML = '';
+    $('custEmpty').style.display = customers.length ? 'none' : 'block';
+    $('custTable').style.display = customers.length ? 'table' : 'none';
+    customers.forEach((c, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${escHtml(c.name)}</td>
+        <td>${escHtml(c.gstin)}</td>
+        <td>${escHtml(c.contact)}</td>
+        <td>${escHtml(c.phone)}</td>
+        <td class="actions">
+          <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-del" data-i="${i}">Delete</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  $('addCustBtn').addEventListener('click', () => {
+    editCustIdx = -1;
+    $('custFormTitle').textContent = 'Add Customer';
+    $('custName').value = '';
+    $('custGstin').value = '';
+    $('custAddress').value = '';
+    $('custContact').value = '';
+    $('custPhone').value = '';
+    $('custFormWrap').classList.remove('hidden');
+  });
+
+  $('cancelCustBtn').addEventListener('click', () => {
+    $('custFormWrap').classList.add('hidden');
+  });
+
+  $('saveCustBtn').addEventListener('click', () => {
+    const obj = {
+      name: $('custName').value.trim(),
+      gstin: $('custGstin').value.trim(),
+      address: $('custAddress').value.trim(),
+      contact: $('custContact').value.trim(),
+      phone: $('custPhone').value.trim()
+    };
+    if (!obj.name) { alert('Company Name is required'); return; }
+    if (editCustIdx >= 0) {
+      customers[editCustIdx] = obj;
+    } else {
+      customers.push(obj);
+    }
+    saveCustomers();
+    renderCustomers();
+    $('custFormWrap').classList.add('hidden');
+  });
+
+  $('custBody').addEventListener('click', e => {
+    const i = +e.target.dataset.i;
+    if (e.target.classList.contains('btn-edit')) {
+      editCustIdx = i;
+      const c = customers[i];
+      $('custFormTitle').textContent = 'Edit Customer';
+      $('custName').value = c.name;
+      $('custGstin').value = c.gstin;
+      $('custAddress').value = c.address;
+      $('custContact').value = c.contact;
+      $('custPhone').value = c.phone;
+      $('custFormWrap').classList.remove('hidden');
+    }
+    if (e.target.classList.contains('btn-del')) {
+      if (confirm('Delete this customer?')) {
+        customers.splice(i, 1);
+        saveCustomers();
+        renderCustomers();
+      }
+    }
+  });
+
+  renderCustomers();
+
+  // ══════════════════════════════════════
+  // ── Product List CRUD ──
+  // ══════════════════════════════════════
+  let products = JSON.parse(localStorage.getItem('ki_products') || '[]');
+  let editProdIdx = -1;
+
+  function saveProducts() {
+    localStorage.setItem('ki_products', JSON.stringify(products));
+  }
+
+  function renderProducts() {
+    const tbody = $('prodBody');
+    tbody.innerHTML = '';
+    $('prodEmpty').style.display = products.length ? 'none' : 'block';
+    $('prodTable').style.display = products.length ? 'table' : 'none';
+    products.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${escHtml(p.name)}</td>
+        <td>${escHtml(p.hsn)}</td>
+        <td>${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+        <td class="actions">
+          <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-del" data-i="${i}">Delete</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  $('addProdBtn').addEventListener('click', () => {
+    editProdIdx = -1;
+    $('prodFormTitle').textContent = 'Add Product';
+    $('prodName').value = '';
+    $('prodHsn').value = '';
+    $('prodRate').value = '';
+    $('prodFormWrap').classList.remove('hidden');
+  });
+
+  $('cancelProdBtn').addEventListener('click', () => {
+    $('prodFormWrap').classList.add('hidden');
+  });
+
+  $('saveProdBtn').addEventListener('click', () => {
+    const obj = {
+      name: $('prodName').value.trim(),
+      hsn: $('prodHsn').value.trim(),
+      rate: parseFloat($('prodRate').value) || 0
+    };
+    if (!obj.name) { alert('Product Name is required'); return; }
+    if (editProdIdx >= 0) {
+      products[editProdIdx] = obj;
+    } else {
+      products.push(obj);
+    }
+    saveProducts();
+    renderProducts();
+    $('prodFormWrap').classList.add('hidden');
+  });
+
+  $('prodBody').addEventListener('click', e => {
+    const i = +e.target.dataset.i;
+    if (e.target.classList.contains('btn-edit')) {
+      editProdIdx = i;
+      const p = products[i];
+      $('prodFormTitle').textContent = 'Edit Product';
+      $('prodName').value = p.name;
+      $('prodHsn').value = p.hsn;
+      $('prodRate').value = p.rate;
+      $('prodFormWrap').classList.remove('hidden');
+    }
+    if (e.target.classList.contains('btn-del')) {
+      if (confirm('Delete this product?')) {
+        products.splice(i, 1);
+        saveProducts();
+        renderProducts();
+      }
+    }
+  });
+
+  renderProducts();
+
+  function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  // ══════════════════════════════════════
+  // ── Invoice Generator ──
+  // ══════════════════════════════════════
   const COMPANY = {
     name: 'KARTHICK INDUSTRIES',
     address: 'No. 61, SSOA Complex, Natesan Nagar, Vanagaram Road,\nAthipet, Chennai - 600 058.',
