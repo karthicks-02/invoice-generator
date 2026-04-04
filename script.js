@@ -118,24 +118,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
 
     let totalTax = 0;
-    let totalsRows = '';
+    let cgstAmt = 0, sgstAmt = 0, igstAmt = 0;
     if (gstType === 'intra') {
-      const cgst = subtotal * (gstRate / 100);
-      const sgst = subtotal * (gstRate / 100);
-      totalTax = cgst + sgst;
-      totalsRows = `
-        <tr><td>&nbsp;</td><td>&nbsp;</td><td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgst)}</td></tr>
-        <tr><td class="c" rowspan="2"><strong>INVOICE Value :</strong><br>Rupees</td><td class="c" rowspan="2"><strong>Rupees ${numberToWords(Math.round(subtotal + cgst + sgst))}<br>Only</strong></td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
-        <tr><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+      cgstAmt = subtotal * (gstRate / 100);
+      sgstAmt = subtotal * (gstRate / 100);
+      totalTax = cgstAmt + sgstAmt;
     } else {
-      const igst = subtotal * ((gstRate * 2) / 100);
-      totalTax = igst;
-      totalsRows = `
-        <tr><td class="c" rowspan="2"><strong>INVOICE Value :</strong><br>Rupees</td><td class="c" rowspan="2"><strong>Rupees ${numberToWords(Math.round(subtotal + igst))}<br>Only</strong></td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
-        <tr><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
+      igstAmt = subtotal * ((gstRate * 2) / 100);
+      totalTax = igstAmt;
     }
-
     const grandTotal = subtotal + totalTax;
+    const wordsStr = numberToWords(Math.round(grandTotal));
 
     $('invoicePaper').innerHTML = `
       <div class="inv">
@@ -238,21 +231,46 @@ document.addEventListener('DOMContentLoaded', () => {
           <tbody>${itemRows}</tbody>
         </table>
 
-        <!-- ─── Totals ─── -->
-        <table class="inv-totals-tbl">
+        <!-- ─── Bottom Section (Totals + Footer) ─── -->
+        <table class="inv-tbl inv-bottom">
+          <colgroup>
+            <col style="width:50%">
+            <col style="width:30%">
+            <col style="width:20%">
+          </colgroup>
           <tr>
-            <td style="width:18%"><strong>Mode Of Transport :</strong></td>
-            <td style="width:32%">${esc($('transportMode').value)}</td>
-            <td style="width:30%" class="r">TOTAL AMOUNT BEFORE TAX</td>
-            <td style="width:20%" class="r">${fmtNum(subtotal)}</td>
+            <td><strong>Mode Of Transport :</strong> &nbsp; ${esc($('transportMode').value)}</td>
+            <td class="r">TOTAL AMOUNT BEFORE TAX</td>
+            <td class="r">${fmtNum(subtotal)}</td>
           </tr>
-          ${totalsRows}
-        </table>
-
-        <!-- ─── Footer ─── -->
-        <table class="inv-footer-tbl">
+          ${gstType === 'intra' ? `
           <tr>
-            <td style="width:50%" rowspan="2" class="inv-cert">
+            <td>&nbsp;</td>
+            <td class="r">CGST @ ${gstRate}%</td>
+            <td class="r">${fmtNum(cgstAmt)}</td>
+          </tr>
+          <tr>
+            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees<br><br><strong>Rupees ${wordsStr}<br>Only</strong></td>
+            <td class="r">SGST @ ${gstRate}%</td>
+            <td class="r">${fmtNum(sgstAmt)}</td>
+          </tr>
+          <tr>
+            <td class="r"><strong>TAX AMOUNT: GST</strong></td>
+            <td class="r"><strong>${fmtNum(totalTax)}</strong></td>
+          </tr>
+          ` : `
+          <tr>
+            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees<br><br><strong>Rupees ${wordsStr}<br>Only</strong></td>
+            <td class="r">IGST @ ${gstRate * 2}%</td>
+            <td class="r">${fmtNum(igstAmt)}</td>
+          </tr>
+          <tr>
+            <td class="r"><strong>TAX AMOUNT: GST</strong></td>
+            <td class="r"><strong>${fmtNum(totalTax)}</strong></td>
+          </tr>
+          `}
+          <tr>
+            <td rowspan="2" class="inv-cert">
               Certified that the particulars given above are true and correct and the amount
               indicated represents the price actually charged and that is no flow of additional
               consideration directly or indirectly from the Buyer.
@@ -261,8 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 good condition &amp; Completely
               </div>
             </td>
-            <td style="width:30%" class="r bld">TOTAL AMOUNT<br>AFTER TAX</td>
-            <td style="width:20%" class="r bld">${fmtNum(grandTotal)}</td>
+            <td class="r"><strong>TOTAL AMOUNT<br>AFTER TAX</strong></td>
+            <td class="r"><strong>${fmtNum(grandTotal)}</strong></td>
           </tr>
           <tr>
             <td colspan="2" class="inv-sig">
