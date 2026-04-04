@@ -1077,6 +1077,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Preview ──
   $('previewBtn').addEventListener('click', () => {
+    const invNo = $('invoiceNumber').value.trim();
+    const buyer = $('buyerName').value.trim();
+    if (!invNo) { alert('Invoice No. is required'); $('invoiceNumber').focus(); return; }
+    if (!buyer) { alert('Buyer Company Name is required'); $('buyerName').focus(); return; }
+
     syncCopyChecks('copyType', 'copyTypePreview');
     saveCurrentInvoice();
     buildAllInvoices();
