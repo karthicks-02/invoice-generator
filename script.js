@@ -188,38 +188,24 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr><td colspan="5" class="inv-lbl">Details of Consignee / shipped to :</td></tr>
           <tr>
             <td><strong>${esc(consigneeName).toUpperCase()}</strong></td>
-            <td class="inv-flbl">P.Order No</td>
+            <td class="inv-flbl">P.Order No.</td>
             <td>${esc($('poNumber').value)}</td>
             <td class="inv-flbl">Date :</td>
             <td>${poDate}</td>
           </tr>
           <tr>
-            <td>${esc(consigneeAddr).replace(/\n/g, '<br>')}</td>
+            <td>Contact:${esc($('contactPhone').value)}</td>
             <td class="inv-flbl">Bank name</td>
             <td>${esc($('bankName').value)}</td>
-            <td></td>
-            <td></td>
+            <td class="inv-flbl">Branch</td>
+            <td>${esc($('bankBranch').value)}</td>
           </tr>
           <tr>
             <td>GSTIN : ${esc($('buyerGstin').value)}</td>
             <td class="inv-flbl">Account<br>Number</td>
             <td>${esc($('accountNumber').value)}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>Contact:${esc($('contactPhone').value)}</td>
             <td class="inv-flbl">IFSC</td>
             <td>${esc($('ifscCode').value)}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td class="inv-flbl">Branch</td>
-            <td>${esc($('bankBranch').value)}</td>
-            <td></td>
-            <td></td>
           </tr>
         </table>
 
