@@ -36,7 +36,7 @@ header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: .02em; }
 
 /* ===== Layout ===== */
 .container {
-  max-width: 1000px;
+  max-width: 960px;
   margin: 2rem auto;
   padding: 0 1.25rem;
 }
@@ -193,8 +193,7 @@ legend {
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   padding: 0;
-  width: 210mm;
-  min-height: 297mm;
+  max-width: 800px;
   overflow: hidden;
 }
 
@@ -205,16 +204,6 @@ legend {
   color: #000;
   line-height: 1.35;
   border: 2px solid #000;
-  display: flex;
-  flex-direction: column;
-  min-height: 297mm;
-  box-sizing: border-box;
-}
-
-.inv-spacer {
-  flex: 1;
-  border-left: 1px solid #000;
-  border-right: 1px solid #000;
 }
 
 /* ── Shared Table Styles ── */
@@ -341,10 +330,14 @@ legend {
 }
 
 /* ===== Print Styles ===== */
+@page {
+  size: A4;
+  margin: 10mm;
+}
 @media print {
-  body { background: #fff; }
-  header, .form-panel, .preview-actions { display: none !important; }
-  .preview-panel { display: block !important; }
-  .invoice-paper { box-shadow: none; border-radius: 0; max-width: 100%; }
+  body { background: #fff; margin: 0; padding: 0; }
+  header, .form-panel, .preview-actions, .container { display: none !important; }
+  .preview-panel { display: block !important; padding: 0; margin: 0; }
+  .invoice-paper { box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; }
   .inv { border-width: 1px; }
 }

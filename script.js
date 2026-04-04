@@ -239,8 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <tbody>${itemRows}</tbody>
         </table>
 
-        <div class="inv-spacer"></div>
-
         <!-- ─── Bottom Section (Totals + Footer) ─── -->
         <table class="inv-tbl inv-bottom">
           <colgroup>
