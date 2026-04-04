@@ -194,8 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           <tr>
             <td>Contact No:${esc($('contactPhone').value)}</td>
-            <td class="inv-flbl">Account Number<br>IFSC<br>Branch</td>
-            <td>${esc($('accountNumber').value)}<br>${esc($('ifscCode').value)}<br>${esc($('bankBranch').value)}</td>
+            <td class="inv-flbl"><div class="inv-sub">Account Number</div><div class="inv-sub">IFSC</div><div class="inv-sub">Branch</div></td>
+            <td><div class="inv-sub">${esc($('accountNumber').value)}</div><div class="inv-sub">${esc($('ifscCode').value)}</div><div class="inv-sub">${esc($('bankBranch').value)}</div></td>
             <td class="inv-flbl">P.O. Date</td>
             <td>${poDate}</td>
           </tr>

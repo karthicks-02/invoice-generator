@@ -283,8 +283,10 @@ legend {
 }
 
 /* ── Consignee ── */
-.inv-con td { font-size: 11px; padding: 3px 8px; }
+.inv-con td { font-size: 11px; padding: 6px 10px; }
 .inv-flbl { font-size: 10px; font-weight: 600; color: #333; }
+.inv-sub { padding: 4px 0; border-top: 1px solid #000; }
+.inv-sub:first-child { border-top: none; }
 
 /* ── Items ── */
 .inv-items th {
