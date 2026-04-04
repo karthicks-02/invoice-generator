@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
           `}
           <tr>
-            <td colspan="2" rowspan="2" class="inv-cert">
+            <td colspan="2" class="inv-cert">
               Certified that the particulars given above are true and correct and the amount
               indicated represents the price actually charged and that is no flow of additional
               consideration directly or indirectly from the Buyer.
@@ -282,16 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="r"><strong>${fmtNum(grandTotal)}</strong></td>
           </tr>
           <tr>
-            <td colspan="2" class="inv-sig">
-              <div>For ${COMPANY.name}</div>
-            </td>
-          </tr>
-          <tr>
             <td colspan="2" class="inv-recv">
               The goods Mentioned in the invoice is received in
               good condition &amp; Completely
             </td>
-            <td colspan="2" class="inv-sig">
+            <td colspan="2" class="inv-sig inv-sig-combined">
+              <div>For ${COMPANY.name}</div>
               <div class="inv-sig-space"></div>
               <div>Authorised Signatory</div>
             </td>
