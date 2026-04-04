@@ -107,13 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const amt = item.qty * item.rate;
       subtotal += amt;
       return `<tr>
-        <td class="center">${i + 1}</td>
-        <td>${esc(item.description).toUpperCase() || '—'}</td>
-        <td class="center">${esc(item.hsn)}</td>
-        <td class="center">${formatBags(item.packages)}</td>
-        <td class="right">${item.qty}</td>
-        <td class="right">${fmtNum(item.rate)}</td>
-        <td class="right">${fmtNum(amt)}</td>
+        <td class="c">${i + 1}</td>
+        <td class="l">${esc(item.description).toUpperCase() || '—'}</td>
+        <td class="c">${esc(item.hsn)}</td>
+        <td class="c">${formatBags(item.packages)}</td>
+        <td class="c">${item.qty}</td>
+        <td class="c">${fmtNum(item.rate)}</td>
+        <td class="r">${fmtNum(amt)}</td>
       </tr>`;
     }).join('');
 
@@ -124,163 +124,161 @@ document.addEventListener('DOMContentLoaded', () => {
       const sgst = subtotal * (gstRate / 100);
       totalTax = cgst + sgst;
       taxRows = `
-        <tr>
-          <td colspan="2"></td>
-          <td class="tax-label">CGST @ ${gstRate}%</td>
-          <td class="tax-value">${fmtNum(cgst)}</td>
-        </tr>
-        <tr>
-          <td colspan="2"></td>
-          <td class="tax-label">SGST @ ${gstRate}%</td>
-          <td class="tax-value">${fmtNum(sgst)}</td>
-        </tr>
-        <tr>
-          <td colspan="2"></td>
-          <td class="tax-label tax-total-cell">TAX AMOUNT: GST</td>
-          <td class="tax-value tax-total-cell">${fmtNum(totalTax)}</td>
-        </tr>`;
+        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgst)}</td></tr>
+        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgst)}</td></tr>
+        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
     } else {
       const igst = subtotal * ((gstRate * 2) / 100);
       totalTax = igst;
       taxRows = `
-        <tr>
-          <td colspan="2"></td>
-          <td class="tax-label">IGST @ ${gstRate * 2}%</td>
-          <td class="tax-value">${fmtNum(igst)}</td>
-        </tr>
-        <tr>
-          <td colspan="2"></td>
-          <td class="tax-label tax-total-cell">TAX AMOUNT: GST</td>
-          <td class="tax-value tax-total-cell">${fmtNum(totalTax)}</td>
-        </tr>`;
+        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r">IGST @ ${gstRate * 2}%</td><td class="r">${fmtNum(igst)}</td></tr>
+        <tr><td class="bl-none br-none"></td><td class="bl-none br-none"></td><td class="r bld">TAX AMOUNT: GST</td><td class="r bld">${fmtNum(totalTax)}</td></tr>`;
     }
 
     const grandTotal = subtotal + totalTax;
     const totalInWords = numberToWords(Math.round(grandTotal));
 
     $('invoicePaper').innerHTML = `
-      <div class="inv-wrapper">
-        <!-- Company Header -->
-        <div class="inv-company-header">
-          <div class="inv-company-name">${COMPANY.name}</div>
-          <div class="inv-company-addr">${COMPANY.address.replace(/\n/g, '<br>')}</div>
-          <div class="inv-company-contact">Email.Id. ${COMPANY.email} / Ph.No. ${COMPANY.phone}</div>
+      <div class="inv">
+        <!-- ─── Company Header ─── -->
+        <div class="inv-hdr">
+          <div class="inv-hdr-name">${COMPANY.name}</div>
+          <div class="inv-hdr-addr">${COMPANY.address.replace(/\n/g, '<br>')}</div>
+          <div class="inv-hdr-addr">Email.Id. ${COMPANY.email} / Ph.No. ${COMPANY.phone}</div>
         </div>
 
-        <!-- GSTIN & Copy Type Row -->
-        <table class="inv-info-table">
-          <tr>
-            <td class="inv-gstin"><strong>GSTIN : ${COMPANY.gstin}</strong></td>
-            <td class="inv-copy-type"><strong>${esc($('copyType').value)}</strong></td>
-          </tr>
-        </table>
+        <!-- ─── GSTIN Row ─── -->
+        <div class="inv-row inv-gstin-row">
+          <span><strong>GSTIN : ${COMPANY.gstin}</strong></span>
+          <span><strong>${esc($('copyType').value)}</strong></span>
+        </div>
 
-        <!-- Buyer & Invoice Details -->
-        <table class="inv-details-table">
+        <!-- ─── Buyer + TAX INVOICE ─── -->
+        <table class="inv-tbl">
+          <colgroup><col style="width:55%"><col style="width:20%"><col style="width:25%"></colgroup>
           <tr>
-            <td class="inv-buyer-section" rowspan="4">
-              <div class="inv-small-label">Details of Buyer ( Billed To) :</div>
-              <div class="inv-buyer-name"><strong>${esc($('buyerName').value).toUpperCase()}</strong></div>
+            <td rowspan="3" class="inv-buyer-cell">
+              <div class="inv-lbl">Details of Buyer ( Billed To) :</div>
+              <div class="inv-buyer-name">${esc($('buyerName').value).toUpperCase()}</div>
               <div class="inv-buyer-addr">${esc($('buyerAddress').value).replace(/\n/g, '<br>')}</div>
-              <div class="inv-small-label" style="margin-top:4px;">GSTIN : ${esc($('buyerGstin').value)}</div>
+              <div class="inv-lbl" style="margin-top:3px">GSTIN : ${esc($('buyerGstin').value)}</div>
             </td>
-            <td colspan="2" class="center inv-tax-title"><strong>TAX INVOICE</strong></td>
+            <td colspan="2" class="c inv-tax-title"><strong>TAX INVOICE</strong></td>
           </tr>
           <tr>
-            <td class="inv-meta-label"><strong>INVOICE NO. :</strong></td>
-            <td class="inv-meta-value"><strong>${esc($('invoiceNumber').value)}</strong></td>
+            <td class="bld">INVOICE NO. :</td>
+            <td class="bld inv-meta-val">${esc($('invoiceNumber').value)}</td>
           </tr>
           <tr>
-            <td class="inv-meta-label"><strong>DATE :</strong></td>
-            <td class="inv-meta-value"><strong>${shortDate}</strong></td>
+            <td class="bld">DATE :</td>
+            <td class="bld inv-meta-val">${shortDate}</td>
           </tr>
         </table>
 
-        <!-- Consignee / Shipped to -->
-        <table class="inv-consignee-table">
+        <!-- ─── Consignee ─── -->
+        <table class="inv-tbl inv-con">
+          <colgroup>
+            <col style="width:22%">
+            <col style="width:16%">
+            <col style="width:22%">
+            <col style="width:16%">
+            <col style="width:24%">
+          </colgroup>
+          <tr><td colspan="5" class="inv-lbl">Details of Consignee / shipped to :</td></tr>
           <tr>
-            <td colspan="5" class="inv-small-label">Details of Consignee / shipped to :</td>
+            <td colspan="2"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
+            <td class="inv-flbl">P.Order No.</td>
+            <td class="inv-flbl">P.O. Date</td>
+            <td class="inv-flbl">Date :</td>
           </tr>
           <tr>
-            <td colspan="2" class="inv-consignee-name"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
-            <td class="inv-field-label">P.Order No.</td>
-            <td class="inv-field-label">P.O. Date</td>
-            <td class="inv-field-label">Date :</td>
-          </tr>
-          <tr>
-            <td>Name: ${esc($('contactPerson').value).toUpperCase()}</td>
-            <td class="inv-field-label">Bank name</td>
+            <td>Name:${esc($('contactPerson').value).toUpperCase()}</td>
+            <td class="inv-flbl">Bank name</td>
             <td>${esc($('poNumber').value)}</td>
             <td>${poDate}</td>
             <td>${shortDate}</td>
           </tr>
           <tr>
-            <td>Contact No: ${esc($('contactPhone').value)}</td>
-            <td class="inv-field-label">Account Number</td>
+            <td>Contact No:${esc($('contactPhone').value)}</td>
+            <td class="inv-flbl">Account<br>Number</td>
             <td>${esc($('accountNumber').value)}</td>
-            <td class="inv-field-label">IFSC</td>
+            <td class="inv-flbl">IFSC</td>
             <td>${esc($('ifscCode').value)}</td>
           </tr>
           <tr>
             <td></td>
             <td>${esc($('bankName').value)}</td>
             <td></td>
-            <td class="inv-field-label">Branch</td>
+            <td class="inv-flbl">Branch</td>
             <td>${esc($('bankBranch').value)}</td>
           </tr>
         </table>
 
-        <!-- Items Table -->
-        <table class="inv-items-table">
+        <!-- ─── Items ─── -->
+        <table class="inv-tbl inv-items">
+          <colgroup>
+            <col style="width:5%">
+            <col style="width:29%">
+            <col style="width:11%">
+            <col style="width:10%">
+            <col style="width:11%">
+            <col style="width:10%">
+            <col style="width:14%">
+          </colgroup>
           <thead>
             <tr>
-              <th class="center" style="width:6%">SL.No.</th>
-              <th style="width:28%">NAME OF THE COMMODITY / SERVICE</th>
-              <th class="center" style="width:10%">HSN CODE</th>
-              <th class="center" style="width:10%">No.Of Packages</th>
-              <th class="center" style="width:10%">Total Qty IN NOS</th>
-              <th class="center" style="width:10%">Rate Per No.</th>
-              <th class="right" style="width:16%">GOODS VALUE (in Rs.)</th>
+              <th>SL.No.</th>
+              <th>NAME OF THE COMMODITY / SERVICE</th>
+              <th>HSN CODE</th>
+              <th>No.Of<br>Packages</th>
+              <th>Total Qty IN<br>NOS</th>
+              <th>Rate Per No.</th>
+              <th>GOODS VALUE<br>(in Rs.)</th>
             </tr>
           </thead>
-          <tbody>
-            ${itemRows}
-          </tbody>
+          <tbody>${itemRows}</tbody>
         </table>
 
-        <!-- Totals Section -->
-        <table class="inv-totals-table">
+        <!-- ─── Totals ─── -->
+        <table class="inv-tbl inv-totals">
+          <colgroup>
+            <col style="width:18%">
+            <col style="width:32%">
+            <col style="width:30%">
+            <col style="width:20%">
+          </colgroup>
           <tr>
-            <td class="inv-transport-label">Mode Of Transport :</td>
-            <td class="inv-transport-value">${esc($('transportMode').value)}</td>
-            <td class="tax-label">TOTAL AMOUNT BEFORE TAX</td>
-            <td class="tax-value">${fmtNum(subtotal)}</td>
+            <td class="inv-flbl">Mode Of Transport :</td>
+            <td>${esc($('transportMode').value)}</td>
+            <td class="r">TOTAL AMOUNT BEFORE<br>TAX</td>
+            <td class="r">${fmtNum(subtotal)}</td>
           </tr>
           ${taxRows}
           <tr>
-            <td class="inv-words-label"><strong>INVOICE Value :</strong></td>
-            <td class="inv-words-value"><strong>Rupees</strong> ${totalInWords} Only</td>
-            <td class="tax-label"><strong>TOTAL AMOUNT AFTER TAX</strong></td>
-            <td class="tax-value"><strong>${fmtNum(grandTotal)}</strong></td>
+            <td class="inv-flbl bld">INVOICE Value :</td>
+            <td><strong>Rupees</strong> ${totalInWords} Only</td>
+            <td class="r bld">TOTAL AMOUNT<br>AFTER TAX</td>
+            <td class="r bld">${fmtNum(grandTotal)}</td>
           </tr>
         </table>
 
-        <!-- Footer -->
-        <table class="inv-footer-table">
+        <!-- ─── Footer ─── -->
+        <table class="inv-tbl inv-footer">
+          <colgroup><col style="width:55%"><col style="width:45%"></colgroup>
           <tr>
-            <td class="inv-cert-text">
+            <td class="inv-cert">
               Certified that the particulars given above are true and correct and the amount
               indicated represents the price actually charged and that is no flow of additional
               consideration directly or indirectly from the Buyer.
             </td>
-            <td class="inv-signature-section" rowspan="2">
+            <td class="inv-sig" rowspan="2">
               <div>For ${COMPANY.name}</div>
               <div class="inv-sig-space"></div>
               <div>Authorised Signatory</div>
             </td>
           </tr>
           <tr>
-            <td class="inv-received-text">
+            <td class="inv-recv">
               The goods Mentioned in the invoice is received in<br>
               good condition &amp; Completely
             </td>
