@@ -308,8 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const filtered = invoices.filter(inv => {
       if (query) {
-        const productNames = (inv.items || []).map(it => (it.description || '').toLowerCase()).join(' ');
-        const haystack = [inv.invoiceNumber, inv.buyerName, productNames].join(' ').toLowerCase();
+        const productInfo = (inv.items || []).map(it => `${it.description || ''} ${it.hsn || ''}`).join(' ');
+        const haystack = [inv.invoiceNumber, inv.buyerName, productInfo].join(' ').toLowerCase();
         if (!haystack.includes(query)) return false;
       }
       if (from && inv.invoiceDate < from) return false;
