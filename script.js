@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <col style="width:20%">
           </colgroup>
           <tr>
-            <td><strong>Mode Of Transport :</strong></td>
+            <td style="white-space:nowrap"><strong>Mode Of Transport :</strong></td>
             <td>${esc($('transportMode').value)}</td>
             <td class="r">TOTAL AMOUNT BEFORE TAX</td>
             <td class="r">${fmtNum(subtotal)}</td>
