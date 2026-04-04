@@ -186,7 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </colgroup>
           <tr><td colspan="5" class="inv-lbl">Details of Consignee / shipped to :</td></tr>
           <tr>
-            <td colspan="3"><strong>${esc(consigneeName).toUpperCase()}</strong></td>
+            <td><strong>${esc(consigneeName).toUpperCase()}</strong></td>
+            <td></td>
+            <td></td>
             <td class="inv-flbl">P.Order No.</td>
             <td class="inv-flbl">P.O. Date</td>
           </tr>
