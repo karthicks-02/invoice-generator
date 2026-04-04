@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const COMPANY = {
     name: 'KARTHICK INDUSTRIES',
-    address: 'Regd.office No. C 19, Mogappair West, Ambattur\nNear Srinivasa Perumal Temple, Chennai-600 037, Tamil Nadu, India.',
-    email: 'karthickindustries18@gmail.com',
+    address: 'No. 61, SSOA Complex, Natesan Nagar, Vanagaram Road,\nAthipet, Chennai - 600 058.',
+    email: 'karthickindustries18@gmail.com, sundram1969@yahoo.co.in',
     phone: '9003291274',
     gstin: '33AKKPR0176Q1ZK'
   };
