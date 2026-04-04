@@ -447,10 +447,15 @@ legend {
   font-size: .85rem;
   cursor: pointer;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 }
 .ac-item:last-child { border-bottom: none; }
 .ac-item:hover, .ac-item.active { background: #eef4fb; }
-.ac-item small { color: var(--text-muted); margin-left: .5rem; }
+.ac-item small { color: var(--text-muted); }
+.ac-list { min-width: 280px; }
 
 /* ===== Utility ===== */
 .hidden { display: none !important; }
