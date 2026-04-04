@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
       checkReminders();
 
       $('loadingPanel').classList.add('hidden');
+      hideCustForm();
+      $('prodFormWrap').classList.add('hidden');
+      $('previewPanel').classList.add('hidden');
       goHome();
     } else {
       customers = [];
