@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${poDate}</td>
           </tr>
           <tr>
-            <td>${esc(consigneeAddr).replace(/\\n/g, '<br>')}</td>
+            <td>${esc(consigneeAddr).replace(/\n/g, '<br>')}</td>
             <td class="inv-flbl">Bank name</td>
             <td>${esc($('bankName').value)}</td>
             <td></td>
