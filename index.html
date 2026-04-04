@@ -40,6 +40,11 @@
           <h3>All Invoices</h3>
           <p>View &amp; manage invoices</p>
         </div>
+        <div class="home-card" data-view="paymentView">
+          <div class="home-card-icon">₹</div>
+          <h3>Payment Info</h3>
+          <p>Track outstanding &amp; payments</p>
+        </div>
       </div>
     </section>
 
@@ -69,6 +74,76 @@
           <tbody id="invListBody"></tbody>
         </table>
         <p id="invListEmpty" class="empty-msg">No invoices saved yet.</p>
+      </div>
+    </div>
+
+    <!-- ======== PAYMENT VIEW ======== -->
+    <div id="paymentView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="payBackBtn">← Back</button>
+        <h2>Payment Info</h2>
+        <div></div>
+      </div>
+
+      <div class="outstanding-bar">
+        <span class="outstanding-label">Total Outstanding</span>
+        <span class="outstanding-amount" id="totalOutstanding">₹0.00</span>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="paySearch" class="filter-input" placeholder="Search by customer name or invoice no..." />
+        <select id="payCustomerFilter" class="filter-select">
+          <option value="">All Customers</option>
+        </select>
+      </div>
+
+      <div id="companySummaryCards" class="company-cards"></div>
+
+      <div class="data-table-wrap">
+        <table class="data-table" id="payTable">
+          <thead>
+            <tr>
+              <th>Invoice No.</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Days</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payBody"></tbody>
+        </table>
+        <p id="payEmpty" class="empty-msg">No outstanding invoices.</p>
+      </div>
+
+      <!-- Add Payment Overlay -->
+      <div id="payFormOverlay" class="overlay hidden">
+        <div class="overlay-box">
+          <h3>Add Payment</h3>
+          <p class="overlay-subtitle" id="payFormInvLabel"></p>
+          <div class="field"><label>Amount (₹)</label><input type="number" id="payAmtInput" min="0" step="0.01" /></div>
+          <div class="field"><label>Note (optional)</label><input type="text" id="payNoteInput" /></div>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="payFormSaveBtn">Save Payment</button>
+            <button class="btn btn-secondary" id="payFormCancelBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Set Reminder Overlay -->
+      <div id="reminderOverlay" class="overlay hidden">
+        <div class="overlay-box">
+          <h3>Set Reminder</h3>
+          <p class="overlay-subtitle" id="reminderInvLabel"></p>
+          <div class="field"><label>Reminder Date</label><input type="date" id="reminderDateInput" /></div>
+          <div class="field"><label>Note (optional)</label><input type="text" id="reminderNoteInput" /></div>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="reminderSaveBtn">Save Reminder</button>
+            <button class="btn btn-secondary" id="reminderCancelBtn">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -296,6 +371,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js?v=21"></script>
+  <script src="script.js?v=22"></script>
 </body>
 </html>

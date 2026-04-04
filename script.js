@@ -32,11 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('invListBackBtn').addEventListener('click', goHome);
 
+  $('payBackBtn').addEventListener('click', goHome);
+
   document.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
       if (card.dataset.view === 'invoiceListView') renderInvoiceList();
       if (card.dataset.view === 'invoiceView') { editingInvoiceId = null; cameFromInvoiceList = false; }
+      if (card.dataset.view === 'paymentView') renderPaymentView();
     });
   });
 
@@ -387,6 +390,277 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // ══════════════════════════════════════
+  // ── Payment Tracking ──
+  // ══════════════════════════════════════
+  let payments = JSON.parse(localStorage.getItem('ki_payments') || '{}');
+
+  function savePayments() {
+    localStorage.setItem('ki_payments', JSON.stringify(payments));
+  }
+
+  function getPaymentRecord(invoiceId) {
+    if (!payments[invoiceId]) {
+      payments[invoiceId] = { invoiceId, payments: [], totalPaid: 0, reminder: null, status: 'unpaid' };
+    }
+    return payments[invoiceId];
+  }
+
+  function addPayment(invoiceId, amount, note) {
+    const rec = getPaymentRecord(invoiceId);
+    rec.payments.push({ amount, date: new Date().toISOString(), note: note || '' });
+    rec.totalPaid = rec.payments.reduce((s, p) => s + p.amount, 0);
+    const inv = invoices.find(x => x.id === invoiceId);
+    const total = inv ? computeGrandTotal(inv) : 0;
+    rec.status = rec.totalPaid >= total ? 'paid' : 'partial';
+    savePayments();
+  }
+
+  function markFullyPaid(invoiceId) {
+    const inv = invoices.find(x => x.id === invoiceId);
+    if (!inv) return;
+    const total = computeGrandTotal(inv);
+    const rec = getPaymentRecord(invoiceId);
+    const remaining = total - rec.totalPaid;
+    if (remaining > 0) {
+      rec.payments.push({ amount: remaining, date: new Date().toISOString(), note: 'Marked as fully paid' });
+      rec.totalPaid = total;
+    }
+    rec.status = 'paid';
+    savePayments();
+  }
+
+  function setReminder(invoiceId, date, note) {
+    const rec = getPaymentRecord(invoiceId);
+    rec.reminder = { date, note: note || '' };
+    savePayments();
+  }
+
+  function daysSince(dateStr) {
+    if (!dateStr) return 0;
+    const created = new Date(dateStr);
+    const now = new Date();
+    return Math.floor((now - created) / (1000 * 60 * 60 * 24));
+  }
+
+  // ── Render Payment View ──
+  function renderPaymentView() {
+    const query = ($('paySearch').value || '').trim().toLowerCase();
+    const custFilter = $('payCustomerFilter').value;
+
+    const unpaid = invoices.filter(inv => {
+      const rec = payments[inv.id];
+      if (rec && rec.status === 'paid') return false;
+      if (query) {
+        const hay = [inv.invoiceNumber, inv.buyerName].join(' ').toLowerCase();
+        if (!hay.includes(query)) return false;
+      }
+      if (custFilter && inv.buyerName !== custFilter) return false;
+      return true;
+    });
+
+    unpaid.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    let totalOutstanding = 0;
+    const companyMap = {};
+
+    unpaid.forEach(inv => {
+      const total = computeGrandTotal(inv);
+      const rec = payments[inv.id];
+      const paid = rec ? rec.totalPaid : 0;
+      const outstanding = total - paid;
+      totalOutstanding += outstanding;
+
+      if (!companyMap[inv.buyerName]) {
+        companyMap[inv.buyerName] = { count: 0, outstanding: 0 };
+      }
+      companyMap[inv.buyerName].count++;
+      companyMap[inv.buyerName].outstanding += outstanding;
+    });
+
+    $('totalOutstanding').textContent = '₹' + fmtNum(totalOutstanding);
+
+    // Company summary cards
+    const cardsEl = $('companySummaryCards');
+    cardsEl.innerHTML = '';
+    Object.keys(companyMap).sort().forEach(name => {
+      const info = companyMap[name];
+      const card = document.createElement('div');
+      card.className = 'company-card' + (custFilter === name ? ' active' : '');
+      card.innerHTML = `
+        <div class="company-card-name">${escHtml(name)}</div>
+        <div class="company-card-detail">${info.count} invoice${info.count > 1 ? 's' : ''}</div>
+        <div class="company-card-amount">₹${fmtNum(info.outstanding)}</div>`;
+      card.addEventListener('click', () => {
+        $('payCustomerFilter').value = custFilter === name ? '' : name;
+        renderPaymentView();
+      });
+      cardsEl.appendChild(card);
+    });
+
+    // Customer dropdown
+    const select = $('payCustomerFilter');
+    const currentVal = select.value;
+    const allCustomerNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">All Customers</option>';
+    allCustomerNames.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      if (n === currentVal) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    // Table
+    const tbody = $('payBody');
+    tbody.innerHTML = '';
+    $('payEmpty').style.display = unpaid.length ? 'none' : 'block';
+    $('payTable').style.display = unpaid.length ? 'table' : 'none';
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    unpaid.forEach(inv => {
+      const total = computeGrandTotal(inv);
+      const rec = payments[inv.id];
+      const paid = rec ? rec.totalPaid : 0;
+      const outstanding = total - paid;
+      const days = daysSince(inv.invoiceDate || inv.createdAt);
+      const reminder = rec ? rec.reminder : null;
+      const isOverdue = reminder && reminder.date <= todayStr;
+
+      const tr = document.createElement('tr');
+      if (isOverdue) tr.className = 'row-overdue';
+
+      let reminderBadge = '';
+      if (reminder) {
+        const cls = isOverdue ? 'reminder-badge overdue' : 'reminder-badge';
+        reminderBadge = `<span class="${cls}" title="Reminder: ${formatShortDate(reminder.date)}${reminder.note ? ' - ' + escHtml(reminder.note) : ''}"></span>`;
+      }
+
+      tr.innerHTML = `
+        <td>${escHtml(inv.invoiceNumber)}${reminderBadge}</td>
+        <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
+        <td>${escHtml(inv.buyerName)}</td>
+        <td class="r">₹${fmtNum(total)}</td>
+        <td class="r">₹${fmtNum(paid)}</td>
+        <td class="r"><strong>₹${fmtNum(outstanding)}</strong></td>
+        <td class="c">${days}</td>
+        <td class="actions">
+          <button class="btn-pay" data-inv-id="${inv.id}">+ Pay</button>
+          <button class="btn-remind" data-inv-id="${inv.id}">Remind</button>
+          <button class="btn-markpaid" data-inv-id="${inv.id}">Paid</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  $('paySearch').addEventListener('input', renderPaymentView);
+  $('payCustomerFilter').addEventListener('change', renderPaymentView);
+
+  // ── Payment table actions ──
+  let payFormInvoiceId = null;
+  let reminderInvoiceId = null;
+
+  $('payBody').addEventListener('click', e => {
+    const id = e.target.dataset.invId;
+    if (!id) return;
+
+    if (e.target.classList.contains('btn-pay')) {
+      payFormInvoiceId = id;
+      const inv = invoices.find(x => x.id === id);
+      $('payFormInvLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
+      $('payAmtInput').value = '';
+      $('payNoteInput').value = '';
+      $('payFormOverlay').classList.remove('hidden');
+      $('payAmtInput').focus();
+    }
+
+    if (e.target.classList.contains('btn-remind')) {
+      reminderInvoiceId = id;
+      const inv = invoices.find(x => x.id === id);
+      $('reminderInvLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
+      const rec = payments[id];
+      $('reminderDateInput').value = (rec && rec.reminder) ? rec.reminder.date : '';
+      $('reminderNoteInput').value = (rec && rec.reminder) ? rec.reminder.note : '';
+      $('reminderOverlay').classList.remove('hidden');
+      $('reminderDateInput').focus();
+    }
+
+    if (e.target.classList.contains('btn-markpaid')) {
+      if (confirm('Mark this invoice as fully paid?')) {
+        markFullyPaid(id);
+        renderPaymentView();
+      }
+    }
+  });
+
+  // Add Payment form
+  $('payFormSaveBtn').addEventListener('click', () => {
+    const amount = parseFloat($('payAmtInput').value);
+    if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+    addPayment(payFormInvoiceId, amount, $('payNoteInput').value.trim());
+    $('payFormOverlay').classList.add('hidden');
+    payFormInvoiceId = null;
+    renderPaymentView();
+  });
+  $('payFormCancelBtn').addEventListener('click', () => {
+    $('payFormOverlay').classList.add('hidden');
+    payFormInvoiceId = null;
+  });
+
+  // Reminder form
+  $('reminderSaveBtn').addEventListener('click', () => {
+    const date = $('reminderDateInput').value;
+    if (!date) { alert('Select a reminder date'); return; }
+    setReminder(reminderInvoiceId, date, $('reminderNoteInput').value.trim());
+    $('reminderOverlay').classList.add('hidden');
+    reminderInvoiceId = null;
+    renderPaymentView();
+  });
+  $('reminderCancelBtn').addEventListener('click', () => {
+    $('reminderOverlay').classList.add('hidden');
+    reminderInvoiceId = null;
+  });
+
+  // ── Browser Notifications for Due Reminders ──
+  function checkReminders() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const due = [];
+
+    Object.values(payments).forEach(rec => {
+      if (rec.status === 'paid') return;
+      if (!rec.reminder || rec.reminder.date > todayStr) return;
+      const inv = invoices.find(x => x.id === rec.invoiceId);
+      if (inv) due.push(inv);
+    });
+
+    if (!due.length) return;
+
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      due.forEach(inv => {
+        new Notification('Payment Reminder', {
+          body: `Invoice ${inv.invoiceNumber} — ${inv.buyerName} is due!`,
+          icon: '₹'
+        });
+      });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          due.forEach(inv => {
+            new Notification('Payment Reminder', {
+              body: `Invoice ${inv.invoiceNumber} — ${inv.buyerName} is due!`,
+              icon: '₹'
+            });
+          });
+        }
+      });
+    }
+  }
+
+  checkReminders();
 
   function escHtml(str) {
     const d = document.createElement('div');
