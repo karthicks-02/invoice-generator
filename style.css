@@ -372,6 +372,13 @@ input.inv-rate-input {
 .inv-items tbody td:nth-child(6) { text-align: center; }
 .inv-items tbody td:nth-child(2) { text-align: left; }
 .inv-items tbody td:nth-child(7) { text-align: right; }
+/* Keep rupee amounts and rates on one line; middle cols stay compact */
+.inv-items tbody td:nth-child(6),
+.inv-items tbody td:nth-child(7) { white-space: nowrap; }
+.inv-items th:nth-child(3),
+.inv-items th:nth-child(4),
+.inv-items th:nth-child(5),
+.inv-items th:nth-child(6) { padding-left: 3px; padding-right: 3px; }
 
 /* ── Bottom Section (Totals + Footer combined) ── */
 .inv-bottom td { vertical-align: middle; }

@@ -2321,13 +2321,13 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Items ─── -->
         <table class="inv-tbl inv-items">
           <colgroup>
-            <col style="width:5%">
-            <col style="width:50%">
-            <col style="width:11%">
-            <col style="width:9%">
-            <col style="width:9%">
+            <col style="width:4%">
+            <col style="width:46%">
+            <col style="width:7%">
+            <col style="width:7%">
+            <col style="width:7%">
             <col style="width:8%">
-            <col style="width:8%">
+            <col style="width:21%">
           </colgroup>
         <thead>
           <tr>
@@ -2499,7 +2499,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
         </table>
         <table class="inv-tbl inv-items">
-          <colgroup><col style="width:5%"><col style="width:50%"><col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:8%"><col style="width:8%"></colgroup>
+          <colgroup><col style="width:4%"><col style="width:46%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:21%"></colgroup>
           <thead><tr>
             <th>SL.No.</th><th>NAME OF THE COMMODITY / SERVICE</th><th>HSN CODE</th>
             <th>No.Of<br>Packages</th><th>Total Qty IN<br>NOS</th><th>Rate Per No.</th><th>GOODS VALUE<br>(in Rs.)</th>
