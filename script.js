@@ -1983,20 +1983,36 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function generatePDF(htmlContent, filename) {
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;overflow:visible;';
-    container.innerHTML = htmlContent;
-    document.body.appendChild(container);
+    return new Promise(resolve => {
+      const container = document.createElement('div');
+      container.setAttribute('data-pdf-render', '1');
+      container.style.cssText = 'position:absolute;left:0;top:0;width:800px;background:#fff;overflow:visible;z-index:-1;opacity:0;pointer-events:none;';
+      container.innerHTML = htmlContent;
+      document.body.appendChild(container);
 
-    const opt = {
-      margin: [0.3, 0.3, 0.3, 0.3],
-      filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-    return html2pdf().set(opt).from(container).save().then(() => {
-      document.body.removeChild(container);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const opt = {
+            margin: [0.3, 0.3, 0.3, 0.3],
+            filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              onclone: function(clonedDoc) {
+                var el = clonedDoc.querySelector('[data-pdf-render]');
+                if (el) el.style.opacity = '1';
+              }
+            },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+          };
+          html2pdf().set(opt).from(container).save().then(() => {
+            document.body.removeChild(container);
+            resolve();
+          });
+        });
+      });
     });
   }
 
