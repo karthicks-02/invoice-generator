@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Karthick Industries</title>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=9" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -496,18 +496,22 @@
       <!-- PREVIEW PANEL -->
       <section class="preview-panel hidden" id="previewPanel">
         <div class="preview-actions">
-          <button class="btn btn-secondary" id="editBtn">← Edit</button>
-          <div class="copy-checks preview-copy-checks">
-            <label class="copy-check"><input type="checkbox" value="ORIGINAL FOR BUYER" class="copyTypePreview" checked /> Original</label>
-            <label class="copy-check"><input type="checkbox" value="DUPLICATE FOR TRANSPORTER" class="copyTypePreview" /> Duplicate</label>
-            <label class="copy-check"><input type="checkbox" value="TRIPLICATE FOR SUPPLIER" class="copyTypePreview" /> Triplicate</label>
-            <label class="copy-check"><input type="checkbox" value="PROFORMA INVOICE" class="copyTypePreview" /> Proforma</label>
-            <label class="copy-check"><input type="checkbox" value="EXTRA COPY" class="copyTypePreview" /> Extra copy</label>
+          <div class="preview-actions-row preview-actions-row--edit-copies">
+            <button type="button" class="btn btn-secondary" id="editBtn">← Edit</button>
+            <div class="copy-checks preview-copy-checks">
+              <label class="copy-check"><input type="checkbox" value="ORIGINAL FOR BUYER" class="copyTypePreview" checked /> Original</label>
+              <label class="copy-check"><input type="checkbox" value="DUPLICATE FOR TRANSPORTER" class="copyTypePreview" /> Duplicate</label>
+              <label class="copy-check"><input type="checkbox" value="TRIPLICATE FOR SUPPLIER" class="copyTypePreview" /> Triplicate</label>
+              <label class="copy-check"><input type="checkbox" value="PROFORMA INVOICE" class="copyTypePreview" /> Proforma</label>
+              <label class="copy-check"><input type="checkbox" value="EXTRA COPY" class="copyTypePreview" /> Extra copy</label>
+            </div>
           </div>
-          <button class="btn btn-primary" id="downloadBtn">Download PDF</button>
-          <button class="btn btn-secondary" id="printBtn">Print</button>
-          <button type="button" class="btn btn-secondary" id="ewayPortalBtn" title="Official GST e-way bill site (opens in new tab)">E-Way Bill portal</button>
-          <button type="button" class="btn btn-secondary" id="ewayCopyBtn" title="Copy plain-text summary for manual entry on the portal">Copy for e-way</button>
+          <div class="preview-actions-row preview-actions-row--export">
+            <button type="button" class="btn btn-primary" id="downloadBtn">Download PDF</button>
+            <button type="button" class="btn btn-secondary" id="printBtn">Print</button>
+            <button type="button" class="btn btn-secondary" id="ewayPortalBtn" title="Official GST e-way bill site (opens in new tab)">E-Way Bill portal</button>
+            <button type="button" class="btn btn-secondary" id="ewayCopyBtn" title="Copy plain-text summary for manual entry on the portal">Copy for e-way</button>
+          </div>
         </div>
         <div class="invoice-paper" id="invoicePaper"></div>
       </section>

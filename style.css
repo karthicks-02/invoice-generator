@@ -202,9 +202,27 @@ input[aria-invalid="true"] {
 .preview-actions {
   align-self: stretch;
   display: flex;
-  gap: .75rem;
+  flex-direction: column;
+  gap: .85rem;
   margin-bottom: 1.25rem;
+  max-width: 800px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+.preview-actions-row {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem .85rem;
+}
+.preview-actions-row--edit-copies .preview-copy-checks {
+  flex: 1;
+  min-width: min(100%, 280px);
+}
+.preview-actions-row--export {
+  padding-top: .15rem;
+  border-top: 1px solid var(--border);
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
