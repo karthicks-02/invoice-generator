@@ -941,168 +941,126 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ══════════════════════════════════════
-  // ── Payment Tracking ──
+  // ── Payment Tracking (Company-Level) ──
   // ══════════════════════════════════════
   let payments = {};
 
-  function savePayments() {
-    db.savePayments(payments);
+  function savePayments() { db.savePayments(payments); }
+
+  function getCompanyPayment(name) {
+    if (!payments[name]) payments[name] = { credits: [], totalCredited: 0, reminder: null };
+    return payments[name];
   }
 
-  function getPaymentRecord(invoiceId) {
-    if (!payments[invoiceId]) {
-      payments[invoiceId] = { invoiceId, payments: [], totalPaid: 0, reminder: null, status: 'unpaid' };
-    }
-    return payments[invoiceId];
-  }
-
-  function addPayment(invoiceId, amount, note) {
-    const rec = getPaymentRecord(invoiceId);
-    rec.payments.push({ amount, date: new Date().toISOString(), note: note || '' });
-    rec.totalPaid = rec.payments.reduce((s, p) => s + p.amount, 0);
-    const inv = invoices.find(x => x.id === invoiceId);
-    const total = inv ? computeGrandTotal(inv) : 0;
-    rec.status = rec.totalPaid >= total ? 'paid' : 'partial';
+  function addCompanyCredit(name, amount, note) {
+    const rec = getCompanyPayment(name);
+    rec.credits.push({ amount, date: new Date().toISOString(), note: note || '' });
+    rec.totalCredited = rec.credits.reduce((s, c) => s + c.amount, 0);
     savePayments();
   }
 
-
-  function setReminder(invoiceId, date, note) {
-    const rec = getPaymentRecord(invoiceId);
+  function setCompanyReminder(name, date, note) {
+    const rec = getCompanyPayment(name);
     rec.reminder = { date, note: note || '' };
     savePayments();
   }
 
+  function getCompanyInvoiceTotal(name) {
+    return invoices.filter(inv => inv.buyerName === name).reduce((s, inv) => s + computeGrandTotal(inv), 0);
+  }
+
   function daysSince(dateStr) {
     if (!dateStr) return 0;
-    const created = new Date(dateStr);
-    const now = new Date();
-    return Math.floor((now - created) / (1000 * 60 * 60 * 24));
+    return Math.floor((new Date() - new Date(dateStr)) / 86400000);
   }
+
+  let expandedCompany = null;
 
   // ── Render Payment View ──
   function renderPaymentView() {
     const query = ($('paySearch').value || '').trim().toLowerCase();
-    const custFilter = $('payCustomerFilter').value;
+    const companyNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))].sort();
 
-    let filtered = invoices.filter(inv => {
-      if (query) {
-        const hay = [inv.invoiceNumber, inv.buyerName].join(' ').toLowerCase();
-        if (!hay.includes(query)) return false;
-      }
-      if (custFilter && inv.buyerName !== custFilter) return false;
-      return true;
-    });
+    const companies = companyNames.map(name => {
+      const invs = invoices.filter(inv => inv.buyerName === name);
+      const totalAmt = invs.reduce((s, inv) => s + computeGrandTotal(inv), 0);
+      const rec = payments[name];
+      const credited = rec ? rec.totalCredited : 0;
+      const outstanding = Math.max(totalAmt - credited, 0);
+      const reminder = rec ? rec.reminder : null;
+      const oldestDate = invs.reduce((oldest, inv) => {
+        const d = inv.invoiceDate || inv.createdAt || '';
+        return (!oldest || d < oldest) ? d : oldest;
+      }, '');
+      return { name, invs, totalAmt, credited, outstanding, reminder, oldestDate, count: invs.length };
+    }).filter(c => !query || c.name.toLowerCase().includes(query));
 
-    filtered.sort((a, b) => {
-      const aRec = payments[a.id], bRec = payments[b.id];
-      const aOut = computeGrandTotal(a) - (aRec ? aRec.totalPaid : 0);
-      const bOut = computeGrandTotal(b) - (bRec ? bRec.totalPaid : 0);
-      if (aOut > 0 && bOut <= 0) return -1;
-      if (aOut <= 0 && bOut > 0) return 1;
-      return (b.createdAt || '').localeCompare(a.createdAt || '');
-    });
+    companies.sort((a, b) => (b.outstanding > 0 ? 1 : 0) - (a.outstanding > 0 ? 1 : 0) || a.name.localeCompare(b.name));
 
-    let totalOutstanding = 0;
-    const companyMap = {};
-
-    filtered.forEach(inv => {
-      const total = computeGrandTotal(inv);
-      const rec = payments[inv.id];
-      const paid = rec ? rec.totalPaid : 0;
-      const outstanding = Math.max(total - paid, 0);
-      totalOutstanding += outstanding;
-
-      const name = inv.buyerName || 'Unknown';
-      if (!companyMap[name]) companyMap[name] = { count: 0, totalAmt: 0, credited: 0, outstanding: 0 };
-      companyMap[name].count++;
-      companyMap[name].totalAmt += total;
-      companyMap[name].credited += paid;
-      companyMap[name].outstanding += outstanding;
-    });
-
+    const totalOutstanding = companies.reduce((s, c) => s + c.outstanding, 0);
     $('totalOutstanding').textContent = '₹' + fmtNum(totalOutstanding);
 
-    const cardsEl = $('companySummaryCards');
-    cardsEl.innerHTML = '';
-    Object.keys(companyMap).sort().forEach(name => {
-      const info = companyMap[name];
-      const card = document.createElement('div');
-      card.className = 'company-card' + (custFilter === name ? ' active' : '');
-      card.innerHTML = `
-        <div class="company-card-name">${escHtml(name)}</div>
-        <div class="company-card-detail">${info.count} inv · Total ₹${fmtNum(info.totalAmt)}</div>
-        <div class="company-card-detail">Credited ₹${fmtNum(info.credited)}</div>
-        <div class="company-card-amount">Outstanding ₹${fmtNum(info.outstanding)}</div>`;
-      card.addEventListener('click', () => {
-        $('payCustomerFilter').value = custFilter === name ? '' : name;
-        renderPaymentView();
-      });
-      cardsEl.appendChild(card);
-    });
-
-    const select = $('payCustomerFilter');
-    const currentVal = select.value;
-    const allCustomerNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))].sort();
-    select.innerHTML = '<option value="">All Customers</option>';
-    allCustomerNames.forEach(n => {
-      const opt = document.createElement('option');
-      opt.value = n; opt.textContent = n;
-      if (n === currentVal) opt.selected = true;
-      select.appendChild(opt);
-    });
-
-    const tbody = $('payBody');
-    tbody.innerHTML = '';
-    $('payEmpty').style.display = filtered.length ? 'none' : 'block';
-    $('payTable').style.display = filtered.length ? 'table' : 'none';
+    const container = $('payCompanyList');
+    container.innerHTML = '';
+    $('payEmpty').classList.toggle('hidden', companies.length > 0);
 
     const todayStr = new Date().toISOString().split('T')[0];
 
-    filtered.forEach(inv => {
-      const total = computeGrandTotal(inv);
-      const rec = payments[inv.id];
-      const paid = rec ? rec.totalPaid : 0;
-      const outstanding = Math.max(total - paid, 0);
-      const days = daysSince(inv.invoiceDate || inv.createdAt);
-      const reminder = rec ? rec.reminder : null;
-      const isOverdue = reminder && reminder.date <= todayStr && outstanding > 0;
-      const isPaid = outstanding <= 0;
+    companies.forEach(co => {
+      const isPaid = co.outstanding <= 0;
+      const isOverdue = co.reminder && co.reminder.date <= todayStr && !isPaid;
+      const isExpanded = expandedCompany === co.name;
 
-      const tr = document.createElement('tr');
-      if (isPaid) tr.className = 'row-paid';
-      else if (isOverdue) tr.className = 'row-overdue';
+      const section = document.createElement('div');
+      section.className = 'pay-company-section' + (isPaid ? ' paid' : '') + (isOverdue ? ' overdue' : '');
 
       let reminderBadge = '';
-      if (reminder && !isPaid) {
+      if (co.reminder && !isPaid) {
         const cls = isOverdue ? 'reminder-badge overdue' : 'reminder-badge';
-        reminderBadge = `<span class="${cls}" title="Reminder: ${formatShortDate(reminder.date)}${reminder.note ? ' - ' + escHtml(reminder.note) : ''}"></span>`;
+        reminderBadge = `<span class="${cls}" title="Reminder: ${formatShortDate(co.reminder.date)}${co.reminder.note ? ' - ' + escHtml(co.reminder.note) : ''}"></span>`;
       }
 
-      tr.innerHTML = `
-        <td>${escHtml(inv.invoiceNumber)}${reminderBadge}</td>
-        <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
-        <td>${escHtml(inv.buyerName)}</td>
-        <td class="r">₹${fmtNum(total)}</td>
-        <td class="r">${paid > 0 ? '₹' + fmtNum(paid) : '—'}</td>
-        <td class="r"><strong>${isPaid ? '<span style="color:#059669">Paid</span>' : '₹' + fmtNum(outstanding)}</strong></td>
-        <td class="c">${days}</td>
-        <td class="actions">
-          <button class="btn-view" data-inv-id="${inv.id}">View</button>
-          ${!isPaid ? `<button class="btn-pay" data-inv-id="${inv.id}">+ Credit</button>` : ''}
-          <button class="btn-history" data-inv-id="${inv.id}">History</button>
-          ${!isPaid ? `<button class="btn-remind" data-inv-id="${inv.id}">Remind</button>` : ''}
-        </td>`;
-      tbody.appendChild(tr);
+      section.innerHTML = `
+        <div class="pay-company-header" data-company="${escHtml(co.name)}">
+          <div class="pay-company-info">
+            <span class="pay-company-toggle">${isExpanded ? '▾' : '▸'}</span>
+            <strong>${escHtml(co.name)}</strong> ${reminderBadge}
+            <span class="pay-company-meta">${co.count} invoice${co.count > 1 ? 's' : ''}</span>
+          </div>
+          <div class="pay-company-nums">
+            <span class="pay-num-group">Total <strong>₹${fmtNum(co.totalAmt)}</strong></span>
+            <span class="pay-num-group">Credited <strong>₹${fmtNum(co.credited)}</strong></span>
+            <span class="pay-num-group pay-outstanding">${isPaid ? '<span style="color:#059669">Paid</span>' : `Outstanding <strong>₹${fmtNum(co.outstanding)}</strong>`}</span>
+          </div>
+          <div class="pay-company-actions">
+            ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
+            <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">History</button>
+            ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
+          </div>
+        </div>
+        <div class="pay-company-invoices ${isExpanded ? '' : 'hidden'}">
+          <table class="data-table" style="font-size:.85rem;margin:0">
+            <thead><tr><th>Invoice No.</th><th>Date</th><th>Amount</th><th>Days</th><th></th></tr></thead>
+            <tbody>
+              ${co.invs.map(inv => `<tr>
+                <td>${escHtml(inv.invoiceNumber)}</td>
+                <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
+                <td class="r">₹${fmtNum(computeGrandTotal(inv))}</td>
+                <td class="c">${daysSince(inv.invoiceDate || inv.createdAt)}</td>
+                <td><button class="btn-view" data-inv-id="${inv.id}" style="font-size:.78rem">View</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      container.appendChild(section);
     });
   }
 
   $('paySearch').addEventListener('input', renderPaymentView);
-  $('payCustomerFilter').addEventListener('change', renderPaymentView);
 
-  // ── Payment table actions ──
-  let payFormInvoiceId = null;
-  let reminderInvoiceId = null;
+  // ── Payment actions (delegated) ──
+  let payFormCompany = null;
+  let reminderCompany = null;
 
   function viewInvoiceFromPayment(id) {
     const inv = invoices.find(x => x.id === id);
@@ -1116,92 +1074,90 @@ document.addEventListener('DOMContentLoaded', () => {
     $('previewPanel').classList.remove('hidden');
   }
 
-  $('payBody').addEventListener('click', e => {
-    const id = e.target.dataset.invId;
-    if (!id) return;
+  $('payCompanyList').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    const header = e.target.closest('.pay-company-header');
 
-    if (e.target.classList.contains('btn-view')) {
-      viewInvoiceFromPayment(id);
+    if (btn && btn.classList.contains('btn-view')) {
+      viewInvoiceFromPayment(btn.dataset.invId);
+      return;
     }
 
-    if (e.target.classList.contains('btn-pay')) {
-      payFormInvoiceId = id;
-      const inv = invoices.find(x => x.id === id);
-      const total = inv ? computeGrandTotal(inv) : 0;
-      const rec = payments[id];
-      const paid = rec ? rec.totalPaid : 0;
-      $('payFormInvLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
-      $('payFormOutstanding').textContent = `Outstanding: ₹${fmtNum(total - paid)}`;
+    if (btn && btn.classList.contains('btn-pay')) {
+      const name = btn.dataset.company;
+      payFormCompany = name;
+      const outstanding = Math.max(getCompanyInvoiceTotal(name) - (payments[name] ? payments[name].totalCredited : 0), 0);
+      $('payFormCompanyLabel').textContent = name;
+      $('payFormOutstanding').textContent = `Outstanding: ₹${fmtNum(outstanding)}`;
       $('payAmtInput').value = '';
       $('payNoteInput').value = '';
       $('payFormOverlay').classList.remove('hidden');
       $('payAmtInput').focus();
+      return;
     }
 
-    if (e.target.classList.contains('btn-history')) {
-      const inv = invoices.find(x => x.id === id);
-      const total = inv ? computeGrandTotal(inv) : 0;
-      const rec = payments[id];
-      const paidAmt = rec ? rec.totalPaid : 0;
-      $('payHistoryLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
+    if (btn && btn.classList.contains('btn-history')) {
+      const name = btn.dataset.company;
+      const rec = payments[name];
+      const totalAmt = getCompanyInvoiceTotal(name);
+      const credited = rec ? rec.totalCredited : 0;
+      $('payHistoryLabel').textContent = name;
       const list = $('payHistoryList');
-      const entries = rec && rec.payments && rec.payments.length ? rec.payments : [];
+      const entries = rec && rec.credits && rec.credits.length ? rec.credits : [];
       if (!entries.length) {
         list.innerHTML = '<p style="color:var(--text-muted);text-align:center">No credits recorded yet.</p>';
       } else {
         list.innerHTML = '<table class="data-table" style="font-size:.85rem"><thead><tr><th>Date</th><th>Amount</th><th>Note</th></tr></thead><tbody>' +
-          entries.map(p => `<tr><td>${p.date ? formatShortDate(p.date.split('T')[0]) : ''}</td><td class="r">₹${fmtNum(p.amount)}</td><td>${escHtml(p.note || '')}</td></tr>`).join('') +
+          entries.map(c => `<tr><td>${c.date ? formatShortDate(c.date.split('T')[0]) : ''}</td><td class="r">₹${fmtNum(c.amount)}</td><td>${escHtml(c.note || '')}</td></tr>`).join('') +
           '</tbody></table>';
       }
-      $('payHistorySummary').textContent = `Total: ₹${fmtNum(total)} · Credited: ₹${fmtNum(paidAmt)} · Outstanding: ₹${fmtNum(Math.max(total - paidAmt, 0))}`;
+      $('payHistorySummary').textContent = `Total Invoices: ₹${fmtNum(totalAmt)} · Credited: ₹${fmtNum(credited)} · Outstanding: ₹${fmtNum(Math.max(totalAmt - credited, 0))}`;
       $('payHistoryOverlay').classList.remove('hidden');
+      return;
     }
 
-    if (e.target.classList.contains('btn-remind')) {
-      reminderInvoiceId = id;
-      const inv = invoices.find(x => x.id === id);
-      $('reminderInvLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
-      const rec = payments[id];
+    if (btn && btn.classList.contains('btn-remind')) {
+      const name = btn.dataset.company;
+      reminderCompany = name;
+      $('reminderInvLabel').textContent = name;
+      const rec = payments[name];
       $('reminderDateInput').value = (rec && rec.reminder) ? rec.reminder.date : '';
       $('reminderNoteInput').value = (rec && rec.reminder) ? rec.reminder.note : '';
       $('reminderOverlay').classList.remove('hidden');
       $('reminderDateInput').focus();
+      return;
+    }
+
+    if (header && !btn) {
+      const name = header.dataset.company;
+      expandedCompany = expandedCompany === name ? null : name;
+      renderPaymentView();
     }
   });
 
-  $('payHistoryCloseBtn').addEventListener('click', () => {
-    $('payHistoryOverlay').classList.add('hidden');
-  });
+  $('payHistoryCloseBtn').addEventListener('click', () => { $('payHistoryOverlay').classList.add('hidden'); });
 
-  // Add Credit form
   $('payFormSaveBtn').addEventListener('click', () => {
     const amount = parseFloat($('payAmtInput').value);
     if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
-    addPayment(payFormInvoiceId, amount, $('payNoteInput').value.trim());
+    addCompanyCredit(payFormCompany, amount, $('payNoteInput').value.trim());
     $('payFormOverlay').classList.add('hidden');
-    payFormInvoiceId = null;
+    payFormCompany = null;
     renderPaymentView();
   });
-  $('payFormCancelBtn').addEventListener('click', () => {
-    $('payFormOverlay').classList.add('hidden');
-    payFormInvoiceId = null;
-  });
+  $('payFormCancelBtn').addEventListener('click', () => { $('payFormOverlay').classList.add('hidden'); payFormCompany = null; });
 
-  // Reminder form
   $('reminderSaveBtn').addEventListener('click', () => {
     const date = $('reminderDateInput').value;
     if (!date) { alert('Select a reminder date'); return; }
-    setReminder(reminderInvoiceId, date, $('reminderNoteInput').value.trim());
+    setCompanyReminder(reminderCompany, date, $('reminderNoteInput').value.trim());
     $('reminderOverlay').classList.add('hidden');
-    reminderInvoiceId = null;
+    reminderCompany = null;
     renderPaymentView();
   });
-  $('reminderCancelBtn').addEventListener('click', () => {
-    $('reminderOverlay').classList.add('hidden');
-    reminderInvoiceId = null;
-  });
+  $('reminderCancelBtn').addEventListener('click', () => { $('reminderOverlay').classList.add('hidden'); reminderCompany = null; });
 
-  // ── Reminder Preset Buttons (overlay + invoice form) ──
+  // ── Reminder Preset Buttons ──
   function addDays(n) {
     const d = new Date();
     d.setDate(d.getDate() + n);
@@ -1209,81 +1165,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.querySelectorAll('#reminderOverlay .preset-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $('reminderDateInput').value = addDays(+btn.dataset.days);
-    });
+    btn.addEventListener('click', () => { $('reminderDateInput').value = addDays(+btn.dataset.days); });
   });
 
   document.querySelectorAll('#invReminderPresets .preset-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $('invoiceReminder').value = addDays(+btn.dataset.days);
-    });
+    btn.addEventListener('click', () => { $('invoiceReminder').value = addDays(+btn.dataset.days); });
   });
 
   // ── Email Reminder ──
   $('reminderEmailBtn').addEventListener('click', () => {
-    if (!reminderInvoiceId) return;
+    if (!reminderCompany) return;
     if (typeof EMAILJS_CONFIG === 'undefined' || EMAILJS_CONFIG.publicKey === 'YOUR_PUBLIC_KEY') {
-      alert('EmailJS is not configured yet.\n\nEdit emailjs-config.js with your EmailJS credentials.\nSee https://www.emailjs.com/ to sign up (free: 200 emails/month).');
+      alert('EmailJS is not configured yet.\n\nEdit emailjs-config.js with your EmailJS credentials.');
       return;
     }
-    const inv = invoices.find(x => x.id === reminderInvoiceId);
-    if (!inv) return;
-    const total = computeGrandTotal(inv);
-    const rec = payments[reminderInvoiceId];
-    const paid = rec ? rec.totalPaid : 0;
-    const outstanding = total - paid;
+    const outstanding = Math.max(getCompanyInvoiceTotal(reminderCompany) - (payments[reminderCompany] ? payments[reminderCompany].totalCredited : 0), 0);
     const dueDate = $('reminderDateInput').value ? formatShortDate($('reminderDateInput').value) : 'Not set';
     const userEmail = auth.currentUser ? auth.currentUser.email : '';
 
     emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
       to_email: userEmail,
-      invoice_no: inv.invoiceNumber,
-      buyer_name: inv.buyerName,
+      invoice_no: 'All',
+      buyer_name: reminderCompany,
       amount: '₹' + fmtNum(outstanding),
       due_date: dueDate
-    }).then(() => {
-      alert('Reminder email sent to ' + userEmail);
-    }).catch(err => {
-      alert('Failed to send email: ' + (err.text || err.message || err));
-    });
+    }).then(() => { alert('Reminder email sent to ' + userEmail); })
+      .catch(err => { alert('Failed to send email: ' + (err.text || err.message || err)); });
   });
 
   // ── Browser Notifications for Due Reminders ──
   function checkReminders() {
     const todayStr = new Date().toISOString().split('T')[0];
     const due = [];
-
-    Object.values(payments).forEach(rec => {
-      if (rec.status === 'paid') return;
+    Object.entries(payments).forEach(([name, rec]) => {
       if (!rec.reminder || rec.reminder.date > todayStr) return;
-      const inv = invoices.find(x => x.id === rec.invoiceId);
-      if (inv) due.push(inv);
+      const outstanding = Math.max(getCompanyInvoiceTotal(name) - (rec.totalCredited || 0), 0);
+      if (outstanding > 0) due.push({ name, outstanding });
     });
-
-    if (!due.length) return;
-
-    if (!('Notification' in window)) return;
-
-    if (Notification.permission === 'granted') {
-      due.forEach(inv => {
-        new Notification('Payment Reminder', {
-          body: `Invoice ${inv.invoiceNumber} — ${inv.buyerName} is due!`,
-          icon: '₹'
-        });
-      });
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then(perm => {
-        if (perm === 'granted') {
-          due.forEach(inv => {
-            new Notification('Payment Reminder', {
-              body: `Invoice ${inv.invoiceNumber} — ${inv.buyerName} is due!`,
-              icon: '₹'
-            });
-          });
-        }
-      });
-    }
+    if (!due.length || !('Notification' in window)) return;
+    const notify = () => due.forEach(d => new Notification('Payment Reminder', { body: `${d.name} — Outstanding ₹${fmtNum(d.outstanding)}` }));
+    if (Notification.permission === 'granted') notify();
+    else if (Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') notify(); });
   }
 
   function escHtml(str) {
