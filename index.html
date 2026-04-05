@@ -273,9 +273,16 @@
             <div class="field"><label>Contact Person</label><input type="text" id="custContact" /></div>
             <div class="field"><label>Phone</label><input type="text" id="custPhone" /></div>
           </div>
-          <div class="row">
+          <div class="row three">
             <div class="field"><label>P.Order No.</label><input type="text" id="custPoNumber" placeholder="Default for invoices" /></div>
             <div class="field"><label>P.O. Date</label><input type="date" id="custPoDate" /></div>
+            <div class="field">
+              <label>GST Type</label>
+              <select id="custGstType">
+                <option value="intra">Intra-State (CGST + SGST)</option>
+                <option value="inter">Inter-State (IGST)</option>
+              </select>
+            </div>
           </div>
           <div class="consignee-section">
             <div class="consignee-header">
@@ -307,6 +314,7 @@
               <th>#</th>
               <th>Company Name</th>
               <th>GSTIN</th>
+              <th>GST Type</th>
               <th>P.Order / Date</th>
               <th>Contact Person</th>
               <th>Phone</th>
@@ -528,6 +536,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=76"></script>
+  <script src="script.js?v=77"></script>
 </body>
 </html>

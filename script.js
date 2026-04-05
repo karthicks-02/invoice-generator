@@ -149,6 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
     db.saveCustomers(customers);
   }
 
+  function customerGstTypeLabel(v) {
+    return v === 'inter' ? 'Inter (IGST)' : 'Intra (CGST+SGST)';
+  }
+
   function renderCustomers() {
     const tbody = $('custBody');
     tbody.innerHTML = '';
@@ -165,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${i + 1}</td>
         <td>${escHtml(c.name)}</td>
         <td>${escHtml(c.gstin)}</td>
+        <td>${escHtml(customerGstTypeLabel(c.gstType))}</td>
         <td class="cust-po-cell">${poSummary}</td>
         <td>${escHtml(c.contact)}</td>
         <td>${escHtml(c.phone)}</td>
@@ -246,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custPhone').value = '';
     $('custPoNumber').value = '';
     $('custPoDate').value = '';
+    $('custGstType').value = 'intra';
     tempConsignees = [];
     renderConsigneeList();
     resetConsigneeForm();
@@ -265,6 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
       phone: $('custPhone').value.trim(),
       poNumber: $('custPoNumber').value.trim(),
       poDate: $('custPoDate').value,
+      gstType: $('custGstType').value,
       consignees: [...tempConsignees]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
@@ -291,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       $('custPoNumber').value = c.poNumber || '';
       $('custPoDate').value = c.poDate || '';
+      $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
       resetConsigneeForm();
@@ -1813,6 +1821,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       $('custPoNumber').value = c.poNumber || '';
       $('custPoDate').value = c.poDate || '';
+      $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
     },
@@ -1832,6 +1841,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       $('custPoNumber').value = c.poNumber || '';
       $('custPoDate').value = c.poDate || '';
+      $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
     },
@@ -2086,6 +2096,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('contactPhone').value = c.phone;
       $('poNumber').value = c.poNumber || '';
       $('poDate').value = c.poDate || '';
+      $('gstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
+      $('gstType').dispatchEvent(new Event('change'));
     }
   );
 
