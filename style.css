@@ -505,6 +505,16 @@ legend {
   gap: .5rem;
   flex-wrap: wrap;
 }
+.download-actions {
+  display: flex;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+.preset-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
 .data-table .btn-download {
   background: none;
   border: 1px solid var(--border);

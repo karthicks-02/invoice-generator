@@ -89,13 +89,17 @@
       </div>
       <div class="download-toolbar">
         <div class="download-presets">
-          <button class="btn btn-sm btn-secondary" id="invPresetThisWeek">This Week</button>
-          <button class="btn btn-sm btn-secondary" id="invPresetLastWeek">Last Week</button>
-          <button class="btn btn-sm btn-secondary" id="invPresetThisMonth">This Month</button>
-          <button class="btn btn-sm btn-secondary" id="invPresetLastMonth">Last Month</button>
-          <button class="btn btn-sm btn-secondary" id="invPresetCustom">Custom</button>
+          <button class="btn btn-sm btn-secondary preset-btn" id="invPresetThisWeek">This Week</button>
+          <button class="btn btn-sm btn-secondary preset-btn" id="invPresetLastWeek">Last Week</button>
+          <button class="btn btn-sm btn-secondary preset-btn" id="invPresetThisMonth">This Month</button>
+          <button class="btn btn-sm btn-secondary preset-btn" id="invPresetLastMonth">Last Month</button>
+          <button class="btn btn-sm btn-secondary preset-btn" id="invPresetCustom">Custom</button>
+          <button class="btn btn-sm btn-secondary preset-btn" id="invPresetClear" style="display:none">Clear Filter</button>
         </div>
-        <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">Download Selected</button>
+        <div class="download-actions">
+          <button class="btn btn-primary btn-sm" id="downloadFilteredBtn" style="display:none">⬇ Download Filtered</button>
+          <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">⬇ Download Selected</button>
+        </div>
       </div>
       <div class="data-table-wrap">
         <table class="data-table" id="invListTable">
@@ -147,14 +151,15 @@
       <div id="customRangeOverlay" class="overlay hidden">
         <div class="overlay-box">
           <h3>Custom Date Range</h3>
-          <p class="overlay-subtitle">Select a date range to download invoices</p>
+          <p class="overlay-subtitle">Select a date range to filter invoices</p>
           <div class="row">
             <div class="field"><label>From</label><input type="date" id="customFrom" /></div>
             <div class="field"><label>To</label><input type="date" id="customTo" /></div>
           </div>
           <p id="customRangeCount" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem"></p>
           <div class="overlay-actions">
-            <button class="btn btn-primary" id="customDownloadBtn">Download PDF</button>
+            <button class="btn btn-primary" id="customApplyBtn">Apply Filter</button>
+            <button class="btn btn-primary" id="customDownloadBtn">⬇ Download PDF</button>
             <button class="btn btn-secondary" id="customCancelBtn">Cancel</button>
           </div>
         </div>
@@ -520,6 +525,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=36"></script>
+  <script src="script.js?v=37"></script>
 </body>
 </html>

@@ -622,24 +622,65 @@ document.addEventListener('DOMContentLoaded', () => {
     return { from: first.toISOString().split('T')[0], to: last.toISOString().split('T')[0] };
   }
 
-  function downloadPreset(range, label) {
+  let activePreset = null;
+
+  function clearPresetActive() {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    activePreset = null;
+    $('invPresetClear').style.display = 'none';
+    $('downloadFilteredBtn').style.display = 'none';
+  }
+
+  function applyPresetFilter(range, btnId) {
+    if (activePreset === btnId) {
+      clearPresetActive();
+      $('invDateFrom').value = '';
+      $('invDateTo').value = '';
+      renderInvoiceList();
+      return;
+    }
+    clearPresetActive();
+    activePreset = btnId;
+    $(btnId).classList.add('active');
     $('invDateFrom').value = range.from;
     $('invDateTo').value = range.to;
     renderInvoiceList();
-    const selected = invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= range.from && inv.invoiceDate <= range.to);
-    if (!selected.length) { alert('No invoices found for ' + label); return; }
-    downloadBulkPDF(selected, `invoices-${range.from}-to-${range.to}.pdf`);
+    $('invPresetClear').style.display = 'inline-flex';
+    $('downloadFilteredBtn').style.display = 'inline-flex';
   }
 
-  $('invPresetThisWeek').addEventListener('click', () => downloadPreset(getWeekRange(0), 'This Week'));
-  $('invPresetLastWeek').addEventListener('click', () => downloadPreset(getWeekRange(-1), 'Last Week'));
-  $('invPresetThisMonth').addEventListener('click', () => downloadPreset(getMonthRange(0), 'This Month'));
-  $('invPresetLastMonth').addEventListener('click', () => downloadPreset(getMonthRange(-1), 'Last Month'));
+  $('invPresetThisWeek').addEventListener('click', () => applyPresetFilter(getWeekRange(0), 'invPresetThisWeek'));
+  $('invPresetLastWeek').addEventListener('click', () => applyPresetFilter(getWeekRange(-1), 'invPresetLastWeek'));
+  $('invPresetThisMonth').addEventListener('click', () => applyPresetFilter(getMonthRange(0), 'invPresetThisMonth'));
+  $('invPresetLastMonth').addEventListener('click', () => applyPresetFilter(getMonthRange(-1), 'invPresetLastMonth'));
+
+  $('invPresetClear').addEventListener('click', () => {
+    clearPresetActive();
+    $('invDateFrom').value = '';
+    $('invDateTo').value = '';
+    renderInvoiceList();
+  });
+
+  function getFilteredInvoices() {
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+    if (!from || !to) return invoices.slice();
+    return invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+  }
+
+  $('downloadFilteredBtn').addEventListener('click', () => {
+    const filtered = getFilteredInvoices();
+    if (!filtered.length) { alert('No invoices in the current filter'); return; }
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+    downloadBulkPDF(filtered, `invoices-${from}-to-${to}.pdf`);
+  });
 
   $('invPresetCustom').addEventListener('click', () => {
-    $('customFrom').value = '';
-    $('customTo').value = '';
+    $('customFrom').value = $('invDateFrom').value || '';
+    $('customTo').value = $('invDateTo').value || '';
     $('customRangeCount').textContent = '';
+    updateCustomCount();
     $('customRangeOverlay').classList.remove('hidden');
     $('customFrom').focus();
   });
@@ -648,20 +689,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const from = $('customFrom').value;
     const to = $('customTo').value;
     if (!from || !to) return [];
-    return invoices.filter(inv => inv.invoiceDate >= from && inv.invoiceDate <= to);
+    return invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
   }
 
-  $('customFrom').addEventListener('change', () => {
+  function updateCustomCount() {
     const list = getCustomFilteredInvoices();
     $('customRangeCount').textContent = list.length ? `${list.length} invoice${list.length > 1 ? 's' : ''} found` : '';
-  });
-  $('customTo').addEventListener('change', () => {
-    const list = getCustomFilteredInvoices();
-    $('customRangeCount').textContent = list.length ? `${list.length} invoice${list.length > 1 ? 's' : ''} found` : '';
-  });
+  }
+
+  $('customFrom').addEventListener('change', updateCustomCount);
+  $('customTo').addEventListener('change', updateCustomCount);
 
   $('customCancelBtn').addEventListener('click', () => {
     $('customRangeOverlay').classList.add('hidden');
+  });
+
+  $('customApplyBtn').addEventListener('click', () => {
+    const from = $('customFrom').value;
+    const to = $('customTo').value;
+    if (!from || !to) { alert('Please select both From and To dates'); return; }
+    $('customRangeOverlay').classList.add('hidden');
+    clearPresetActive();
+    activePreset = 'invPresetCustom';
+    $('invPresetCustom').classList.add('active');
+    $('invDateFrom').value = from;
+    $('invDateTo').value = to;
+    renderInvoiceList();
+    $('invPresetClear').style.display = 'inline-flex';
+    $('downloadFilteredBtn').style.display = 'inline-flex';
   });
 
   $('customDownloadBtn').addEventListener('click', () => {
