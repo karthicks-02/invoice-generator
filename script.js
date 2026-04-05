@@ -156,11 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custTable').style.display = customers.length ? 'table' : 'none';
     customers.forEach((c, i) => {
       const conCount = c.consignees ? c.consignees.length : 0;
+      const poParts = [];
+      if (c.poNumber) poParts.push(escHtml(c.poNumber));
+      if (c.poDate) poParts.push(formatShortDate(c.poDate));
+      const poSummary = poParts.length ? poParts.join(' · ') : '—';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
         <td>${escHtml(c.name)}</td>
         <td>${escHtml(c.gstin)}</td>
+        <td class="cust-po-cell">${poSummary}</td>
         <td>${escHtml(c.contact)}</td>
         <td>${escHtml(c.phone)}</td>
         <td>${conCount}</td>
@@ -239,6 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custAddress').value = '';
     $('custContact').value = '';
     $('custPhone').value = '';
+    $('custPoNumber').value = '';
+    $('custPoDate').value = '';
     tempConsignees = [];
     renderConsigneeList();
     resetConsigneeForm();
@@ -256,6 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
       address: $('custAddress').value.trim(),
       contact: $('custContact').value.trim(),
       phone: $('custPhone').value.trim(),
+      poNumber: $('custPoNumber').value.trim(),
+      poDate: $('custPoDate').value,
       consignees: [...tempConsignees]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
@@ -280,6 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custAddress').value = c.address;
       $('custContact').value = c.contact;
       $('custPhone').value = c.phone;
+      $('custPoNumber').value = c.poNumber || '';
+      $('custPoDate').value = c.poDate || '';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
       resetConsigneeForm();
@@ -1744,6 +1755,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custAddress').value = c.address;
       $('custContact').value = c.contact;
       $('custPhone').value = c.phone;
+      $('custPoNumber').value = c.poNumber || '';
+      $('custPoDate').value = c.poDate || '';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
     },
@@ -1761,6 +1774,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custAddress').value = c.address;
       $('custContact').value = c.contact;
       $('custPhone').value = c.phone;
+      $('custPoNumber').value = c.poNumber || '';
+      $('custPoDate').value = c.poDate || '';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       renderConsigneeList();
     },
@@ -1967,6 +1982,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('buyerAddress').value = c.address;
       $('contactPerson').value = c.contact;
       $('contactPhone').value = c.phone;
+      $('poNumber').value = c.poNumber || '';
+      $('poDate').value = c.poDate || '';
     }
   );
 

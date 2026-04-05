@@ -273,6 +273,10 @@
             <div class="field"><label>Contact Person</label><input type="text" id="custContact" /></div>
             <div class="field"><label>Phone</label><input type="text" id="custPhone" /></div>
           </div>
+          <div class="row">
+            <div class="field"><label>P.Order No.</label><input type="text" id="custPoNumber" placeholder="Default for invoices" /></div>
+            <div class="field"><label>P.O. Date</label><input type="date" id="custPoDate" /></div>
+          </div>
           <div class="consignee-section">
             <div class="consignee-header">
               <label class="consignee-label">Consignee / Shipped To</label>
@@ -303,6 +307,7 @@
               <th>#</th>
               <th>Company Name</th>
               <th>GSTIN</th>
+              <th>P.Order / Date</th>
               <th>Contact Person</th>
               <th>Phone</th>
               <th>Consignees</th>
@@ -515,6 +520,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=64"></script>
+  <script src="script.js?v=65"></script>
 </body>
 </html>
