@@ -1995,54 +1995,81 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
   }
 
-  function generatePDF(htmlContent, filename) {
-    return new Promise(resolve => {
-      const container = document.createElement('div');
-      container.setAttribute('data-pdf-render', '1');
-      container.style.cssText = 'position:absolute;left:0;top:0;width:800px;background:#fff;overflow:visible;z-index:-1;opacity:0;pointer-events:none;';
-      container.innerHTML = htmlContent;
-      document.body.appendChild(container);
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const opt = {
-            margin: [0.3, 0.3, 0.3, 0.3],
-            filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-              scale: 2,
-              useCORS: true,
-              backgroundColor: '#ffffff',
-              onclone: function(clonedDoc) {
-                var el = clonedDoc.querySelector('[data-pdf-render]');
-                if (el) el.style.opacity = '1';
-              }
-            },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-          };
-          html2pdf().set(opt).from(container).save().then(() => {
-            document.body.removeChild(container);
-            resolve();
-          });
-        });
-      });
-    });
+  function saveViewState() {
+    const state = { views: [], homeHidden: $('homePanel').classList.contains('hidden'),
+      formHidden: $('formPanel').classList.contains('hidden'),
+      previewHidden: $('previewPanel').classList.contains('hidden'),
+      paperHTML: $('invoicePaper').innerHTML };
+    document.querySelectorAll('.view').forEach(v => state.views.push({ el: v, hidden: v.classList.contains('hidden') }));
+    return state;
   }
 
-  function downloadInvoicePDF(inv) {
-    const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
-    const html = types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
-    generatePDF(html, `${inv.invoiceNumber || 'invoice'}.pdf`);
+  function restoreViewState(state) {
+    state.views.forEach(s => s.hidden ? s.el.classList.add('hidden') : s.el.classList.remove('hidden'));
+    state.homeHidden ? $('homePanel').classList.add('hidden') : $('homePanel').classList.remove('hidden');
+    state.formHidden ? $('formPanel').classList.add('hidden') : $('formPanel').classList.remove('hidden');
+    state.previewHidden ? $('previewPanel').classList.add('hidden') : $('previewPanel').classList.remove('hidden');
+    $('invoicePaper').innerHTML = state.paperHTML;
   }
 
-  function downloadBulkPDF(selected, filename) {
-    let html = '';
+  function showPaperForCapture() {
+    const shield = document.createElement('div');
+    shield.id = 'pdfShield';
+    shield.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg,#f0f2f5);z-index:99999;';
+    document.body.appendChild(shield);
+
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('invoiceView').classList.remove('hidden');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+    window.scrollTo(0, 0);
+    return shield;
+  }
+
+  function capturePDF(filename) {
+    const opt = {
+      margin: [0.3, 0.3, 0.3, 0.3],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    return html2pdf().set(opt).from($('invoicePaper')).save();
+  }
+
+  async function downloadInvoicePDF(inv) {
+    const state = saveViewState();
+    loadInvoiceIntoForm(inv);
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
+    const shield = showPaperForCapture();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await capturePDF(`${inv.invoiceNumber || 'invoice'}.pdf`);
+    shield.remove();
+    restoreViewState(state);
+  }
+
+  async function downloadBulkPDF(selected, filename) {
+    if (!selected.length) return;
+    if (selected.length === 1) return downloadInvoicePDF(selected[0]);
+    const state = saveViewState();
+
+    let allHtml = '';
     selected.forEach((inv, idx) => {
-      const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
-      html += types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
-      if (idx < selected.length - 1) html += '<div class="copy-separator"></div>';
+      loadInvoiceIntoForm(inv);
+      syncCopyChecks('copyType', 'copyTypePreview');
+      const types = getSelectedCopyTypes('copyType');
+      if (!types.length) types.push('');
+      allHtml += types.map(t => buildInvoice(t)).join('<div class="copy-separator"></div>');
+      if (idx < selected.length - 1) allHtml += '<div style="page-break-before:always"></div>';
     });
-    generatePDF(html, filename);
+    $('invoicePaper').innerHTML = allHtml;
+    const shield = showPaperForCapture();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await capturePDF(filename);
+    shield.remove();
+    restoreViewState(state);
   }
 
   // ── PDF Download ──
