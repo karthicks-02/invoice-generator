@@ -1603,8 +1603,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('previewBtn').addEventListener('click', () => {
     const invNo = $('invoiceNumber').value.trim();
     const buyer = $('buyerName').value.trim();
+    const reminder = $('invoiceReminder').value;
     if (!invNo) { alert('Invoice No. is required'); $('invoiceNumber').focus(); return; }
     if (!buyer) { alert('Buyer Company Name is required'); $('buyerName').focus(); return; }
+    if (!reminder) { alert('Reminder Date is required'); $('invoiceReminder').focus(); return; }
 
     syncCopyChecks('copyType', 'copyTypePreview');
     saveCurrentInvoice();

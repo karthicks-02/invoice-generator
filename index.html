@@ -386,10 +386,10 @@
         <fieldset>
           <legend>Invoice Info</legend>
           <div class="row three">
-            <div class="field"><label>Invoice No.</label><input type="text" id="invoiceNumber" /></div>
+            <div class="field"><label>Invoice No. <span class="req">*</span></label><input type="text" id="invoiceNumber" /></div>
             <div class="field"><label>Date</label><input type="date" id="invoiceDate" /></div>
             <div class="field">
-              <label>Reminder Date</label>
+              <label>Reminder Date <span class="req">*</span></label>
               <input type="date" id="invoiceReminder" />
               <div class="reminder-preset-row" id="invReminderPresets">
                 <button type="button" class="preset-pill" data-days="30">30d</button>
@@ -411,7 +411,7 @@
         <fieldset>
           <legend>Buyer Details (Billed To)</legend>
           <div class="row">
-            <div class="field"><label>Company Name</label><input type="text" id="buyerName" /></div>
+            <div class="field"><label>Company Name <span class="req">*</span></label><input type="text" id="buyerName" /></div>
             <div class="field"><label>GSTIN</label><input type="text" id="buyerGstin" /></div>
           </div>
           <div class="field"><label>Address</label><textarea id="buyerAddress" rows="2"></textarea></div>
@@ -525,6 +525,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=44"></script>
+  <script src="script.js?v=45"></script>
 </body>
 </html>
