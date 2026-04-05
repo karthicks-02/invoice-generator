@@ -765,6 +765,22 @@ legend {
 .reminder-badge.overdue { background: var(--danger); }
 
 .row-overdue { background: #fef2f2 !important; }
+.row-paid { opacity: 0.6; }
+.row-paid:hover { opacity: 1; }
+
+/* ===== Payment History ===== */
+.btn-history {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .3rem .6rem;
+  font-size: .78rem;
+  font-family: inherit;
+  cursor: pointer;
+  color: #7c3aed;
+  transition: background .15s;
+}
+.btn-history:hover { background: #f5f3ff; }
 
 /* ===== Payment Tabs ===== */
 .pay-tabs {

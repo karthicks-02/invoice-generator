@@ -966,19 +966,6 @@ document.addEventListener('DOMContentLoaded', () => {
     savePayments();
   }
 
-  function markFullyPaid(invoiceId) {
-    const inv = invoices.find(x => x.id === invoiceId);
-    if (!inv) return;
-    const total = computeGrandTotal(inv);
-    const rec = getPaymentRecord(invoiceId);
-    const remaining = total - rec.totalPaid;
-    if (remaining > 0) {
-      rec.payments.push({ amount: remaining, date: new Date().toISOString(), note: 'Marked as fully paid' });
-      rec.totalPaid = total;
-    }
-    rec.status = 'paid';
-    savePayments();
-  }
 
   function setReminder(invoiceId, date, note) {
     const rec = getPaymentRecord(invoiceId);
@@ -998,9 +985,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const query = ($('paySearch').value || '').trim().toLowerCase();
     const custFilter = $('payCustomerFilter').value;
 
-    const unpaid = invoices.filter(inv => {
-      const rec = payments[inv.id];
-      if (rec && rec.status === 'paid') return false;
+    let filtered = invoices.filter(inv => {
       if (query) {
         const hay = [inv.invoiceNumber, inv.buyerName].join(' ').toLowerCase();
         if (!hay.includes(query)) return false;
@@ -1009,28 +994,35 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    unpaid.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    filtered.sort((a, b) => {
+      const aRec = payments[a.id], bRec = payments[b.id];
+      const aOut = computeGrandTotal(a) - (aRec ? aRec.totalPaid : 0);
+      const bOut = computeGrandTotal(b) - (bRec ? bRec.totalPaid : 0);
+      if (aOut > 0 && bOut <= 0) return -1;
+      if (aOut <= 0 && bOut > 0) return 1;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
 
     let totalOutstanding = 0;
     const companyMap = {};
 
-    unpaid.forEach(inv => {
+    filtered.forEach(inv => {
       const total = computeGrandTotal(inv);
       const rec = payments[inv.id];
       const paid = rec ? rec.totalPaid : 0;
-      const outstanding = total - paid;
+      const outstanding = Math.max(total - paid, 0);
       totalOutstanding += outstanding;
 
-      if (!companyMap[inv.buyerName]) {
-        companyMap[inv.buyerName] = { count: 0, outstanding: 0 };
-      }
-      companyMap[inv.buyerName].count++;
-      companyMap[inv.buyerName].outstanding += outstanding;
+      const name = inv.buyerName || 'Unknown';
+      if (!companyMap[name]) companyMap[name] = { count: 0, totalAmt: 0, credited: 0, outstanding: 0 };
+      companyMap[name].count++;
+      companyMap[name].totalAmt += total;
+      companyMap[name].credited += paid;
+      companyMap[name].outstanding += outstanding;
     });
 
     $('totalOutstanding').textContent = '₹' + fmtNum(totalOutstanding);
 
-    // Company summary cards
     const cardsEl = $('companySummaryCards');
     cardsEl.innerHTML = '';
     Object.keys(companyMap).sort().forEach(name => {
@@ -1039,8 +1031,9 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'company-card' + (custFilter === name ? ' active' : '');
       card.innerHTML = `
         <div class="company-card-name">${escHtml(name)}</div>
-        <div class="company-card-detail">${info.count} invoice${info.count > 1 ? 's' : ''}</div>
-        <div class="company-card-amount">₹${fmtNum(info.outstanding)}</div>`;
+        <div class="company-card-detail">${info.count} inv · Total ₹${fmtNum(info.totalAmt)}</div>
+        <div class="company-card-detail">Credited ₹${fmtNum(info.credited)}</div>
+        <div class="company-card-amount">Outstanding ₹${fmtNum(info.outstanding)}</div>`;
       card.addEventListener('click', () => {
         $('payCustomerFilter').value = custFilter === name ? '' : name;
         renderPaymentView();
@@ -1048,41 +1041,40 @@ document.addEventListener('DOMContentLoaded', () => {
       cardsEl.appendChild(card);
     });
 
-    // Customer dropdown
     const select = $('payCustomerFilter');
     const currentVal = select.value;
     const allCustomerNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))].sort();
     select.innerHTML = '<option value="">All Customers</option>';
     allCustomerNames.forEach(n => {
       const opt = document.createElement('option');
-      opt.value = n;
-      opt.textContent = n;
+      opt.value = n; opt.textContent = n;
       if (n === currentVal) opt.selected = true;
       select.appendChild(opt);
     });
 
-    // Table
     const tbody = $('payBody');
     tbody.innerHTML = '';
-    $('payEmpty').style.display = unpaid.length ? 'none' : 'block';
-    $('payTable').style.display = unpaid.length ? 'table' : 'none';
+    $('payEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('payTable').style.display = filtered.length ? 'table' : 'none';
 
     const todayStr = new Date().toISOString().split('T')[0];
 
-    unpaid.forEach(inv => {
+    filtered.forEach(inv => {
       const total = computeGrandTotal(inv);
       const rec = payments[inv.id];
       const paid = rec ? rec.totalPaid : 0;
-      const outstanding = total - paid;
+      const outstanding = Math.max(total - paid, 0);
       const days = daysSince(inv.invoiceDate || inv.createdAt);
       const reminder = rec ? rec.reminder : null;
-      const isOverdue = reminder && reminder.date <= todayStr;
+      const isOverdue = reminder && reminder.date <= todayStr && outstanding > 0;
+      const isPaid = outstanding <= 0;
 
       const tr = document.createElement('tr');
-      if (isOverdue) tr.className = 'row-overdue';
+      if (isPaid) tr.className = 'row-paid';
+      else if (isOverdue) tr.className = 'row-overdue';
 
       let reminderBadge = '';
-      if (reminder) {
+      if (reminder && !isPaid) {
         const cls = isOverdue ? 'reminder-badge overdue' : 'reminder-badge';
         reminderBadge = `<span class="${cls}" title="Reminder: ${formatShortDate(reminder.date)}${reminder.note ? ' - ' + escHtml(reminder.note) : ''}"></span>`;
       }
@@ -1092,89 +1084,21 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
         <td>${escHtml(inv.buyerName)}</td>
         <td class="r">₹${fmtNum(total)}</td>
-        <td class="r">₹${fmtNum(paid)}</td>
-        <td class="r"><strong>₹${fmtNum(outstanding)}</strong></td>
+        <td class="r">${paid > 0 ? '₹' + fmtNum(paid) : '—'}</td>
+        <td class="r"><strong>${isPaid ? '<span style="color:#059669">Paid</span>' : '₹' + fmtNum(outstanding)}</strong></td>
         <td class="c">${days}</td>
         <td class="actions">
           <button class="btn-view" data-inv-id="${inv.id}">View</button>
-          <button class="btn-pay" data-inv-id="${inv.id}">+ Pay</button>
-          <button class="btn-remind" data-inv-id="${inv.id}">Remind</button>
-          <button class="btn-markpaid" data-inv-id="${inv.id}">Paid</button>
+          ${!isPaid ? `<button class="btn-pay" data-inv-id="${inv.id}">+ Credit</button>` : ''}
+          <button class="btn-history" data-inv-id="${inv.id}">History</button>
+          ${!isPaid ? `<button class="btn-remind" data-inv-id="${inv.id}">Remind</button>` : ''}
         </td>`;
       tbody.appendChild(tr);
-    });
-
-    // Paid invoices table
-    const paidInvs = invoices.filter(inv => {
-      const rec = payments[inv.id];
-      if (!rec || rec.status !== 'paid') return false;
-      if (query) {
-        const hay = [inv.invoiceNumber, inv.buyerName].join(' ').toLowerCase();
-        if (!hay.includes(query)) return false;
-      }
-      if (custFilter && inv.buyerName !== custFilter) return false;
-      return true;
-    });
-
-    paidInvs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-
-    $('unpaidCount').textContent = unpaid.length;
-    $('paidCount').textContent = paidInvs.length;
-
-    $('paidTable').style.display = paidInvs.length ? 'table' : 'none';
-    $('paidEmpty').style.display = paidInvs.length ? 'none' : 'block';
-
-    const paidTbody = $('paidBody');
-    paidTbody.innerHTML = '';
-    paidInvs.forEach(inv => {
-      const total = computeGrandTotal(inv);
-      const rec = payments[inv.id];
-      const paid = rec ? rec.totalPaid : 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escHtml(inv.invoiceNumber)}</td>
-        <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
-        <td>${escHtml(inv.buyerName)}</td>
-        <td class="r">₹${fmtNum(total)}</td>
-        <td class="r">₹${fmtNum(paid)}</td>
-        <td class="actions">
-          <button class="btn-view" data-inv-id="${inv.id}">View</button>
-          <button class="btn-unpaid" data-inv-id="${inv.id}">Mark Unpaid</button>
-        </td>`;
-      paidTbody.appendChild(tr);
     });
   }
 
   $('paySearch').addEventListener('input', renderPaymentView);
   $('payCustomerFilter').addEventListener('change', renderPaymentView);
-
-  // Tab switching
-  document.querySelectorAll('.pay-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      $('unpaidPanel').classList.toggle('hidden', tab.dataset.tab !== 'unpaid');
-      $('paidPanel').classList.toggle('hidden', tab.dataset.tab !== 'paid');
-    });
-  });
-
-  $('paidBody').addEventListener('click', e => {
-    const id = e.target.dataset.invId;
-    if (!id) return;
-    if (e.target.classList.contains('btn-view')) {
-      viewInvoiceFromPayment(id);
-    }
-    if (e.target.classList.contains('btn-unpaid')) {
-      const rec = payments[id];
-      if (rec) {
-        rec.status = 'unpaid';
-        rec.payments = [];
-        rec.totalPaid = 0;
-        savePayments();
-        renderPaymentView();
-      }
-    }
-  });
 
   // ── Payment table actions ──
   let payFormInvoiceId = null;
@@ -1203,11 +1127,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.classList.contains('btn-pay')) {
       payFormInvoiceId = id;
       const inv = invoices.find(x => x.id === id);
+      const total = inv ? computeGrandTotal(inv) : 0;
+      const rec = payments[id];
+      const paid = rec ? rec.totalPaid : 0;
       $('payFormInvLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
+      $('payFormOutstanding').textContent = `Outstanding: ₹${fmtNum(total - paid)}`;
       $('payAmtInput').value = '';
       $('payNoteInput').value = '';
       $('payFormOverlay').classList.remove('hidden');
       $('payAmtInput').focus();
+    }
+
+    if (e.target.classList.contains('btn-history')) {
+      const inv = invoices.find(x => x.id === id);
+      const total = inv ? computeGrandTotal(inv) : 0;
+      const rec = payments[id];
+      const paidAmt = rec ? rec.totalPaid : 0;
+      $('payHistoryLabel').textContent = inv ? `Invoice ${inv.invoiceNumber} — ${inv.buyerName}` : '';
+      const list = $('payHistoryList');
+      const entries = rec && rec.payments && rec.payments.length ? rec.payments : [];
+      if (!entries.length) {
+        list.innerHTML = '<p style="color:var(--text-muted);text-align:center">No credits recorded yet.</p>';
+      } else {
+        list.innerHTML = '<table class="data-table" style="font-size:.85rem"><thead><tr><th>Date</th><th>Amount</th><th>Note</th></tr></thead><tbody>' +
+          entries.map(p => `<tr><td>${p.date ? formatShortDate(p.date.split('T')[0]) : ''}</td><td class="r">₹${fmtNum(p.amount)}</td><td>${escHtml(p.note || '')}</td></tr>`).join('') +
+          '</tbody></table>';
+      }
+      $('payHistorySummary').textContent = `Total: ₹${fmtNum(total)} · Credited: ₹${fmtNum(paidAmt)} · Outstanding: ₹${fmtNum(Math.max(total - paidAmt, 0))}`;
+      $('payHistoryOverlay').classList.remove('hidden');
     }
 
     if (e.target.classList.contains('btn-remind')) {
@@ -1220,16 +1167,13 @@ document.addEventListener('DOMContentLoaded', () => {
       $('reminderOverlay').classList.remove('hidden');
       $('reminderDateInput').focus();
     }
-
-    if (e.target.classList.contains('btn-markpaid')) {
-      if (confirm('Mark this invoice as fully paid?')) {
-        markFullyPaid(id);
-        renderPaymentView();
-      }
-    }
   });
 
-  // Add Payment form
+  $('payHistoryCloseBtn').addEventListener('click', () => {
+    $('payHistoryOverlay').classList.add('hidden');
+  });
+
+  // Add Credit form
   $('payFormSaveBtn').addEventListener('click', () => {
     const amount = parseFloat($('payAmtInput').value);
     if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
