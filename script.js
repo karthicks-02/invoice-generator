@@ -1094,6 +1094,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return Math.floor((new Date() - new Date(dateStr)) / 86400000);
   }
 
+  function getPaymentSummarySnapshot(companyName) {
+    migratePaymentCreditIds();
+    const invs = invoices.filter(inv => inv.buyerName === companyName);
+    const totalAmt = getCompanyInvoiceTotal(companyName);
+    const rec = payments[companyName];
+    const credited = rec ? rec.totalCredited : 0;
+    const outstanding = Math.max(totalAmt - credited, 0);
+    const creditEntries = rec && rec.credits ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+    const fifoRows = fifoAllocationsForCompany(companyName);
+    const openFifo = fifoRows.filter(r => r.balance > 0.005);
+    return {
+      companyName,
+      invCount: invs.length,
+      totalAmt,
+      credited,
+      outstanding,
+      payCount: creditEntries.length,
+      pendCount: openFifo.length,
+      creditEntries,
+      fifoRows,
+      openFifo,
+      generatedAt: formatDateTime(new Date().toISOString())
+    };
+  }
+
   let expandedCompany = null;
 
   // ── Render Payment View ──
@@ -1247,53 +1272,109 @@ document.addEventListener('DOMContentLoaded', () => {
     $('payFormOutstanding').classList.toggle('hidden', edit);
   }
 
-  function fillPayHistoryOverlay(name) {
-    const rec = payments[name];
-    const totalAmt = getCompanyInvoiceTotal(name);
-    const credited = rec ? rec.totalCredited : 0;
-    const out = Math.max(totalAmt - credited, 0);
-    $('payHistoryLabel').textContent = name;
-    const list = $('payHistoryList');
-    const entries = rec && rec.credits && rec.credits.length ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
-    let run = 0;
-    const creditTable = entries.length
-      ? `<div class="pay-history-pdf-row">
-          <button type="button" class="btn btn-primary btn-sm btn-pay-summary-pdf" data-company="${escHtml(name)}">Download summary PDF</button>
-          <span class="pay-history-pdf-hint">Includes payment count, totals, outstanding, pending invoices, and full FIFO allocation.</span>
+  function buildPaymentSummaryDialogHtmlFromSnapshot(s) {
+    const ne = escHtml(s.companyName);
+    let runningCred = 0;
+    const payRows = s.creditEntries.map((c, i) => {
+      runningCred += Number(c.amount) || 0;
+      const outstandingAfter = Math.max(0, s.totalAmt - runningCred);
+      const cid = escHtml(c.id || '');
+      return `<tr>
+        <td class="c">${i + 1}</td>
+        <td class="pay-sum-nowrap">${formatDateTime(c.date)}</td>
+        <td class="r pay-sum-num">₹${fmtNum(c.amount)}</td>
+        <td>${escHtml(c.note || '—')}</td>
+        <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(outstandingAfter)}</td>
+        <td class="pay-sum-act"><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${ne}" data-credit-id="${cid}">Edit</button></td>
+      </tr>`;
+    }).join('');
+
+    const pendRows = s.openFifo.length
+      ? s.openFifo.map(r => `<tr>
+          <td>${escHtml(r.inv.invoiceNumber)}</td>
+          <td class="pay-sum-nowrap">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.gross)}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.applied)}</td>
+          <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(r.balance)}</td>
+          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td class="pay-sum-act"><button type="button" class="btn-view" data-inv-id="${r.inv.id}">View</button></td>
+        </tr>`).join('')
+      : `<tr><td colspan="7" class="pay-sum-empty">No pending balances — all covered (FIFO).</td></tr>`;
+
+    const fifoRowsHtml = s.fifoRows.length
+      ? s.fifoRows.map(r => `<tr class="${r.balance <= 0.005 ? 'pay-sum-row-cleared' : ''}">
+          <td>${escHtml(r.inv.invoiceNumber)}</td>
+          <td class="pay-sum-nowrap">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.gross)}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.applied)}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.balance)}</td>
+          <td class="c">${r.balance <= 0.005 ? 'Cleared' : 'Due'}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="6" class="pay-sum-empty">No invoices.</td></tr>`;
+
+    const paymentsTbody = s.payCount
+      ? payRows
+      : `<tr><td colspan="6" class="pay-sum-empty">No credits recorded yet.</td></tr>`;
+
+    return `<div class="pay-sum-dialog">
+        <div class="pay-sum-toolbar">
+          <button type="button" class="btn btn-primary btn-sm btn-pay-summary-pdf" data-company="${ne}">Download summary PDF</button>
         </div>
-        <h4 class="pay-subhead">Payments / credits (full log)</h4>
-        <div class="pay-table-scroll">
-          <table class="data-table pay-table-tight">
-            <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Outstanding (₹)</th><th></th></tr></thead>
-            <tbody>${entries.map((c, i) => {
-              run += Number(c.amount) || 0;
-              const outstandingAfter = Math.max(0, totalAmt - run);
-              const cid = escHtml(c.id || '');
-              return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(outstandingAfter)}</td>
-                <td class="pay-credit-actions"><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(name)}" data-credit-id="${cid}">Edit</button></td></tr>`;
-            }).join('')}</tbody>
-          </table>
-        </div>`
-      : `<div class="pay-history-pdf-row">
-          <button type="button" class="btn btn-primary btn-sm btn-pay-summary-pdf" data-company="${escHtml(name)}">Download summary PDF</button>
+        <div class="pay-sum-hdr">
+          <div class="pay-sum-co">${escHtml(COMPANY.name)}</div>
+          <div class="pay-sum-title">Payment summary — outstanding &amp; credits</div>
+          <div class="pay-sum-meta"><strong>Customer:</strong> ${ne}</div>
+          <div class="pay-sum-gen">Generated: ${escHtml(s.generatedAt)}</div>
         </div>
-        <p class="pay-history-empty">No credits recorded yet.</p>`;
-    const fifo = fifoAllocationsForCompany(name);
-    const fifoTable = `<h4 class="pay-subhead pay-subhead-spaced">How credits apply (oldest invoice date first)</h4>
-      <div class="pay-table-scroll">
-        <table class="data-table pay-table-tight">
-          <thead><tr><th>Invoice No.</th><th>Invoice date</th><th class="r">Total (₹)</th><th class="r">Settled (₹)</th><th class="r">Balance (₹)</th></tr></thead>
-          <tbody>${fifo.map(r => `<tr class="${r.balance <= 0.005 ? 'row-cleared' : ''}">
-            <td>${escHtml(r.inv.invoiceNumber)}</td>
-            <td>${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
-            <td class="r">${fmtNum(r.gross)}</td>
-            <td class="r">${fmtNum(r.applied)}</td>
-            <td class="r">${fmtNum(r.balance)}</td>
-          </tr>`).join('')}</tbody>
+
+        <h4 class="pay-sum-h4">Figures at a glance</h4>
+        <table class="pay-sum-table pay-sum-figures">
+          <colgroup><col style="width:58%"><col style="width:42%"></colgroup>
+          <tbody>
+            <tr class="pay-sum-zebra"><td>Invoices billed (no.)</td><td class="r pay-sum-strong">${s.invCount}</td></tr>
+            <tr><td>Total billed</td><td class="r pay-sum-num">₹${fmtNum(s.totalAmt)}</td></tr>
+            <tr class="pay-sum-zebra"><td>Payments recorded (no.)</td><td class="r pay-sum-strong">${s.payCount}</td></tr>
+            <tr><td>Total credited</td><td class="r pay-sum-num">₹${fmtNum(s.credited)}</td></tr>
+            <tr class="pay-sum-out-row"><td><strong>Outstanding</strong></td><td class="r pay-sum-strong">₹${fmtNum(s.outstanding)}</td></tr>
+            <tr><td>Invoices with balance due (no.)</td><td class="r pay-sum-strong">${s.pendCount}</td></tr>
+          </tbody>
         </table>
+        <p class="pay-sum-fifo-note">Credits apply oldest invoice date first (FIFO).</p>
+
+        <h4 class="pay-sum-h4">Payments (chronological)</h4>
+        <div class="pay-table-scroll pay-sum-scroll">
+          <table class="pay-sum-table pay-sum-payments">
+            <colgroup><col class="pay-sum-c5"><col class="pay-sum-c20"><col class="pay-sum-c17"><col class="pay-sum-c30"><col class="pay-sum-c18"><col class="pay-sum-c10"></colgroup>
+            <thead><tr><th class="c">#</th><th>When</th><th class="r">Amount</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
+            <tbody>${paymentsTbody}</tbody>
+          </table>
+        </div>
+
+        <h4 class="pay-sum-h4">Invoices pending</h4>
+        <div class="pay-table-scroll pay-sum-scroll">
+          <table class="pay-sum-table pay-sum-pending">
+            <colgroup><col class="pay-sum-p17"><col class="pay-sum-p14"><col class="pay-sum-p16"><col class="pay-sum-p17"><col class="pay-sum-p18"><col class="pay-sum-p10"><col class="pay-sum-p8"></colgroup>
+            <thead><tr><th>Inv. no.</th><th>Date</th><th class="r">Total</th><th class="r">Settled</th><th class="r">Balance</th><th class="c">Days</th><th></th></tr></thead>
+            <tbody>${pendRows}</tbody>
+          </table>
+        </div>
+
+        <h4 class="pay-sum-h4">All invoices — FIFO allocation</h4>
+        <div class="pay-table-scroll pay-sum-scroll">
+          <table class="pay-sum-table pay-sum-fifoalloc">
+            <colgroup><col class="pay-sum-p17"><col class="pay-sum-p14"><col class="pay-sum-p16"><col class="pay-sum-p17"><col class="pay-sum-p18"><col class="pay-sum-p18"></colgroup>
+            <thead><tr><th>Inv. no.</th><th>Date</th><th class="r">Total</th><th class="r">Settled</th><th class="r">Balance</th><th class="c">Status</th></tr></thead>
+            <tbody>${fifoRowsHtml}</tbody>
+          </table>
+        </div>
       </div>`;
-    list.innerHTML = creditTable + fifoTable;
-    $('payHistorySummary').textContent = `Billed total ₹${fmtNum(totalAmt)} · Credits ₹${fmtNum(credited)} · Outstanding ₹${fmtNum(out)}`;
+  }
+
+  function fillPayHistoryOverlay(name) {
+    $('payHistoryLabel').textContent = name;
+    const snapshot = getPaymentSummarySnapshot(name);
+    $('payHistoryList').innerHTML = buildPaymentSummaryDialogHtmlFromSnapshot(snapshot);
+    $('payHistorySummary').textContent = `Billed ₹${fmtNum(snapshot.totalAmt)} · Credits ₹${fmtNum(snapshot.credited)} · Outstanding ₹${fmtNum(snapshot.outstanding)}`;
   }
 
   function viewInvoiceFromPayment(id) {
@@ -1393,6 +1474,14 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       e.preventDefault();
       downloadCompanyPaymentSummaryPDF(pdfBtn.dataset.company).catch(() => alert('Could not generate PDF. Try again.'));
+      return;
+    }
+    const vw = e.target.closest('.btn-view');
+    if (vw && vw.dataset.invId && e.target.closest('#payHistoryOverlay')) {
+      e.stopPropagation();
+      viewInvoiceFromPayment(vw.dataset.invId);
+      $('payHistoryOverlay').classList.add('hidden');
+      payHistoryOpenCompany = null;
       return;
     }
     const ed = e.target.closest('.btn-edit-credit');
@@ -2187,17 +2276,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   function buildPaymentSummaryPdfHtml(companyName) {
-    migratePaymentCreditIds();
-    const invs = invoices.filter(inv => inv.buyerName === companyName);
-    const totalAmt = getCompanyInvoiceTotal(companyName);
-    const rec = payments[companyName];
-    const credited = rec ? rec.totalCredited : 0;
-    const outstanding = Math.max(totalAmt - credited, 0);
-    const creditEntries = rec && rec.credits ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
-    const payCount = creditEntries.length;
-    const fifoRows = fifoAllocationsForCompany(companyName);
-    const openFifo = fifoRows.filter(r => r.balance > 0.005);
-    const pendCount = openFifo.length;
+    const s = getPaymentSummarySnapshot(companyName);
 
     const td = 'padding:3px 4px;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word;';
     const th = 'padding:3px 4px;font-weight:700;text-align:left;';
@@ -2221,9 +2300,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let runningCred = 0;
-    const payRows = creditEntries.map((c, i) => {
+    const payRows = s.creditEntries.map((c, i) => {
       runningCred += Number(c.amount) || 0;
-      const outAfter = Math.max(0, totalAmt - runningCred);
+      const outAfter = Math.max(0, s.totalAmt - runningCred);
       return `<tr style="border-bottom:1px solid #e2e8f0">
         <td style="${td}text-align:center">${i + 1}</td>
         <td style="${td}font-size:7px;">${pdfWhen(c.date)}</td>
@@ -2233,8 +2312,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`;
     }).join('');
 
-    const pendRows = openFifo.length
-      ? openFifo.map(r => `<tr style="border-bottom:1px solid #e2e8f0">
+    const pendRows = s.openFifo.length
+      ? s.openFifo.map(r => `<tr style="border-bottom:1px solid #e2e8f0">
           <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
           <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
           <td style="${amt}">₹${fmtNum(r.gross)}</td>
@@ -2244,8 +2323,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </tr>`).join('')
       : `<tr><td colspan="6" style="padding:8px;text-align:center;color:#059669">No pending balances — all covered (FIFO).</td></tr>`;
 
-    const allInvRows = fifoRows.length
-      ? fifoRows.map(r => `<tr style="border-bottom:1px solid #e2e8f0;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
+    const allInvRows = s.fifoRows.length
+      ? s.fifoRows.map(r => `<tr style="border-bottom:1px solid #e2e8f0;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
         <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
         <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
         <td style="${amt}">₹${fmtNum(r.gross)}</td>
@@ -2255,25 +2334,23 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`).join('')
       : `<tr><td colspan="6" style="padding:8px;text-align:center">No invoices.</td></tr>`;
 
-    const genAt = formatDateTime(new Date().toISOString());
-
     return `<div class="pay-pdf-root" style="box-sizing:border-box;width:100%;max-width:100%;padding:8px 6px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.35;">
       <div style="border-bottom:2px solid #1e3a5f;padding-bottom:8px;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700;color:#1e3a5f">${esc(COMPANY.name)}</div>
         <div style="font-size:11px;font-weight:700;margin-top:4px">Payment summary — outstanding &amp; credits</div>
-        <div style="margin-top:6px;font-size:10px"><strong>Customer:</strong> ${esc(companyName)}</div>
-        <div style="margin-top:2px;font-size:8px;color:#64748b">Generated: ${esc(genAt)}</div>
+        <div style="margin-top:6px;font-size:10px"><strong>Customer:</strong> ${esc(s.companyName)}</div>
+        <div style="margin-top:2px;font-size:8px;color:#64748b">Generated: ${esc(s.generatedAt)}</div>
       </div>
 
       <div style="font-size:10px;font-weight:700;margin:8px 0 4px">Figures at a glance</div>
       <table style="${tbl}margin-bottom:10px">
         <colgroup><col style="width:58%"><col style="width:42%"></colgroup>
-        <tr style="background:#f1f5f9"><td style="${td}">Invoices billed (no.)</td><td style="${amt}font-weight:700;">${invs.length}</td></tr>
-        <tr><td style="${td}">Total billed</td><td style="${amt}">₹${fmtNum(totalAmt)}</td></tr>
-        <tr style="background:#f8fafc"><td style="${td}">Payments recorded (no.)</td><td style="${amt}font-weight:700;">${payCount}</td></tr>
-        <tr><td style="${td}">Total credited</td><td style="${amt}">₹${fmtNum(credited)}</td></tr>
-        <tr style="background:#fef2f2"><td style="${td}"><strong>Outstanding</strong></td><td style="${amt}"><strong>₹${fmtNum(outstanding)}</strong></td></tr>
-        <tr><td style="${td}">Invoices with balance due (no.)</td><td style="${amt}font-weight:700;">${pendCount}</td></tr>
+        <tr style="background:#f1f5f9"><td style="${td}">Invoices billed (no.)</td><td style="${amt}font-weight:700;">${s.invCount}</td></tr>
+        <tr><td style="${td}">Total billed</td><td style="${amt}">₹${fmtNum(s.totalAmt)}</td></tr>
+        <tr style="background:#f8fafc"><td style="${td}">Payments recorded (no.)</td><td style="${amt}font-weight:700;">${s.payCount}</td></tr>
+        <tr><td style="${td}">Total credited</td><td style="${amt}">₹${fmtNum(s.credited)}</td></tr>
+        <tr style="background:#fef2f2"><td style="${td}"><strong>Outstanding</strong></td><td style="${amt}"><strong>₹${fmtNum(s.outstanding)}</strong></td></tr>
+        <tr><td style="${td}">Invoices with balance due (no.)</td><td style="${amt}font-weight:700;">${s.pendCount}</td></tr>
       </table>
       <p style="margin:0 0 10px;font-size:7px;color:#475569">Credits apply oldest invoice date first (FIFO).</p>
 
@@ -2287,7 +2364,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <th style="${th}font-size:7px;">Note</th>
           <th style="${thR}font-size:7px;">Outstd.</th>
         </tr></thead>
-        <tbody>${payCount ? payRows : `<tr><td colspan="5" style="padding:8px;text-align:center">No credits yet.</td></tr>`}</tbody>
+        <tbody>${s.payCount ? payRows : `<tr><td colspan="5" style="padding:8px;text-align:center">No credits yet.</td></tr>`}</tbody>
       </table>
 
       <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Invoices pending</div>

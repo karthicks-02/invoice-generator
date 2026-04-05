@@ -932,12 +932,84 @@ legend {
   font-variant-numeric: tabular-nums;
 }
 
-.pay-history-box { max-width: 720px; width: calc(100% - 2rem); }
+.pay-history-box {
+  max-width: min(1040px, 96vw);
+  width: calc(100% - 1.5rem);
+}
 .pay-history-scroll {
-  max-height: min(70vh, 520px);
+  max-height: min(78vh, 720px);
   overflow-y: auto;
   margin-bottom: 1rem;
 }
+
+/* Payment summary dialog — same sections as PDF */
+.pay-sum-dialog { font-size: .85rem; color: var(--text); line-height: 1.4; }
+.pay-sum-toolbar { margin-bottom: 0.75rem; }
+.pay-sum-hdr {
+  border-bottom: 2px solid #1e3a5f;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+.pay-sum-co { font-size: 1.05rem; font-weight: 700; color: #1e3a5f; letter-spacing: 0.02em; }
+.pay-sum-title { font-size: 0.95rem; font-weight: 700; margin-top: 0.35rem; color: var(--text); }
+.pay-sum-meta { margin-top: 0.5rem; font-size: 0.88rem; }
+.pay-sum-gen { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+.pay-sum-h4 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 1rem 0 0.4rem;
+  color: var(--text);
+}
+.pay-sum-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.78rem;
+  border: 1px solid #94a3b8;
+  margin-bottom: 0.25rem;
+}
+.pay-sum-table thead th {
+  background: #1e3a5f;
+  color: #fff;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.pay-sum-table-fifoalloc thead th { background: #334155; }
+.pay-sum-table td {
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.pay-sum-figures td { padding: 0.45rem 0.5rem; }
+.pay-sum-zebra { background: #f1f5f9; }
+.pay-sum-out-row { background: #fef2f2 !important; }
+.pay-sum-num { font-variant-numeric: tabular-nums; }
+.pay-sum-strong { font-weight: 700; }
+.pay-sum-row-cleared { color: #64748b; }
+.pay-sum-fifo-note { font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.85rem; line-height: 1.35; }
+.pay-sum-empty { text-align: center; padding: 0.75rem !important; color: var(--text-muted); }
+.pay-sum-nowrap { white-space: nowrap; font-size: 0.72rem; }
+.pay-sum-act { white-space: nowrap; vertical-align: middle !important; }
+.pay-sum-scroll { margin-bottom: 0.35rem; }
+.pay-sum-table .r { text-align: right; }
+.pay-sum-table .c { text-align: center; }
+.pay-sum-c5 { width: 5%; }
+.pay-sum-c20 { width: 20%; }
+.pay-sum-c17 { width: 17%; }
+.pay-sum-c30 { width: 30%; }
+.pay-sum-c18 { width: 18%; }
+.pay-sum-c10 { width: 10%; }
+.pay-sum-p17 { width: 17%; }
+.pay-sum-p14 { width: 14%; }
+.pay-sum-p16 { width: 16%; }
+.pay-sum-p18 { width: 18%; }
+.pay-sum-p10 { width: 10%; }
+.pay-sum-p8 { width: 8%; }
+.pay-sum-table .btn-view { font-size: 0.72rem; padding: 0.2rem 0.45rem; }
 
 @media (max-width: 600px) {
   .pay-company-header { grid-template-columns: 1fr; }
