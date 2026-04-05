@@ -121,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
       cameFromInvoiceList = false;
       showView('invoiceListView');
       renderInvoiceList();
-      if (!$('chartBody').classList.contains('hidden')) renderRevenueChart();
     } else {
       goHome();
     }
@@ -133,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
-      if (card.dataset.view === 'invoiceListView') { renderInvoiceList(); if (!$('chartBody').classList.contains('hidden')) renderRevenueChart(); }
+      if (card.dataset.view === 'invoiceListView') renderInvoiceList();
       if (card.dataset.view === 'invoiceView') { resetInvoiceForm(); }
       if (card.dataset.view === 'paymentView') renderPaymentView();
     });
@@ -724,62 +723,139 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Revenue Chart ──
+  // ── Revenue Graph (Dialog) ──
   let revenueChart = null;
+  let graphMode = 'monthly';
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  function renderRevenueChart() {
-    const yearSelect = $('chartYear');
+  function populateChartYear() {
+    const sel = $('chartYear');
     const years = [...new Set(invoices.map(inv => {
       const d = inv.invoiceDate || inv.createdAt;
       return d ? new Date(d).getFullYear() : null;
     }).filter(Boolean))].sort((a, b) => b - a);
-
     if (!years.length) years.push(new Date().getFullYear());
-    const currentVal = yearSelect.value;
-    yearSelect.innerHTML = '';
+    const cur = sel.value;
+    sel.innerHTML = '';
     years.forEach(y => {
-      const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y;
-      if (String(y) === currentVal) opt.selected = true;
-      yearSelect.appendChild(opt);
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (String(y) === cur) o.selected = true;
+      sel.appendChild(o);
     });
-    if (!currentVal) yearSelect.value = years[0];
+    if (!cur) sel.value = years[0];
+  }
 
-    const selYear = parseInt(yearSelect.value);
-    const monthlyRevenue = new Array(12).fill(0);
-
-    invoices.forEach(inv => {
-      const dateStr = inv.invoiceDate || inv.createdAt;
-      if (!dateStr) return;
-      const d = new Date(dateStr);
-      if (d.getFullYear() !== selYear) return;
-      monthlyRevenue[d.getMonth()] += computeGrandTotal(inv);
+  function populateChartMonth() {
+    const sel = $('chartMonth');
+    const cur = sel.value;
+    sel.innerHTML = '';
+    MONTHS_SHORT.forEach((m, i) => {
+      const o = document.createElement('option');
+      o.value = i; o.textContent = m;
+      sel.appendChild(o);
     });
+    sel.value = cur || new Date().getMonth();
+  }
 
+  function renderGraph() {
     const ctx = $('revenueChart').getContext('2d');
     if (revenueChart) revenueChart.destroy();
 
+    let labels = [], data = [];
+
+    if (graphMode === 'monthly') {
+      const year = parseInt($('chartYear').value);
+      labels = [...MONTHS_SHORT];
+      data = new Array(12).fill(0);
+      invoices.forEach(inv => {
+        const ds = inv.invoiceDate || inv.createdAt;
+        if (!ds) return;
+        const d = new Date(ds);
+        if (d.getFullYear() === year) data[d.getMonth()] += computeGrandTotal(inv);
+      });
+
+    } else if (graphMode === 'weekly') {
+      const year = parseInt($('chartYear').value);
+      const month = parseInt($('chartMonth').value);
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      let weekStart = new Date(firstDay);
+      let weekNum = 1;
+      while (weekStart <= lastDay) {
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const wEnd = weekEnd > lastDay ? lastDay : weekEnd;
+        const wsStr = weekStart.toISOString().split('T')[0];
+        const weStr = wEnd.toISOString().split('T')[0];
+        labels.push('W' + weekNum);
+        let total = 0;
+        invoices.forEach(inv => {
+          const ds = inv.invoiceDate;
+          if (ds && ds >= wsStr && ds <= weStr) total += computeGrandTotal(inv);
+        });
+        data.push(total);
+        weekStart.setDate(weekStart.getDate() + 7);
+        weekNum++;
+      }
+
+    } else if (graphMode === 'yearly') {
+      const yearSet = [...new Set(invoices.map(inv => {
+        const d = inv.invoiceDate || inv.createdAt;
+        return d ? new Date(d).getFullYear() : null;
+      }).filter(Boolean))].sort();
+      if (!yearSet.length) yearSet.push(new Date().getFullYear());
+      labels = yearSet.map(String);
+      data = yearSet.map(y => {
+        let total = 0;
+        invoices.forEach(inv => {
+          const ds = inv.invoiceDate || inv.createdAt;
+          if (ds && new Date(ds).getFullYear() === y) total += computeGrandTotal(inv);
+        });
+        return total;
+      });
+
+    } else if (graphMode === 'custom') {
+      const from = $('graphCustomFrom').value;
+      const to = $('graphCustomTo').value;
+      if (!from || !to) {
+        revenueChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true } });
+        return;
+      }
+      const filtered = invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+      const dayMap = {};
+      filtered.forEach(inv => {
+        dayMap[inv.invoiceDate] = (dayMap[inv.invoiceDate] || 0) + computeGrandTotal(inv);
+      });
+      const days = Object.keys(dayMap).sort();
+      labels = days.map(d => formatShortDate(d));
+      data = days.map(d => dayMap[d]);
+    }
+
     revenueChart = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        labels,
         datasets: [{
           label: 'Revenue (₹)',
-          data: monthlyRevenue,
-          backgroundColor: 'rgba(26, 58, 92, 0.7)',
+          data,
           borderColor: '#1a3a5c',
-          borderWidth: 1,
-          borderRadius: 4
+          backgroundColor: 'rgba(26, 58, 92, 0.1)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true,
+          pointBackgroundColor: '#1a3a5c',
+          pointRadius: 4
         }]
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: ctx => '₹' + ctx.raw.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+              label: c => '₹' + c.raw.toLocaleString('en-IN', { minimumFractionDigits: 2 })
             }
           }
         },
@@ -795,17 +871,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  $('chartYear').addEventListener('change', renderRevenueChart);
+  function updateGraphFilters() {
+    $('chartYear').classList.toggle('hidden', graphMode === 'custom');
+    $('chartMonth').classList.toggle('hidden', graphMode !== 'weekly');
+    $('graphCustomRow').classList.toggle('hidden', graphMode !== 'custom');
+    $('graphFilters').classList.toggle('hidden', graphMode === 'custom');
+  }
 
-  $('toggleChartBtn').addEventListener('click', () => {
-    const body = $('chartBody');
-    const yearSel = $('chartYear');
-    const btn = $('toggleChartBtn');
-    const isHidden = body.classList.contains('hidden');
-    body.classList.toggle('hidden');
-    yearSel.classList.toggle('hidden');
-    btn.textContent = isHidden ? 'Hide Graph' : 'Show Graph';
-    if (isHidden) renderRevenueChart();
+  $('openGraphBtn').addEventListener('click', () => {
+    populateChartYear();
+    populateChartMonth();
+    updateGraphFilters();
+    $('graphOverlay').classList.remove('hidden');
+    renderGraph();
+  });
+
+  $('graphCloseBtn').addEventListener('click', () => {
+    $('graphOverlay').classList.add('hidden');
+  });
+
+  document.querySelectorAll('.graph-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.graph-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      graphMode = tab.dataset.mode;
+      updateGraphFilters();
+      renderGraph();
+    });
+  });
+
+  $('chartYear').addEventListener('change', renderGraph);
+  $('chartMonth').addEventListener('change', renderGraph);
+  $('graphCustomFrom').addEventListener('change', renderGraph);
+  $('graphCustomTo').addEventListener('change', renderGraph);
+
+  $('graphDownloadBtn').addEventListener('click', () => {
+    const canvas = $('revenueChart');
+    const link = document.createElement('a');
+    link.download = `revenue-${graphMode}-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   });
 
   // ══════════════════════════════════════
