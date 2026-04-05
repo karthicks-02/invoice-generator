@@ -503,6 +503,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const pk = Math.round(Number(row.packages));
           row.packages = Number.isFinite(pk) && pk >= 0 ? pk : 0;
+          if (row.rate != null && row.rate !== '') {
+            const r = Math.round(Number(row.rate) * 100) / 100;
+            row.rate = Number.isFinite(r) && r >= 0 ? r : null;
+          }
           return row;
         })
       : [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
@@ -1969,7 +1973,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function rateInputDisplay(v) {
     if (v == null || v === '') return '';
     const n = Number(v);
-    return Number.isFinite(n) && n !== 0 ? String(v) : '';
+    if (!Number.isFinite(n) || n === 0) return '';
+    const r = Math.round(n * 100) / 100;
+    return String(r);
+  }
+
+  function parseRateToStore(raw) {
+    const t = String(raw).trim().replace(/,/g, '');
+    if (t === '' || t === '.') return null;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) return null;
+    if (n === 0) return 0;
+    return Math.round(n * 100) / 100;
   }
 
   function parseQtyToStore(raw) {
@@ -2010,7 +2025,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" /></td>
         <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(packagesInputDisplay(item.packages))}" data-i="${i}" data-f="packages" /></td>
         <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(qtyInputDisplay(item.qty))}" data-i="${i}" data-f="qty" /></td>
-        <td><input type="number" value="${rateInputDisplay(item.rate)}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
+        <td><input type="text" class="inv-qty-input inv-rate-input" inputmode="decimal" autocomplete="off" value="${esc(rateInputDisplay(item.rate))}" data-i="${i}" data-f="rate" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
         <td><button type="button" class="btn-delete" data-i="${i}" title="Remove">&times;</button></td>
       `;
@@ -2030,8 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (f === 'qty') {
       items[i].qty = parseQtyToStore(inp.value);
     } else if (f === 'rate') {
-      const t = inp.value.trim();
-      items[i].rate = t === '' ? null : (parseFloat(t) || 0);
+      items[i].rate = parseRateToStore(inp.value);
     }
     if (f === 'qty' || f === 'rate') {
       const amtDiv = inp.closest('tr').querySelector('.amount-display');
@@ -2039,11 +2053,6 @@ document.addEventListener('DOMContentLoaded', () => {
       amtDiv.textContent = '₹' + fmtNum(q * (Number(items[i].rate) || 0));
     }
   });
-
-  // Stop mouse-wheel from changing number inputs (often causes off-by-one when scrolling the page).
-  $('itemsBody').addEventListener('wheel', e => {
-    if (e.target.matches && e.target.matches('input[type="number"]')) e.preventDefault();
-  }, { passive: false });
 
   $('itemsBody').addEventListener('click', e => {
     if (e.target.classList.contains('btn-delete')) {

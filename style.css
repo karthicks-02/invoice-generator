@@ -141,6 +141,7 @@ input[aria-invalid="true"] {
 }
 .items-table input:focus { outline: none; border-color: var(--primary); }
 .items-table input.inv-qty-input { font-variant-numeric: tabular-nums; }
+.items-table input.inv-rate-input { min-width: 4.5rem; }
 .col-desc { width: 30%; }
 .col-hsn { width: 14%; }
 .col-pkg { width: 12%; }
