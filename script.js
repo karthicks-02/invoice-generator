@@ -428,10 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
       editingInvoiceId = data.id;
     }
     saveInvoices();
-
-    if (data.reminderDate) {
-      setReminder(data.id || editingInvoiceId, data.reminderDate, 'Payment reminder');
-    }
   }
 
   function loadInvoiceIntoForm(inv) {
