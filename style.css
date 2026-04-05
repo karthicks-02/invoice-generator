@@ -129,6 +129,7 @@ legend {
   background: #fafbfc;
 }
 .items-table input:focus { outline: none; border-color: var(--primary); }
+.items-table input.inv-qty-input { font-variant-numeric: tabular-nums; }
 .col-desc { width: 30%; }
 .col-hsn { width: 14%; }
 .col-pkg { width: 12%; }

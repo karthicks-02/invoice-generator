@@ -465,7 +465,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('gstType').value = inv.gstType || 'intra';
     $('invoiceReminder').value = inv.reminderDate || '';
 
-    items = (inv.items && inv.items.length) ? inv.items.map(it => ({ ...it })) : [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
+    items = (inv.items && inv.items.length)
+      ? inv.items.map(it => {
+          const row = { ...it };
+          if (row.qty != null && row.qty !== '') {
+            const n = Math.round(Number(row.qty));
+            row.qty = Number.isFinite(n) ? n : null;
+          }
+          return row;
+        })
+      : [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
     renderItems();
 
     if (inv.copyTypes && inv.copyTypes.length) {
@@ -511,7 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function computeGrandTotal(inv) {
     let subtotal = 0;
-    (inv.items || []).forEach(it => { subtotal += (it.qty || 0) * (it.rate || 0); });
+    (inv.items || []).forEach(it => {
+      const q = Math.round(Number(it.qty) || 0);
+      subtotal += q * (Number(it.rate) || 0);
+    });
     const rate = inv.gstRate || 0;
     const tax = inv.gstType === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
     return Math.round(subtotal + tax);
@@ -1855,13 +1867,19 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push(`Name: ${shipName || '—'}`);
     lines.push(`Address: ${String(shipAddr || '').replace(/\n/g, ', ')}`);
     lines.push(`Pincode: ${extractPincode(shipAddr) || '—'}`);
-    lines.push(`State: ${stateNameFromGstin(data.buyerGstin)}`);
+    if (data.sameAsBuyer !== false) {
+      lines.push(`GSTIN: ${(data.buyerGstin || '').trim() || '—'}`);
+      lines.push(`State: ${stateNameFromGstin(data.buyerGstin)}`);
+    } else {
+      lines.push('GSTIN: — (not on invoice when ship-to differs; add on portal if needed)');
+      lines.push('State: — (from consignee on portal)');
+    }
     lines.push('');
     lines.push('--- Line items (taxable = qty × rate) ---');
     let subtotal = 0;
     let lineNo = 0;
     (data.items || []).forEach(it => {
-      const qty = Number(it.qty) || 0;
+      const qty = Math.round(Number(it.qty) || 0);
       const rate = Number(it.rate) || 0;
       const taxable = qty * rate;
       const hasLine = ((it.description || '').trim() || (it.hsn || '').trim()) || taxable > 0;
@@ -1902,10 +1920,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Items management ──
   let items = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
 
-  function qtyRateInputValue(v) {
+  /** Integer qty for NOS; avoids float noise (e.g. 1599.999…) and matches invoice display. */
+  function qtyInputDisplay(v) {
+    if (v == null || v === '') return '';
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n) || n === 0) return '';
+    return String(n);
+  }
+
+  function rateInputDisplay(v) {
     if (v == null || v === '') return '';
     const n = Number(v);
-    return Number.isFinite(n) && n !== 0 ? v : '';
+    return Number.isFinite(n) && n !== 0 ? String(v) : '';
+  }
+
+  function parseQtyToStore(raw) {
+    const t = String(raw).trim().replace(/,/g, '');
+    if (t === '') return null;
+    const n = Number(t);
+    if (!Number.isFinite(n)) return null;
+    return Math.round(n);
   }
 
   function formatBags(n) {
@@ -1917,14 +1951,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = $('itemsBody');
     tbody.innerHTML = '';
     items.forEach((item, i) => {
-      const amount = (item.qty || 0) * (item.rate || 0);
+      const amount = (Math.round(Number(item.qty) || 0)) * (Number(item.rate) || 0);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" /></td>
         <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" /></td>
         <td><input type="number" value="${item.packages || ''}" data-i="${i}" data-f="packages" min="0" step="1" /></td>
-        <td><input type="number" value="${qtyRateInputValue(item.qty)}" data-i="${i}" data-f="qty" min="0" step="1" /></td>
-        <td><input type="number" value="${qtyRateInputValue(item.rate)}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
+        <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(qtyInputDisplay(item.qty))}" data-i="${i}" data-f="qty" /></td>
+        <td><input type="number" value="${rateInputDisplay(item.rate)}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
         <td><button type="button" class="btn-delete" data-i="${i}" title="Remove">&times;</button></td>
       `;
@@ -1942,17 +1976,22 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (f === 'packages') {
       items[i].packages = parseInt(inp.value) || 0;
     } else if (f === 'qty') {
-      const t = inp.value.trim();
-      items[i].qty = t === '' ? null : (parseFloat(t) || 0);
+      items[i].qty = parseQtyToStore(inp.value);
     } else if (f === 'rate') {
       const t = inp.value.trim();
       items[i].rate = t === '' ? null : (parseFloat(t) || 0);
     }
     if (f === 'qty' || f === 'rate') {
       const amtDiv = inp.closest('tr').querySelector('.amount-display');
-      amtDiv.textContent = '₹' + fmtNum((items[i].qty || 0) * (items[i].rate || 0));
+      const q = Math.round(Number(items[i].qty) || 0);
+      amtDiv.textContent = '₹' + fmtNum(q * (Number(items[i].rate) || 0));
     }
   });
+
+  // Stop mouse-wheel from changing number inputs (often causes off-by-one when scrolling the page).
+  $('itemsBody').addEventListener('wheel', e => {
+    if (e.target.matches && e.target.matches('input[type="number"]')) e.preventDefault();
+  }, { passive: false });
 
   $('itemsBody').addEventListener('click', e => {
     if (e.target.classList.contains('btn-delete')) {
@@ -2087,19 +2126,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortDate = invoiceDate ? formatShortDate(invoiceDate) : '';
     const poDate = $('poDate').value ? formatShortDate($('poDate').value) : '';
 
-    const consigneeName = $('sameAsBuyer').checked ? $('buyerName').value : $('consigneeName').value;
-    const consigneeAddr = $('sameAsBuyer').checked ? $('buyerAddress').value : $('consigneeAddress').value;
+    const sameAsBuyerShip = $('sameAsBuyer').checked;
+    const consigneeName = sameAsBuyerShip ? $('buyerName').value : $('consigneeName').value;
+    const consigneeAddr = sameAsBuyerShip ? $('buyerAddress').value : $('consigneeAddress').value;
 
     let subtotal = 0;
     const itemRows = items.map((item, i) => {
-      const amt = item.qty * item.rate;
+      const q = Math.round(Number(item.qty) || 0);
+      const r = Number(item.rate) || 0;
+      const amt = q * r;
       subtotal += amt;
       return `<tr>
         <td class="c">${i + 1}</td>
         <td class="l">${esc(item.description).toUpperCase() || '—'}</td>
         <td class="c">${esc(item.hsn)}</td>
         <td class="c">${formatBags(item.packages)}</td>
-        <td class="c">${item.qty}</td>
+        <td class="c">${q}</td>
         <td class="c">${fmtNum(item.rate)}</td>
         <td class="r">${fmtNum(amt)}</td>
       </tr>`;
@@ -2171,7 +2213,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
               ${$('contactPerson').value.trim() ? `<div style="margin-bottom:4px">Contact Name : ${esc($('contactPerson').value).toUpperCase()}</div>` : ''}
               <div style="margin-bottom:4px">Contact : ${esc($('contactPhone').value)}</div>
-              <div>GSTIN : ${esc($('buyerGstin').value)}</div>
+              ${sameAsBuyerShip ? `<div>GSTIN : ${esc($('buyerGstin').value)}</div>` : ''}
             </td>
             <td class="inv-flbl">P.Order No.</td>
             <td>${esc($('poNumber').value)}</td>
@@ -2291,19 +2333,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const gstType = inv.gstType || 'intra';
     const shortDate = inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '';
     const poDate = inv.poDate ? formatShortDate(inv.poDate) : '';
-    const consigneeName = inv.sameAsBuyer !== false ? (inv.buyerName || '') : (inv.consigneeName || '');
-    const consigneeAddr = inv.sameAsBuyer !== false ? (inv.buyerAddress || '') : (inv.consigneeAddress || '');
+    const sameAsBuyerShip = inv.sameAsBuyer !== false;
+    const consigneeName = sameAsBuyerShip ? (inv.buyerName || '') : (inv.consigneeName || '');
+    const consigneeAddr = sameAsBuyerShip ? (inv.buyerAddress || '') : (inv.consigneeAddress || '');
 
     let subtotal = 0;
     const itemRows = (inv.items || []).map((item, i) => {
-      const amt = (item.qty || 0) * (item.rate || 0);
+      const q = Math.round(Number(item.qty) || 0);
+      const r = Number(item.rate) || 0;
+      const amt = q * r;
       subtotal += amt;
       return `<tr>
         <td class="c">${i + 1}</td>
         <td class="l">${esc(item.description).toUpperCase() || '—'}</td>
         <td class="c">${esc(item.hsn)}</td>
         <td class="c">${formatBags(item.packages)}</td>
-        <td class="c">${item.qty || 0}</td>
+        <td class="c">${q}</td>
         <td class="c">${fmtNum(item.rate || 0)}</td>
         <td class="r">${fmtNum(amt)}</td>
       </tr>`;
@@ -2355,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
               ${(inv.contactPerson || '').trim() ? `<div style="margin-bottom:4px">Contact Name : ${esc(inv.contactPerson).toUpperCase()}</div>` : ''}
               <div style="margin-bottom:4px">Contact : ${esc(inv.contactPhone)}</div>
-              <div>GSTIN : ${esc(inv.buyerGstin)}</div>
+              ${sameAsBuyerShip ? `<div>GSTIN : ${esc(inv.buyerGstin)}</div>` : ''}
             </td>
             <td class="inv-flbl">P.Order No.</td><td>${esc(inv.poNumber)}</td>
             <td class="inv-flbl">P.O. Date</td><td>${poDate}</td>
