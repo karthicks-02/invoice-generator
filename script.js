@@ -1020,33 +1020,38 @@ document.addEventListener('DOMContentLoaded', () => {
         reminderBadge = `<span class="${cls}" title="Reminder: ${formatShortDate(co.reminder.date)}${co.reminder.note ? ' - ' + escHtml(co.reminder.note) : ''}"></span>`;
       }
 
+      const rec = payments[co.name];
+      const lastCredit = rec && rec.credits && rec.credits.length ? rec.credits[rec.credits.length - 1] : null;
+      const lastCreditDate = lastCredit ? formatShortDate(lastCredit.date.split('T')[0]) : '';
+
       section.innerHTML = `
         <div class="pay-company-header" data-company="${escHtml(co.name)}">
-          <div class="pay-company-info">
+          <div class="pay-company-top">
             <span class="pay-company-toggle">${isExpanded ? '▾' : '▸'}</span>
-            <strong>${escHtml(co.name)}</strong> ${reminderBadge}
+            <span class="pay-company-name">${escHtml(co.name)}</span> ${reminderBadge}
             <span class="pay-company-meta">${co.count} invoice${co.count > 1 ? 's' : ''}</span>
-          </div>
-          <div class="pay-company-nums">
-            <span class="pay-num-group">Total <strong>₹${fmtNum(co.totalAmt)}</strong></span>
-            <span class="pay-num-group">Credited <strong>₹${fmtNum(co.credited)}</strong></span>
-            <span class="pay-num-group pay-outstanding">${isPaid ? '<span style="color:#059669">Paid</span>' : `Outstanding <strong>₹${fmtNum(co.outstanding)}</strong>`}</span>
+            ${lastCreditDate ? `<span class="pay-company-date">Last credited: ${lastCreditDate}</span>` : ''}
           </div>
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
             <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">History</button>
             ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
+          <div class="pay-company-nums">
+            <span class="pay-num-group">Total <strong>₹${fmtNum(co.totalAmt)}</strong></span>
+            <span class="pay-num-group">Credited <strong>₹${fmtNum(co.credited)}</strong></span>
+            <span class="pay-num-group pay-outstanding">${isPaid ? '<span style="color:#059669">Fully Paid</span>' : `Outstanding <strong>₹${fmtNum(co.outstanding)}</strong>`}</span>
+          </div>
         </div>
         <div class="pay-company-invoices ${isExpanded ? '' : 'hidden'}">
           <table class="data-table" style="font-size:.85rem;margin:0">
-            <thead><tr><th>Invoice No.</th><th>Date</th><th>Amount</th><th>Days</th><th></th></tr></thead>
+            <thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Amount</th><th>Days Since</th><th></th></tr></thead>
             <tbody>
-              ${co.invs.map(inv => `<tr>
+              ${co.invs.sort((a, b) => (b.invoiceDate || '').localeCompare(a.invoiceDate || '')).map(inv => `<tr>
                 <td>${escHtml(inv.invoiceNumber)}</td>
-                <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
+                <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '—'}</td>
                 <td class="r">₹${fmtNum(computeGrandTotal(inv))}</td>
-                <td class="c">${daysSince(inv.invoiceDate || inv.createdAt)}</td>
+                <td class="c">${daysSince(inv.invoiceDate || inv.createdAt)}d</td>
                 <td><button class="btn-view" data-inv-id="${inv.id}" style="font-size:.78rem">View</button></td>
               </tr>`).join('')}
             </tbody>
