@@ -831,6 +831,56 @@ legend {
 .pay-company-invoices .data-table { box-shadow: none; }
 .pay-company-invoices .data-table thead th { background: #f1f5f9; }
 
+.pay-subhead {
+  margin: 0 0 .35rem;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.pay-subhead-spaced { margin-top: 1rem; }
+.pay-fifo-hint {
+  margin: 0 0 .75rem;
+  font-size: .78rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.pay-fifo-hint-strong { font-weight: 500; color: var(--text); }
+.pay-credit-log { margin-bottom: 1rem; }
+.pay-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: .25rem;
+}
+.pay-table-tight { font-size: .82rem; min-width: 100%; }
+.pay-table-tight th,
+.pay-table-tight td { padding: .4rem .5rem; vertical-align: top; }
+.pay-col-date { white-space: nowrap; }
+.pay-col-when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pay-col-note { max-width: 160px; word-break: break-word; }
+.pay-col-idx { width: 2rem; }
+.pay-col-settled,
+.pay-col-balance { font-variant-numeric: tabular-nums; }
+.pay-all-settled {
+  margin: 0 0 .5rem;
+  padding: .65rem .75rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  font-size: .82rem;
+  color: #065f46;
+}
+.pay-history-empty { color: var(--text-muted); text-align: center; margin: .5rem 0; }
+.data-table tr.row-cleared { opacity: .55; }
+.data-table tr.row-cleared td { color: var(--text-muted); }
+.pay-form-fifo-hint { margin-top: -.25rem; }
+
+.pay-history-box { max-width: 720px; width: calc(100% - 2rem); }
+.pay-history-scroll {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 600px) {
   .pay-company-header { grid-template-columns: 1fr; }
   .pay-company-actions { grid-row: auto; grid-column: auto; justify-content: flex-start; }

@@ -192,6 +192,7 @@
           <h3>Add Credit</h3>
           <p class="overlay-subtitle" id="payFormCompanyLabel"></p>
           <p class="overlay-subtitle" id="payFormOutstanding" style="font-weight:600;color:var(--danger)"></p>
+          <p class="overlay-subtitle pay-form-fifo-hint">Credits apply to the oldest invoices first (by invoice date), until the amount is used up.</p>
           <div class="field"><label>Credited Amount (₹)</label><input type="number" id="payAmtInput" min="0" step="0.01" /></div>
           <div class="field"><label>Note (optional)</label><input type="text" id="payNoteInput" /></div>
           <div class="overlay-actions">
@@ -203,10 +204,10 @@
 
       <!-- Credit History Overlay -->
       <div id="payHistoryOverlay" class="overlay hidden">
-        <div class="overlay-box" style="max-width:520px">
-          <h3>Credit History</h3>
+        <div class="overlay-box pay-history-box">
+          <h3>Payment summary</h3>
           <p class="overlay-subtitle" id="payHistoryLabel"></p>
-          <div id="payHistoryList" style="max-height:300px;overflow-y:auto;margin-bottom:1rem"></div>
+          <div id="payHistoryList" class="pay-history-scroll"></div>
           <p class="overlay-subtitle" id="payHistorySummary" style="font-weight:600"></p>
           <div class="overlay-actions">
             <button class="btn btn-secondary" id="payHistoryCloseBtn">Close</button>
@@ -492,6 +493,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=48"></script>
+  <script src="script.js?v=49"></script>
 </body>
 </html>

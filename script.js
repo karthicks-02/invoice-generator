@@ -969,6 +969,58 @@ document.addEventListener('DOMContentLoaded', () => {
     return invoices.filter(inv => inv.buyerName === name).reduce((s, inv) => s + computeGrandTotal(inv), 0);
   }
 
+  /** Oldest invoice date first; ties broken by invoice no. then id */
+  function sortInvoicesFifo(invs) {
+    return [...invs].sort((a, b) => {
+      const da = (a.invoiceDate || a.createdAt || '').toString();
+      const db = (b.invoiceDate || b.createdAt || '').toString();
+      const cmp = da.localeCompare(db);
+      if (cmp !== 0) return cmp;
+      const na = (a.invoiceNumber || '').toString();
+      const nb = (b.invoiceNumber || '').toString();
+      const c2 = na.localeCompare(nb);
+      if (c2 !== 0) return c2;
+      return (a.id || '').toString().localeCompare((b.id || '').toString());
+    });
+  }
+
+  /** Apply total credited amount to invoices in FIFO order; returns per-invoice applied & balance */
+  function fifoAllocationsForCompany(name) {
+    const invs = sortInvoicesFifo(invoices.filter(inv => inv.buyerName === name));
+    const rec = payments[name];
+    let pool = rec ? Number(rec.totalCredited) : 0;
+    if (Number.isNaN(pool) || pool < 0) pool = 0;
+    return invs.map(inv => {
+      const gross = computeGrandTotal(inv);
+      const applied = Math.min(pool, gross);
+      pool = Math.max(0, pool - applied);
+      return {
+        inv,
+        gross,
+        applied: Math.round(applied * 100) / 100,
+        balance: Math.round((gross - applied) * 100) / 100
+      };
+    });
+  }
+
+  function formatDateTime(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) {
+      const day = String(isoStr).split('T')[0];
+      return formatShortDate(day) || '—';
+    }
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    let h = d.getHours();
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${dd}/${mm}/${yyyy} ${h}:${mi} ${ampm}`;
+  }
+
   function daysSince(dateStr) {
     if (!dateStr) return 0;
     return Math.floor((new Date() - new Date(dateStr)) / 86400000);
@@ -1022,19 +1074,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const rec = payments[co.name];
       const lastCredit = rec && rec.credits && rec.credits.length ? rec.credits[rec.credits.length - 1] : null;
-      const lastCreditDate = lastCredit ? formatShortDate(lastCredit.date.split('T')[0]) : '';
+      const lastCreditDate = lastCredit ? formatDateTime(lastCredit.date) : '';
+      const fifoRows = fifoAllocationsForCompany(co.name);
+      const openFifo = fifoRows.filter(r => r.balance > 0.005);
+      const creditEntries = rec && rec.credits && rec.credits.length
+        ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date))
+        : [];
+      let runningCred = 0;
+      const creditLogRows = creditEntries.map((c, i) => {
+        runningCred += Number(c.amount) || 0;
+        return `<tr>
+          <td class="c pay-col-idx">${i + 1}</td>
+          <td class="pay-col-when">${formatDateTime(c.date)}</td>
+          <td class="r">₹${fmtNum(c.amount)}</td>
+          <td class="pay-col-note">${escHtml(c.note || '—')}</td>
+          <td class="r">₹${fmtNum(runningCred)}</td>
+        </tr>`;
+      }).join('');
+      const creditLogBlock = creditEntries.length
+        ? `<div class="pay-credit-log">
+            <h4 class="pay-subhead">Credits recorded</h4>
+            <p class="pay-fifo-hint">Each payment is listed with date &amp; time. Running total shows cumulative credits.</p>
+            <div class="pay-table-scroll">
+              <table class="data-table pay-table-tight">
+                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Running total</th></tr></thead>
+                <tbody>${creditLogRows}</tbody>
+              </table>
+            </div>
+          </div>`
+        : `<p class="pay-fifo-hint">No credits yet. Open invoices show full amounts until you add credits (applied to oldest invoice dates first).</p>`;
+
+      const invoiceRows = openFifo.map(r => `<tr>
+          <td>${escHtml(r.inv.invoiceNumber)}</td>
+          <td class="pay-col-date">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+          <td class="r">₹${fmtNum(r.gross)}</td>
+          <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
+          <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
+          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td><button class="btn-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
+        </tr>`).join('');
+      const invoiceTable = openFifo.length
+        ? `<div class="pay-table-scroll">
+            <table class="data-table pay-table-tight" style="margin:0">
+              <thead><tr>
+                <th>Invoice No.</th>
+                <th class="pay-col-date">Invoice date</th>
+                <th class="r">Invoice total</th>
+                <th class="r">Settled by credits</th>
+                <th class="r">Balance due</th>
+                <th class="c">Days</th>
+                <th></th>
+              </tr></thead>
+              <tbody>${invoiceRows}</tbody>
+            </table>
+          </div>`
+        : `<p class="pay-all-settled">No open balances — credits (oldest invoices first) cover every invoice for this company.</p>`;
 
       section.innerHTML = `
         <div class="pay-company-header" data-company="${escHtml(co.name)}">
           <div class="pay-company-top">
             <span class="pay-company-toggle">${isExpanded ? '▾' : '▸'}</span>
             <span class="pay-company-name">${escHtml(co.name)}</span> ${reminderBadge}
-            <span class="pay-company-meta">${co.count} invoice${co.count > 1 ? 's' : ''}</span>
-            ${lastCreditDate ? `<span class="pay-company-date">Last credited: ${lastCreditDate}</span>` : ''}
+            <span class="pay-company-meta">${openFifo.length} with balance · ${co.count} invoice${co.count !== 1 ? 's' : ''} billed</span>
+            ${lastCreditDate ? `<span class="pay-company-date">Last credit: ${lastCreditDate}</span>` : ''}
           </div>
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
-            <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">History</button>
+            <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Summary</button>
             ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
           <div class="pay-company-nums">
@@ -1044,18 +1150,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div class="pay-company-invoices ${isExpanded ? '' : 'hidden'}">
-          <table class="data-table" style="font-size:.85rem;margin:0">
-            <thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Amount</th><th>Days Since</th><th></th></tr></thead>
-            <tbody>
-              ${co.invs.sort((a, b) => (b.invoiceDate || '').localeCompare(a.invoiceDate || '')).map(inv => `<tr>
-                <td>${escHtml(inv.invoiceNumber)}</td>
-                <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '—'}</td>
-                <td class="r">₹${fmtNum(computeGrandTotal(inv))}</td>
-                <td class="c">${daysSince(inv.invoiceDate || inv.createdAt)}d</td>
-                <td><button class="btn-view" data-inv-id="${inv.id}" style="font-size:.78rem">View</button></td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
+          <p class="pay-fifo-hint pay-fifo-hint-strong">Credits are applied in order of invoice date (oldest first) until the recorded credits are used up.</p>
+          ${creditLogBlock}
+          <h4 class="pay-subhead pay-subhead-spaced">Invoices still due</h4>
+          ${invoiceTable}
         </div>`;
       container.appendChild(section);
     });
@@ -1106,17 +1204,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const rec = payments[name];
       const totalAmt = getCompanyInvoiceTotal(name);
       const credited = rec ? rec.totalCredited : 0;
+      const out = Math.max(totalAmt - credited, 0);
       $('payHistoryLabel').textContent = name;
       const list = $('payHistoryList');
-      const entries = rec && rec.credits && rec.credits.length ? rec.credits : [];
-      if (!entries.length) {
-        list.innerHTML = '<p style="color:var(--text-muted);text-align:center">No credits recorded yet.</p>';
-      } else {
-        list.innerHTML = '<table class="data-table" style="font-size:.85rem"><thead><tr><th>Date</th><th>Amount</th><th>Note</th></tr></thead><tbody>' +
-          entries.map(c => `<tr><td>${c.date ? formatShortDate(c.date.split('T')[0]) : ''}</td><td class="r">₹${fmtNum(c.amount)}</td><td>${escHtml(c.note || '')}</td></tr>`).join('') +
-          '</tbody></table>';
-      }
-      $('payHistorySummary').textContent = `Total Invoices: ₹${fmtNum(totalAmt)} · Credited: ₹${fmtNum(credited)} · Outstanding: ₹${fmtNum(Math.max(totalAmt - credited, 0))}`;
+      const entries = rec && rec.credits && rec.credits.length ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+      let run = 0;
+      const creditTable = entries.length
+        ? `<h4 class="pay-subhead">Payments / credits (full log)</h4>
+          <div class="pay-table-scroll">
+            <table class="data-table pay-table-tight">
+              <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Running total (₹)</th></tr></thead>
+              <tbody>${entries.map((c, i) => {
+                run += Number(c.amount) || 0;
+                return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(run)}</td></tr>`;
+              }).join('')}</tbody>
+            </table>
+          </div>`
+        : '<p class="pay-history-empty">No credits recorded yet.</p>';
+      const fifo = fifoAllocationsForCompany(name);
+      const fifoTable = `<h4 class="pay-subhead pay-subhead-spaced">How credits apply (oldest invoice date first)</h4>
+        <div class="pay-table-scroll">
+          <table class="data-table pay-table-tight">
+            <thead><tr><th>Invoice No.</th><th>Invoice date</th><th class="r">Total (₹)</th><th class="r">Settled (₹)</th><th class="r">Balance (₹)</th></tr></thead>
+            <tbody>${fifo.map(r => `<tr class="${r.balance <= 0.005 ? 'row-cleared' : ''}">
+              <td>${escHtml(r.inv.invoiceNumber)}</td>
+              <td>${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+              <td class="r">${fmtNum(r.gross)}</td>
+              <td class="r">${fmtNum(r.applied)}</td>
+              <td class="r">${fmtNum(r.balance)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      list.innerHTML = creditTable + fifoTable;
+      $('payHistorySummary').textContent = `Billed total ₹${fmtNum(totalAmt)} · Credits ₹${fmtNum(credited)} · Outstanding ₹${fmtNum(out)}`;
       $('payHistoryOverlay').classList.remove('hidden');
       return;
     }
@@ -1566,13 +1686,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="inv-hdr-name">${COMPANY.name}</div>
           <div class="inv-hdr-addr">${COMPANY.address.replace(/\n/g, '<br>')}</div>
           <div class="inv-hdr-addr">Email.Id. ${COMPANY.email} / Ph.No. ${COMPANY.phone}</div>
-        </div>
+      </div>
 
         <!-- ─── GSTIN Row ─── -->
         <div class="inv-row inv-gstin-row">
           <span><strong>GSTIN : ${COMPANY.gstin}</strong></span>
           <span><strong>${esc(copyType)}</strong></span>
-        </div>
+      </div>
 
         <!-- ─── Buyer + TAX INVOICE ─── -->
         <table class="inv-tbl">
@@ -1644,8 +1764,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <col style="width:10%">
             <col style="width:14%">
           </colgroup>
-          <thead>
-            <tr>
+        <thead>
+          <tr>
               <th>SL.No.</th>
               <th>NAME OF THE COMMODITY / SERVICE</th>
               <th>HSN CODE</th>
@@ -1653,10 +1773,10 @@ document.addEventListener('DOMContentLoaded', () => {
               <th>Total Qty IN<br>NOS</th>
               <th>Rate Per No.</th>
               <th>GOODS VALUE<br>(in Rs.)</th>
-            </tr>
-          </thead>
+          </tr>
+        </thead>
           <tbody>${itemRows}</tbody>
-        </table>
+      </table>
 
         <!-- ─── Bottom Section (Totals + Footer) ─── -->
         <table class="inv-tbl inv-bottom">
@@ -1768,7 +1888,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="inv-hdr-name">${COMPANY.name}</div>
           <div class="inv-hdr-addr">${COMPANY.address.replace(/\n/g, '<br>')}</div>
           <div class="inv-hdr-addr">Email.Id. ${COMPANY.email} / Ph.No. ${COMPANY.phone}</div>
-        </div>
+      </div>
         <div class="inv-row inv-gstin-row">
           <span><strong>GSTIN : ${COMPANY.gstin}</strong></span>
           <span><strong>${esc(copyType || '')}</strong></span>
