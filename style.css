@@ -889,6 +889,11 @@ legend {
 .data-table tr.row-cleared td { color: var(--text-muted); }
 .pay-form-fifo-hint { margin-top: -.25rem; }
 
+.pay-credit-box.overlay-box {
+  min-width: min(420px, 94vw);
+  max-width: 480px;
+}
+
 .pay-form-actions {
   display: flex;
   justify-content: space-between;

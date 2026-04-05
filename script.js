@@ -978,12 +978,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return payments[name];
   }
 
-  function addCompanyCredit(name, amount, note) {
+  function addCompanyCredit(name, amount, note, dateIso) {
     const rec = getCompanyPayment(name);
     rec.credits.push({
       id: genCreditId(),
       amount: Number(amount),
-      date: new Date().toISOString(),
+      date: dateIso || new Date().toISOString(),
       note: note || ''
     });
     rec.totalCredited = rec.credits.reduce((s, c) => s + (Number(c.amount) || 0), 0);
@@ -1267,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function setPayFormMode(edit) {
     $('payFormHeading').textContent = edit ? 'Edit credit' : 'Add Credit';
     $('payFormFifoHint').classList.toggle('hidden', edit);
-    $('payDateField').classList.toggle('hidden', !edit);
+    $('payDateField').classList.remove('hidden');
     $('payFormDeleteBtn').classList.toggle('hidden', !edit);
     $('payFormOutstanding').classList.toggle('hidden', edit);
   }
@@ -1408,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('payFormOutstanding').textContent = `Outstanding: ₹${fmtNum(outstanding)}`;
       $('payAmtInput').value = '';
       $('payNoteInput').value = '';
+      $('payDateInput').value = isoToDatetimeLocal(new Date().toISOString());
       $('payFormOverlay').classList.remove('hidden');
       $('payAmtInput').focus();
       return;
@@ -1493,12 +1494,13 @@ document.addEventListener('DOMContentLoaded', () => {
   $('payFormSaveBtn').addEventListener('click', () => {
     const amount = parseFloat($('payAmtInput').value);
     if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+    const d = $('payDateInput').value;
+    if (!d) { alert(payEditCreditId ? 'Select credit date and time' : 'Select created date and time'); return; }
+    const dateIso = datetimeLocalToIso(d);
     if (payEditCreditId) {
-      const d = $('payDateInput').value;
-      if (!d) { alert('Select credit date and time'); return; }
-      updateCompanyCredit(payFormCompany, payEditCreditId, amount, $('payNoteInput').value.trim(), datetimeLocalToIso(d));
+      updateCompanyCredit(payFormCompany, payEditCreditId, amount, $('payNoteInput').value.trim(), dateIso);
     } else {
-      addCompanyCredit(payFormCompany, amount, $('payNoteInput').value.trim());
+      addCompanyCredit(payFormCompany, amount, $('payNoteInput').value.trim(), dateIso);
     }
     const savedCompany = payFormCompany;
     closePayCreditForm();
