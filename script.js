@@ -349,10 +349,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('saveProdBtn').addEventListener('click', () => {
+    const parsedRate = parseRateToStore($('prodRate').value);
     const obj = {
       name: $('prodName').value.trim(),
       hsn: $('prodHsn').value.trim(),
-      rate: parseFloat($('prodRate').value) || 0
+      rate: parsedRate == null ? 0 : parsedRate
     };
     if (!obj.name) { alert('Product Name is required'); return; }
     if (editProdIdx >= 0) {
@@ -373,7 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('prodFormTitle').textContent = 'Edit Product';
       $('prodName').value = p.name;
       $('prodHsn').value = p.hsn;
-      $('prodRate').value = p.rate;
+      const pr = Number(p.rate);
+      $('prodRate').value = Number.isFinite(pr) ? String(Math.round(pr * 100) / 100) : '';
       $('prodFormWrap').classList.remove('hidden');
     }
     if (e.target.classList.contains('btn-del')) {
