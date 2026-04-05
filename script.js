@@ -1928,26 +1928,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function generatePDF(htmlContent, filename) {
-    const area = $('pdfRenderArea');
-    area.innerHTML = htmlContent;
-    area.style.display = 'block';
-    $('pdfOverlay').classList.remove('hidden');
-    window.scrollTo(0, 0);
+    const container = document.createElement('div');
+    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;overflow:visible;';
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
 
-    setTimeout(() => {
-      const opt = {
-        margin: [0.3, 0.3, 0.3, 0.3],
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 800 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(area).save().then(() => {
-        area.style.display = 'none';
-        area.innerHTML = '';
-        $('pdfOverlay').classList.add('hidden');
-      });
-    }, 300);
+    const opt = {
+      margin: [0.3, 0.3, 0.3, 0.3],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    return html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
+    });
   }
 
   function downloadInvoicePDF(inv) {
