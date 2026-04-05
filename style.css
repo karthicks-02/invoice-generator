@@ -937,13 +937,16 @@ legend {
   font-variant-numeric: tabular-nums;
 }
 
-.pay-history-box {
-  max-width: min(1040px, 96vw);
-  width: calc(100% - 1.5rem);
+/* Must beat .overlay-box { width: 380px } — same element has both classes */
+.overlay-box.pay-history-box {
+  width: min(1200px, calc(100vw - 2rem));
+  max-width: min(1200px, 96vw);
+  min-width: min(720px, 100vw - 2rem);
 }
 .pay-history-scroll {
   max-height: min(78vh, 720px);
   overflow-y: auto;
+  overflow-x: auto;
   margin-bottom: 1rem;
 }
 
@@ -992,8 +995,11 @@ legend {
 .pay-sum-figures td { padding: 0.45rem 0.5rem; }
 .pay-sum-zebra { background: #f1f5f9; }
 .pay-sum-out-row { background: #fef2f2 !important; }
-.pay-sum-num { font-variant-numeric: tabular-nums; }
-.pay-sum-strong { font-weight: 700; }
+.pay-sum-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pay-sum-strong { font-weight: 700; white-space: nowrap; }
 .pay-sum-row-cleared { color: #64748b; }
 .pay-sum-fifo-note { font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.85rem; line-height: 1.35; }
 .pay-sum-empty { text-align: center; padding: 0.75rem !important; color: var(--text-muted); }
