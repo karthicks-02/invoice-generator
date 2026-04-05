@@ -1,6 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
 
+  /** YYYY-MM-DD in local timezone (toISOString() is UTC and shifts the calendar day in IST etc.). */
+  function formatDateYMDLocal(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   // ══════════════════════════════════════
   // ── Auth: Login / Register / Logout ──
   // ══════════════════════════════════════
@@ -541,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invNoErr.classList.add('hidden');
     }
     $('invoiceNumber').removeAttribute('aria-invalid');
-    $('invoiceDate').value = new Date().toISOString().split('T')[0];
+    $('invoiceDate').value = formatDateYMDLocal(new Date());
     $('buyerName').value = '';
     $('buyerGstin').value = '';
     $('buyerAddress').value = '';
@@ -742,14 +750,14 @@ document.addEventListener('DOMContentLoaded', () => {
     monday.setDate(now.getDate() + mondayOffset + (offset * 7));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return { from: monday.toISOString().split('T')[0], to: sunday.toISOString().split('T')[0] };
+    return { from: formatDateYMDLocal(monday), to: formatDateYMDLocal(sunday) };
   }
 
   function getMonthRange(offset) {
     const now = new Date();
     const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
     const last = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
-    return { from: first.toISOString().split('T')[0], to: last.toISOString().split('T')[0] };
+    return { from: formatDateYMDLocal(first), to: formatDateYMDLocal(last) };
   }
 
   function getYearRange(offset) {
@@ -870,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ids = Array.from(checked).map(cb => cb.dataset.invId);
     const selected = invoices.filter(inv => ids.includes(inv.id));
     if (!selected.length) return;
-    const filename = selected.length === 1 ? `${selected[0].invoiceNumber || 'invoice'}.pdf` : `invoices-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = selected.length === 1 ? `${selected[0].invoiceNumber || 'invoice'}.pdf` : `invoices-${formatDateYMDLocal(new Date())}.pdf`;
     downloadBulkPDF(selected, filename);
   });
 
@@ -937,8 +945,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
         const wEnd = weekEnd > lastDay ? lastDay : weekEnd;
-        const wsStr = weekStart.toISOString().split('T')[0];
-        const weStr = wEnd.toISOString().split('T')[0];
+        const wsStr = formatDateYMDLocal(weekStart);
+        const weStr = formatDateYMDLocal(wEnd);
         labels.push('W' + weekNum);
         let total = 0;
         invoices.forEach(inv => {
@@ -1274,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = '';
     $('payEmpty').classList.toggle('hidden', companies.length > 0);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = formatDateYMDLocal(new Date());
 
     companies.forEach(co => {
       const isPaid = co.outstanding <= 0;
@@ -1659,7 +1667,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function addDays(n) {
     const d = new Date();
     d.setDate(d.getDate() + n);
-    return d.toISOString().split('T')[0];
+    return formatDateYMDLocal(d);
   }
 
   document.querySelectorAll('#reminderOverlay .preset-pill').forEach(btn => {
@@ -1695,7 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Company reminders (Payments → Remind) and per-invoice Reminder Date both trigger when date ≤ today
   // and there is still an outstanding balance (FIFO for invoice-level).
   function checkReminders() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = formatDateYMDLocal(new Date());
     const items = [];
     Object.entries(payments).forEach(([name, rec]) => {
       if (!rec.reminder || rec.reminder.date > todayStr) return;
@@ -1957,7 +1965,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const today = new Date();
-  $('invoiceDate').value = today.toISOString().split('T')[0];
+  $('invoiceDate').value = formatDateYMDLocal(today);
 
   $('sameAsBuyer').addEventListener('change', e => {
     $('consigneeFields').classList.toggle('hidden', e.target.checked);
