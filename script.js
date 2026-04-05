@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('gstType').value = inv.gstType || 'intra';
     $('invoiceReminder').value = inv.reminderDate || '';
 
-    items = (inv.items && inv.items.length) ? inv.items.map(it => ({ ...it })) : [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
+    items = (inv.items && inv.items.length) ? inv.items.map(it => ({ ...it })) : [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
     renderItems();
 
     if (inv.copyTypes && inv.copyTypes.length) {
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('gstRate').value = 9;
     $('gstType').value = 'intra';
     $('invoiceReminder').value = '';
-    items = [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
+    items = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
     renderItems();
     document.querySelectorAll('.copyType').forEach(cb => {
       cb.checked = cb.value === 'ORIGINAL FOR BUYER';
@@ -1742,7 +1742,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Items management ──
-  let items = [{ description: '', hsn: '', packages: 0, qty: 0, rate: 0 }];
+  let items = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
+
+  function qtyRateInputValue(v) {
+    if (v == null || v === '') return '';
+    const n = Number(v);
+    return Number.isFinite(n) && n !== 0 ? v : '';
+  }
 
   function formatBags(n) {
     if (!n || n <= 0) return '';
@@ -1753,14 +1759,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = $('itemsBody');
     tbody.innerHTML = '';
     items.forEach((item, i) => {
-      const amount = item.qty * item.rate;
+      const amount = (item.qty || 0) * (item.rate || 0);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" /></td>
         <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" /></td>
         <td><input type="number" value="${item.packages || ''}" data-i="${i}" data-f="packages" min="0" step="1" /></td>
-        <td><input type="number" value="${item.qty}" data-i="${i}" data-f="qty" min="0" step="1" /></td>
-        <td><input type="number" value="${item.rate}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
+        <td><input type="number" value="${qtyRateInputValue(item.qty)}" data-i="${i}" data-f="qty" min="0" step="1" /></td>
+        <td><input type="number" value="${qtyRateInputValue(item.rate)}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
         <td><button type="button" class="btn-delete" data-i="${i}" title="Remove">&times;</button></td>
       `;
@@ -1778,13 +1784,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (f === 'packages') {
       items[i].packages = parseInt(inp.value) || 0;
     } else if (f === 'qty') {
-      items[i].qty = parseFloat(inp.value) || 0;
+      const t = inp.value.trim();
+      items[i].qty = t === '' ? null : (parseFloat(t) || 0);
     } else if (f === 'rate') {
-      items[i].rate = parseFloat(inp.value) || 0;
+      const t = inp.value.trim();
+      items[i].rate = t === '' ? null : (parseFloat(t) || 0);
     }
     if (f === 'qty' || f === 'rate') {
       const amtDiv = inp.closest('tr').querySelector('.amount-display');
-      amtDiv.textContent = '₹' + fmtNum(items[i].qty * items[i].rate);
+      amtDiv.textContent = '₹' + fmtNum((items[i].qty || 0) * (items[i].rate || 0));
     }
   });
 
@@ -1796,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('addItemBtn').addEventListener('click', () => {
-    items.push({ description: '', hsn: '', packages: 0, qty: 0, rate: 0 });
+    items.push({ description: '', hsn: '', packages: 0, qty: null, rate: null });
     renderItems();
     const rows = $('itemsBody').querySelectorAll('tr');
     rows[rows.length - 1].querySelector('input').focus();
