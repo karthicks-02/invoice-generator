@@ -87,10 +87,20 @@
         <input type="date" id="invDateFrom" class="filter-date" title="From date" />
         <input type="date" id="invDateTo" class="filter-date" title="To date" />
       </div>
+      <div class="download-toolbar">
+        <div class="download-presets">
+          <button class="btn btn-sm btn-secondary" id="invPresetThisWeek">This Week</button>
+          <button class="btn btn-sm btn-secondary" id="invPresetLastWeek">Last Week</button>
+          <button class="btn btn-sm btn-secondary" id="invPresetThisMonth">This Month</button>
+          <button class="btn btn-sm btn-secondary" id="invPresetLastMonth">Last Month</button>
+        </div>
+        <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">Download Selected</button>
+      </div>
       <div class="data-table-wrap">
         <table class="data-table" id="invListTable">
           <thead>
             <tr>
+              <th style="width:36px"><input type="checkbox" id="invSelectAll" /></th>
               <th>Invoice No.</th>
               <th>Date</th>
               <th>Customer</th>
@@ -101,6 +111,13 @@
           <tbody id="invListBody"></tbody>
         </table>
         <p id="invListEmpty" class="empty-msg">No invoices saved yet.</p>
+      </div>
+      <div class="chart-section">
+        <div class="chart-header">
+          <h3>Monthly Revenue</h3>
+          <select id="chartYear" class="filter-select" style="min-width:100px"></select>
+        </div>
+        <canvas id="revenueChart" height="280"></canvas>
       </div>
     </div>
 
@@ -190,10 +207,16 @@
         <div class="overlay-box">
           <h3>Set Reminder</h3>
           <p class="overlay-subtitle" id="reminderInvLabel"></p>
-          <div class="field"><label>Reminder Date</label><input type="date" id="reminderDateInput" /></div>
+          <div class="reminder-preset-row">
+            <button type="button" class="preset-pill" data-days="30">30 Days</button>
+            <button type="button" class="preset-pill" data-days="60">60 Days</button>
+            <button type="button" class="preset-pill" data-days="90">90 Days</button>
+          </div>
+          <div class="field"><label>Custom Date</label><input type="date" id="reminderDateInput" /></div>
           <div class="field"><label>Note (optional)</label><input type="text" id="reminderNoteInput" /></div>
           <div class="overlay-actions">
             <button class="btn btn-primary" id="reminderSaveBtn">Save Reminder</button>
+            <button class="btn btn-secondary" id="reminderEmailBtn">Send Email</button>
             <button class="btn btn-secondary" id="reminderCancelBtn">Cancel</button>
           </div>
         </div>
@@ -320,7 +343,15 @@
           <div class="row three">
             <div class="field"><label>Invoice No.</label><input type="text" id="invoiceNumber" /></div>
             <div class="field"><label>Date</label><input type="date" id="invoiceDate" /></div>
-            <div class="field"><label>Reminder Date</label><input type="date" id="invoiceReminder" /></div>
+            <div class="field">
+              <label>Reminder Date</label>
+              <input type="date" id="invoiceReminder" />
+              <div class="reminder-preset-row" id="invReminderPresets">
+                <button type="button" class="preset-pill" data-days="30">30d</button>
+                <button type="button" class="preset-pill" data-days="60">60d</button>
+                <button type="button" class="preset-pill" data-days="90">90d</button>
+              </div>
+            </div>
           </div>
           <div class="copy-type-row">
             <span class="copy-type-label">Copy Type</span>
@@ -446,6 +477,9 @@
   <script src="firebase-config.js"></script>
   <script src="db.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="script.js?v=28"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="emailjs-config.js"></script>
+  <script src="script.js?v=29"></script>
 </body>
 </html>

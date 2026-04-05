@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cameFromInvoiceList = false;
       showView('invoiceListView');
       renderInvoiceList();
+      renderRevenueChart();
     } else {
       goHome();
     }
@@ -132,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
-      if (card.dataset.view === 'invoiceListView') renderInvoiceList();
+      if (card.dataset.view === 'invoiceListView') { renderInvoiceList(); renderRevenueChart(); }
       if (card.dataset.view === 'invoiceView') { resetInvoiceForm(); }
       if (card.dataset.view === 'paymentView') renderPaymentView();
     });
@@ -537,6 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       const total = computeGrandTotal(inv);
       tr.innerHTML = `
+        <td><input type="checkbox" class="inv-check" data-inv-id="${inv.id}" /></td>
         <td>${escHtml(inv.invoiceNumber)}</td>
         <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
         <td>${escHtml(inv.buyerName)}</td>
@@ -544,10 +546,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="actions">
           <button class="btn-edit" data-inv-id="${inv.id}">Edit</button>
           <button class="btn-print" data-inv-id="${inv.id}">Print</button>
+          <button class="btn-download" data-inv-id="${inv.id}">PDF</button>
           <button class="btn-del" data-inv-id="${inv.id}">Delete</button>
         </td>`;
       tbody.appendChild(tr);
     });
+    if ($('invSelectAll')) $('invSelectAll').checked = false;
   }
 
   $('invSearch').addEventListener('input', renderInvoiceList);
@@ -581,6 +585,11 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => window.print(), 300);
     }
 
+    if (e.target.classList.contains('btn-download')) {
+      const inv = invoices.find(x => x.id === id);
+      if (inv) downloadInvoicePDF(inv);
+    }
+
     if (e.target.classList.contains('btn-del')) {
       if (confirm('Delete this invoice?')) {
         invoices = invoices.filter(x => x.id !== id);
@@ -589,6 +598,149 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // ── Select All checkbox ──
+  $('invSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('.inv-check').forEach(cb => { cb.checked = e.target.checked; });
+  });
+
+  // ── Date preset helpers ──
+  function getWeekRange(offset) {
+    const now = new Date();
+    const day = now.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + mondayOffset + (offset * 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { from: monday.toISOString().split('T')[0], to: sunday.toISOString().split('T')[0] };
+  }
+
+  function getMonthRange(offset) {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
+    return { from: first.toISOString().split('T')[0], to: last.toISOString().split('T')[0] };
+  }
+
+  function applyDatePreset(range) {
+    $('invDateFrom').value = range.from;
+    $('invDateTo').value = range.to;
+    renderInvoiceList();
+    setTimeout(() => {
+      document.querySelectorAll('.inv-check').forEach(cb => { cb.checked = true; });
+      if ($('invSelectAll')) $('invSelectAll').checked = true;
+    }, 50);
+  }
+
+  $('invPresetThisWeek').addEventListener('click', () => applyDatePreset(getWeekRange(0)));
+  $('invPresetLastWeek').addEventListener('click', () => applyDatePreset(getWeekRange(-1)));
+  $('invPresetThisMonth').addEventListener('click', () => applyDatePreset(getMonthRange(0)));
+  $('invPresetLastMonth').addEventListener('click', () => applyDatePreset(getMonthRange(-1)));
+
+  // ── Bulk PDF download ──
+  $('bulkDownloadBtn').addEventListener('click', () => {
+    const checked = document.querySelectorAll('.inv-check:checked');
+    if (!checked.length) { alert('Select at least one invoice'); return; }
+
+    const ids = Array.from(checked).map(cb => cb.dataset.invId);
+    const selected = invoices.filter(inv => ids.includes(inv.id));
+    if (!selected.length) return;
+
+    const container = document.createElement('div');
+    container.className = 'invoice-paper';
+    selected.forEach((inv, idx) => {
+      const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
+      container.innerHTML += types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
+      if (idx < selected.length - 1) container.innerHTML += '<div class="copy-separator"></div>';
+    });
+    document.body.appendChild(container);
+
+    const filename = selected.length === 1 ? `${selected[0].invoiceNumber || 'invoice'}.pdf` : `invoices-${new Date().toISOString().split('T')[0]}.pdf`;
+    const opt = {
+      margin: [0.3, 0.3, 0.3, 0.3],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
+    });
+  });
+
+  // ── Revenue Chart ──
+  let revenueChart = null;
+
+  function renderRevenueChart() {
+    const yearSelect = $('chartYear');
+    const years = [...new Set(invoices.map(inv => {
+      const d = inv.invoiceDate || inv.createdAt;
+      return d ? new Date(d).getFullYear() : null;
+    }).filter(Boolean))].sort((a, b) => b - a);
+
+    if (!years.length) years.push(new Date().getFullYear());
+    const currentVal = yearSelect.value;
+    yearSelect.innerHTML = '';
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (String(y) === currentVal) opt.selected = true;
+      yearSelect.appendChild(opt);
+    });
+    if (!currentVal) yearSelect.value = years[0];
+
+    const selYear = parseInt(yearSelect.value);
+    const monthlyRevenue = new Array(12).fill(0);
+
+    invoices.forEach(inv => {
+      const dateStr = inv.invoiceDate || inv.createdAt;
+      if (!dateStr) return;
+      const d = new Date(dateStr);
+      if (d.getFullYear() !== selYear) return;
+      monthlyRevenue[d.getMonth()] += computeGrandTotal(inv);
+    });
+
+    const ctx = $('revenueChart').getContext('2d');
+    if (revenueChart) revenueChart.destroy();
+
+    revenueChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: monthlyRevenue,
+          backgroundColor: 'rgba(26, 58, 92, 0.7)',
+          borderColor: '#1a3a5c',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => '₹' + ctx.raw.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  $('chartYear').addEventListener('change', renderRevenueChart);
 
   // ══════════════════════════════════════
   // ── Payment Tracking ──
@@ -905,6 +1057,54 @@ document.addEventListener('DOMContentLoaded', () => {
   $('reminderCancelBtn').addEventListener('click', () => {
     $('reminderOverlay').classList.add('hidden');
     reminderInvoiceId = null;
+  });
+
+  // ── Reminder Preset Buttons (overlay + invoice form) ──
+  function addDays(n) {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+  }
+
+  document.querySelectorAll('#reminderOverlay .preset-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('reminderDateInput').value = addDays(+btn.dataset.days);
+    });
+  });
+
+  document.querySelectorAll('#invReminderPresets .preset-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('invoiceReminder').value = addDays(+btn.dataset.days);
+    });
+  });
+
+  // ── Email Reminder ──
+  $('reminderEmailBtn').addEventListener('click', () => {
+    if (!reminderInvoiceId) return;
+    if (typeof EMAILJS_CONFIG === 'undefined' || EMAILJS_CONFIG.publicKey === 'YOUR_PUBLIC_KEY') {
+      alert('EmailJS is not configured yet.\n\nEdit emailjs-config.js with your EmailJS credentials.\nSee https://www.emailjs.com/ to sign up (free: 200 emails/month).');
+      return;
+    }
+    const inv = invoices.find(x => x.id === reminderInvoiceId);
+    if (!inv) return;
+    const total = computeGrandTotal(inv);
+    const rec = payments[reminderInvoiceId];
+    const paid = rec ? rec.totalPaid : 0;
+    const outstanding = total - paid;
+    const dueDate = $('reminderDateInput').value ? formatShortDate($('reminderDateInput').value) : 'Not set';
+    const userEmail = auth.currentUser ? auth.currentUser.email : '';
+
+    emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+      to_email: userEmail,
+      invoice_no: inv.invoiceNumber,
+      buyer_name: inv.buyerName,
+      amount: '₹' + fmtNum(outstanding),
+      due_date: dueDate
+    }).then(() => {
+      alert('Reminder email sent to ' + userEmail);
+    }).catch(err => {
+      alert('Failed to send email: ' + (err.text || err.message || err));
+    });
   });
 
   // ── Browser Notifications for Due Reminders ──
@@ -1453,6 +1653,167 @@ document.addEventListener('DOMContentLoaded', () => {
         </table>
       </div>
     `;
+  }
+
+  // ── Build Invoice from stored data (no DOM dependency) ──
+  function buildInvoiceFromData(inv, copyType) {
+    const gstRate = inv.gstRate || 0;
+    const gstType = inv.gstType || 'intra';
+    const shortDate = inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '';
+    const poDate = inv.poDate ? formatShortDate(inv.poDate) : '';
+    const consigneeName = inv.sameAsBuyer !== false ? (inv.buyerName || '') : (inv.consigneeName || '');
+    const consigneeAddr = inv.sameAsBuyer !== false ? (inv.buyerAddress || '') : (inv.consigneeAddress || '');
+
+    let subtotal = 0;
+    const itemRows = (inv.items || []).map((item, i) => {
+      const amt = (item.qty || 0) * (item.rate || 0);
+      subtotal += amt;
+      return `<tr>
+        <td class="c">${i + 1}</td>
+        <td class="l">${esc(item.description).toUpperCase() || '—'}</td>
+        <td class="c">${esc(item.hsn)}</td>
+        <td class="c">${formatBags(item.packages)}</td>
+        <td class="c">${item.qty || 0}</td>
+        <td class="c">${fmtNum(item.rate || 0)}</td>
+        <td class="r">${fmtNum(amt)}</td>
+      </tr>`;
+    }).join('');
+
+    let totalTax = 0, cgstAmt = 0, sgstAmt = 0, igstAmt = 0;
+    if (gstType === 'intra') {
+      cgstAmt = subtotal * (gstRate / 100);
+      sgstAmt = subtotal * (gstRate / 100);
+      totalTax = cgstAmt + sgstAmt;
+    } else {
+      igstAmt = subtotal * (gstRate / 100);
+      totalTax = igstAmt;
+    }
+    const grandTotal = subtotal + totalTax;
+    const wordsStr = numberToWords(Math.round(grandTotal));
+
+    return `
+      <div class="inv">
+        <div class="inv-hdr">
+          <div class="inv-hdr-name">${COMPANY.name}</div>
+          <div class="inv-hdr-addr">${COMPANY.address.replace(/\n/g, '<br>')}</div>
+          <div class="inv-hdr-addr">Email.Id. ${COMPANY.email} / Ph.No. ${COMPANY.phone}</div>
+        </div>
+        <div class="inv-row inv-gstin-row">
+          <span><strong>GSTIN : ${COMPANY.gstin}</strong></span>
+          <span><strong>${esc(copyType || '')}</strong></span>
+        </div>
+        <table class="inv-tbl">
+          <colgroup><col style="width:55%"><col style="width:20%"><col style="width:25%"></colgroup>
+          <tr>
+            <td rowspan="3" class="inv-buyer-cell">
+              <div class="inv-lbl">Details of Buyer ( Billed To) :</div>
+              <div class="inv-buyer-name">${esc(inv.buyerName).toUpperCase()}</div>
+              <div class="inv-buyer-addr">${esc(inv.buyerAddress).replace(/\n/g, '<br>')}</div>
+              <div class="inv-lbl" style="margin-top:3px">GSTIN : ${esc(inv.buyerGstin)}</div>
+            </td>
+            <td colspan="2" class="c inv-tax-title"><strong>TAX INVOICE</strong></td>
+          </tr>
+          <tr><td class="bld">INVOICE NO. :</td><td class="bld inv-meta-val">${esc(inv.invoiceNumber)}</td></tr>
+          <tr><td class="bld">DATE :</td><td class="bld inv-meta-val">${shortDate}</td></tr>
+        </table>
+        <table class="inv-tbl inv-con">
+          <colgroup><col style="width:34%"><col style="width:11%"><col style="width:22%"><col style="width:11%"><col style="width:22%"></colgroup>
+          <tr>
+            <td rowspan="3" style="vertical-align:top;padding:8px 10px">
+              <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
+              <div style="font-weight:700;margin-bottom:4px">${esc(consigneeName).toUpperCase()}</div>
+              <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
+              ${(inv.contactPerson || '').trim() ? `<div style="margin-bottom:4px">Contact Name : ${esc(inv.contactPerson).toUpperCase()}</div>` : ''}
+              <div style="margin-bottom:4px">Contact : ${esc(inv.contactPhone)}</div>
+              <div>GSTIN : ${esc(inv.buyerGstin)}</div>
+            </td>
+            <td class="inv-flbl">P.Order No.</td><td>${esc(inv.poNumber)}</td>
+            <td class="inv-flbl">P.O. Date</td><td>${poDate}</td>
+          </tr>
+          <tr>
+            <td class="inv-flbl">Bank name</td><td>${esc(inv.bankName)}</td>
+            <td class="inv-flbl">Branch</td><td>${esc(inv.bankBranch)}</td>
+          </tr>
+          <tr>
+            <td class="inv-flbl">Account<br>Number</td><td>${esc(inv.accountNumber)}</td>
+            <td class="inv-flbl">IFSC</td><td>${esc(inv.ifscCode)}</td>
+          </tr>
+        </table>
+        <table class="inv-tbl inv-items">
+          <colgroup><col style="width:5%"><col style="width:29%"><col style="width:11%"><col style="width:10%"><col style="width:11%"><col style="width:10%"><col style="width:14%"></colgroup>
+          <thead><tr>
+            <th>SL.No.</th><th>NAME OF THE COMMODITY / SERVICE</th><th>HSN CODE</th>
+            <th>No.Of<br>Packages</th><th>Total Qty IN<br>NOS</th><th>Rate Per No.</th><th>GOODS VALUE<br>(in Rs.)</th>
+          </tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        <table class="inv-tbl inv-bottom">
+          <colgroup><col style="width:18%"><col style="width:32%"><col style="width:30%"><col style="width:20%"></colgroup>
+          <tr>
+            <td style="white-space:nowrap"><strong>Mode Of Transport :</strong></td>
+            <td>${esc(inv.transportMode)}</td>
+            <td class="r">TOTAL AMOUNT BEFORE TAX</td>
+            <td class="r">${fmtNum(subtotal)}</td>
+          </tr>
+          ${gstType === 'intra' ? `
+          <tr>
+            <td rowspan="3" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
+            <td rowspan="3" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
+            <td class="r">CGST @ ${gstRate}%</td><td class="r">${fmtNum(cgstAmt)}</td>
+          </tr>
+          <tr><td class="r">SGST @ ${gstRate}%</td><td class="r">${fmtNum(sgstAmt)}</td></tr>
+          <tr><td class="r"><strong>TAX AMOUNT: GST</strong></td><td class="r"><strong>${fmtNum(totalTax)}</strong></td></tr>
+          ` : `
+          <tr>
+            <td rowspan="2" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
+            <td rowspan="2" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
+            <td class="r">IGST @ ${gstRate}%</td><td class="r">${fmtNum(igstAmt)}</td>
+          </tr>
+          <tr><td class="r"><strong>TAX AMOUNT: GST</strong></td><td class="r"><strong>${fmtNum(totalTax)}</strong></td></tr>
+          `}
+          <tr>
+            <td colspan="2" class="inv-cert">
+              Certified that the particulars given above are true and correct and the amount
+              indicated represents the price actually charged and that is no flow of additional
+              consideration directly or indirectly from the Buyer.
+            </td>
+            <td class="r"><strong>TOTAL AMOUNT<br>AFTER TAX</strong></td>
+            <td class="r"><strong>${fmtNum(grandTotal)}</strong></td>
+          </tr>
+          <tr>
+            <td colspan="2" class="inv-recv" style="vertical-align:top;padding:8px 10px">
+              <strong>The goods Mentioned in the invoice is received in
+              good condition &amp; Completely</strong>
+              <div style="margin-top:20px">Receivers Name :</div>
+              <div style="margin-top:20px">Receivers Signature :</div>
+            </td>
+            <td colspan="2" class="inv-sig inv-sig-combined">
+              <div>For ${COMPANY.name}</div>
+              <div class="inv-sig-space"></div>
+              <div>Authorised Signatory</div>
+            </td>
+          </tr>
+        </table>
+      </div>`;
+  }
+
+  function downloadInvoicePDF(inv) {
+    const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
+    const html = types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
+    const container = document.createElement('div');
+    container.className = 'invoice-paper';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    const opt = {
+      margin: [0.3, 0.3, 0.3, 0.3],
+      filename: `${inv.invoiceNumber || 'invoice'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
+    });
   }
 
   // ── PDF Download ──
