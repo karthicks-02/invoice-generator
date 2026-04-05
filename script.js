@@ -2005,6 +2005,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function restoreViewState(state) {
+    $('invoicePaper').style.overflow = '';
     state.views.forEach(s => s.hidden ? s.el.classList.add('hidden') : s.el.classList.remove('hidden'));
     state.homeHidden ? $('homePanel').classList.add('hidden') : $('homePanel').classList.remove('hidden');
     state.formHidden ? $('formPanel').classList.add('hidden') : $('formPanel').classList.remove('hidden');
@@ -2023,6 +2024,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('invoiceView').classList.remove('hidden');
     $('formPanel').classList.add('hidden');
     $('previewPanel').classList.remove('hidden');
+    $('invoicePaper').style.overflow = 'visible';
     window.scrollTo(0, 0);
     return shield;
   }
@@ -2075,6 +2077,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── PDF Download ──
   $('downloadBtn').addEventListener('click', () => {
     const element = $('invoicePaper');
+    element.style.overflow = 'visible';
     const invNum = $('invoiceNumber').value || 'invoice';
     const opt = {
       margin:      [0.3, 0.3, 0.3, 0.3],
@@ -2083,7 +2086,9 @@ document.addEventListener('DOMContentLoaded', () => {
       html2canvas: { scale: 2, useCORS: true },
       jsPDF:       { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set(opt).from(element).save().then(() => {
+      element.style.overflow = '';
+    });
   });
 
   $('printBtn').addEventListener('click', () => window.print());
