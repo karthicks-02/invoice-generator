@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cameFromInvoiceList = false;
       showView('invoiceListView');
       renderInvoiceList();
-      renderRevenueChart();
+      if (!$('chartBody').classList.contains('hidden')) renderRevenueChart();
     } else {
       goHome();
     }
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
-      if (card.dataset.view === 'invoiceListView') { renderInvoiceList(); renderRevenueChart(); }
+      if (card.dataset.view === 'invoiceListView') { renderInvoiceList(); if (!$('chartBody').classList.contains('hidden')) renderRevenueChart(); }
       if (card.dataset.view === 'invoiceView') { resetInvoiceForm(); }
       if (card.dataset.view === 'paymentView') renderPaymentView();
     });
@@ -638,6 +638,21 @@ document.addEventListener('DOMContentLoaded', () => {
   $('invPresetThisMonth').addEventListener('click', () => applyDatePreset(getMonthRange(0)));
   $('invPresetLastMonth').addEventListener('click', () => applyDatePreset(getMonthRange(-1)));
 
+  $('invPresetCustom').addEventListener('click', () => {
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+    if (!from || !to) {
+      alert('Select From and To dates above first');
+      $('invDateFrom').focus();
+      return;
+    }
+    renderInvoiceList();
+    setTimeout(() => {
+      document.querySelectorAll('.inv-check').forEach(cb => { cb.checked = true; });
+      if ($('invSelectAll')) $('invSelectAll').checked = true;
+    }, 50);
+  });
+
   // ── Bulk PDF download ──
   $('bulkDownloadBtn').addEventListener('click', () => {
     const checked = document.querySelectorAll('.inv-check:checked');
@@ -741,6 +756,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('chartYear').addEventListener('change', renderRevenueChart);
+
+  $('toggleChartBtn').addEventListener('click', () => {
+    const body = $('chartBody');
+    const yearSel = $('chartYear');
+    const btn = $('toggleChartBtn');
+    const isHidden = body.classList.contains('hidden');
+    body.classList.toggle('hidden');
+    yearSel.classList.toggle('hidden');
+    btn.textContent = isHidden ? 'Hide Graph' : 'Show Graph';
+    if (isHidden) renderRevenueChart();
+  });
 
   // ══════════════════════════════════════
   // ── Payment Tracking ──

@@ -93,6 +93,7 @@
           <button class="btn btn-sm btn-secondary" id="invPresetLastWeek">Last Week</button>
           <button class="btn btn-sm btn-secondary" id="invPresetThisMonth">This Month</button>
           <button class="btn btn-sm btn-secondary" id="invPresetLastMonth">Last Month</button>
+          <button class="btn btn-sm btn-secondary" id="invPresetCustom">Custom</button>
         </div>
         <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">Download Selected</button>
       </div>
@@ -114,10 +115,12 @@
       </div>
       <div class="chart-section">
         <div class="chart-header">
-          <h3>Monthly Revenue</h3>
-          <select id="chartYear" class="filter-select" style="min-width:100px"></select>
+          <button class="btn btn-sm btn-secondary" id="toggleChartBtn">Show Graph</button>
+          <select id="chartYear" class="filter-select hidden" style="min-width:100px"></select>
         </div>
-        <canvas id="revenueChart" height="280"></canvas>
+        <div id="chartBody" class="hidden">
+          <canvas id="revenueChart" height="280"></canvas>
+        </div>
       </div>
     </div>
 
@@ -480,6 +483,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=29"></script>
+  <script src="script.js?v=30"></script>
 </body>
 </html>
