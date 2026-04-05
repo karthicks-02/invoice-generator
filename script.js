@@ -1151,23 +1151,27 @@ document.addEventListener('DOMContentLoaded', () => {
       let runningCred = 0;
       const creditLogRows = creditEntries.map((c, i) => {
         runningCred += Number(c.amount) || 0;
+        const outstandingAfter = Math.max(0, co.totalAmt - runningCred);
         const cid = escHtml(c.id || '');
         return `<tr>
           <td class="c pay-col-idx">${i + 1}</td>
           <td class="pay-col-when">${formatDateTime(c.date)}</td>
           <td class="r">₹${fmtNum(c.amount)}</td>
           <td class="pay-col-note">${escHtml(c.note || '—')}</td>
-          <td class="r">₹${fmtNum(runningCred)}</td>
-          <td><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Edit</button></td>
+          <td class="r pay-col-outstanding">₹${fmtNum(outstandingAfter)}</td>
+          <td class="pay-credit-actions"><span class="actions">
+            <button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Edit</button>
+            <button type="button" class="btn-view btn-download-credit" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Download</button>
+          </span></td>
         </tr>`;
       }).join('');
       const creditLogBlock = creditEntries.length
         ? `<div class="pay-credit-log">
             <h4 class="pay-subhead">Credits recorded</h4>
-            <p class="pay-fifo-hint">Each payment is listed with date &amp; time. Running total shows cumulative credits. Use Edit to correct an amount.</p>
+            <p class="pay-fifo-hint">Each payment shows date &amp; time. <strong>Outstanding</strong> is billed total minus credits recorded up to that row (chronological). Use Edit to correct an amount; Download saves a text receipt for that entry.</p>
             <div class="pay-table-scroll">
               <table class="data-table pay-table-tight">
-                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Running total</th><th></th></tr></thead>
+                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
                 <tbody>${creditLogRows}</tbody>
               </table>
             </div>
@@ -1258,12 +1262,16 @@ document.addEventListener('DOMContentLoaded', () => {
       ? `<h4 class="pay-subhead">Payments / credits (full log)</h4>
         <div class="pay-table-scroll">
           <table class="data-table pay-table-tight">
-            <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Running total (₹)</th><th></th></tr></thead>
+            <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Outstanding (₹)</th><th></th></tr></thead>
             <tbody>${entries.map((c, i) => {
               run += Number(c.amount) || 0;
+              const outstandingAfter = Math.max(0, totalAmt - run);
               const cid = escHtml(c.id || '');
-              return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(run)}</td>
-                <td><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(name)}" data-credit-id="${cid}">Edit</button></td></tr>`;
+              return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(outstandingAfter)}</td>
+                <td class="pay-credit-actions"><span class="actions">
+                  <button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(name)}" data-credit-id="${cid}">Edit</button>
+                  <button type="button" class="btn-view btn-download-credit" data-company="${escHtml(name)}" data-credit-id="${cid}">Download</button>
+                </span></td></tr>`;
             }).join('')}</tbody>
           </table>
         </div>`
@@ -1377,7 +1385,53 @@ document.addEventListener('DOMContentLoaded', () => {
     $('payAmtInput').focus();
   }
 
+  function downloadCompanyCreditReceipt(companyName, creditId) {
+    migratePaymentCreditIds();
+    const rec = payments[companyName];
+    if (!rec || !rec.credits) return;
+    const credit = rec.credits.find(x => x.id === creditId);
+    if (!credit) return;
+    const totalBilled = getCompanyInvoiceTotal(companyName);
+    const sorted = [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let cum = 0;
+    for (let j = 0; j < sorted.length; j++) {
+      cum += Number(sorted[j].amount) || 0;
+      if (sorted[j].id === creditId) break;
+    }
+    const outstanding = Math.max(0, totalBilled - cum);
+    const lines = [
+      'Credit / payment record',
+      '─────────────────────────',
+      `Company: ${companyName}`,
+      `Credit date & time: ${formatDateTime(credit.date)}`,
+      `Amount credited: ₹${fmtNum(credit.amount)}`,
+      `Note: ${credit.note ? credit.note : '—'}`,
+      '',
+      `Total billed (all invoices): ₹${fmtNum(totalBilled)}`,
+      `Cumulative credits up to this entry: ₹${fmtNum(cum)}`,
+      `Outstanding after this entry: ₹${fmtNum(outstanding)}`,
+      '',
+      `Generated: ${formatDateTime(new Date().toISOString())}`
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const safeCo = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
+    const safeTs = String(credit.date || '').replace(/[T:]/g, '-').split('.')[0] || String(Date.now());
+    a.download = `credit-${safeCo}-${safeTs}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+
   $('paymentView').addEventListener('click', e => {
+    const dl = e.target.closest('.btn-download-credit');
+    if (dl && dl.dataset.company && dl.dataset.creditId) {
+      e.stopPropagation();
+      downloadCompanyCreditReceipt(dl.dataset.company, dl.dataset.creditId);
+      return;
+    }
     const ed = e.target.closest('.btn-edit-credit');
     if (!ed || !ed.dataset.company || !ed.dataset.creditId) return;
     e.stopPropagation();

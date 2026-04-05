@@ -899,6 +899,13 @@ legend {
   padding: .2rem .45rem;
   white-space: nowrap;
 }
+.pay-credit-actions .actions {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+.pay-table-tight .pay-col-outstanding {
+  font-variant-numeric: tabular-nums;
+}
 
 .pay-history-box { max-width: 720px; width: calc(100% - 2rem); }
 .pay-history-scroll {
