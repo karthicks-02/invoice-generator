@@ -543,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${escHtml(inv.buyerName)}</td>
         <td class="r">₹${fmtNum(total)}</td>
         <td class="actions">
+          <button class="btn-view" data-inv-id="${inv.id}">View</button>
           <button class="btn-edit" data-inv-id="${inv.id}">Edit</button>
           <button class="btn-print" data-inv-id="${inv.id}">Print</button>
           <button class="btn-download" data-inv-id="${inv.id}">PDF</button>
@@ -560,6 +561,18 @@ document.addEventListener('DOMContentLoaded', () => {
   $('invListBody').addEventListener('click', e => {
     const id = e.target.dataset.invId;
     if (!id) return;
+
+    if (e.target.classList.contains('btn-view')) {
+      const inv = invoices.find(x => x.id === id);
+      if (!inv) return;
+      cameFromInvoiceList = true;
+      loadInvoiceIntoForm(inv);
+      syncCopyChecks('copyType', 'copyTypePreview');
+      buildAllInvoices();
+      showView('invoiceView');
+      $('formPanel').classList.add('hidden');
+      $('previewPanel').classList.remove('hidden');
+    }
 
     if (e.target.classList.contains('btn-edit')) {
       const inv = invoices.find(x => x.id === id);

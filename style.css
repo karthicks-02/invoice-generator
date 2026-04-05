@@ -426,6 +426,7 @@ legend {
 }
 .data-table tbody tr:hover { background: #f8fafc; }
 .data-table .actions { display: flex; gap: .5rem; }
+.data-table .btn-view,
 .data-table .btn-edit,
 .data-table .btn-del,
 .data-table .btn-print {
@@ -438,6 +439,8 @@ legend {
   cursor: pointer;
   transition: background .15s;
 }
+.data-table .btn-view { color: #6366f1; }
+.data-table .btn-view:hover { background: #eef2ff; }
 .data-table .btn-edit { color: var(--primary); }
 .data-table .btn-edit:hover { background: #eef4fb; }
 .data-table .btn-print { color: #059669; }
