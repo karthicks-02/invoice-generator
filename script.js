@@ -2190,6 +2190,15 @@ document.addEventListener('DOMContentLoaded', () => {
     $('invoicePaper').innerHTML = types.map(t => buildInvoice(t)).join('<div class="copy-separator"></div>');
   }
 
+  /** Bank details under consignee — one horizontal line (no cramped 4-col grid). */
+  function invBankInlineHtml(bankName, bankBranch, accountNumber, ifscCode) {
+    const bn = esc(bankName);
+    const br = esc(bankBranch);
+    const ac = esc(accountNumber);
+    const ic = esc(ifscCode);
+    return `<div class="inv-bank-inline"><span class="inv-bank-piece"><strong>Bank name</strong>\u00A0${bn}</span><span class="inv-bank-sep">|</span><span class="inv-bank-piece"><strong>Branch</strong>\u00A0${br}</span><span class="inv-bank-sep">|</span><span class="inv-bank-piece"><strong>Account Number</strong>\u00A0${ac}</span><span class="inv-bank-sep">|</span><span class="inv-bank-piece"><strong>IFSC</strong>\u00A0${ic}</span></div>`;
+  }
+
   // ── Build Invoice HTML ──
   function buildInvoice(copyType) {
     const gstRate = parseFloat($('gstRate').value) || 0;
@@ -2272,37 +2281,26 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Consignee ─── -->
         <table class="inv-tbl inv-con">
           <colgroup>
-            <col style="width:55%">
-            <col style="width:10%">
-            <col style="width:12.5%">
-            <col style="width:10%">
-            <col style="width:12.5%">
+            <col style="width:52%">
+            <col style="width:12%">
+            <col style="width:12%">
+            <col style="width:12%">
+            <col style="width:12%">
           </colgroup>
           <tr>
-            <td rowspan="3" class="inv-buyer-cell">
+            <td class="inv-buyer-cell">
               <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
               <div style="font-weight:700;margin-bottom:4px">${esc(consigneeName).toUpperCase()}</div>
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
               ${$('contactPerson').value.trim() ? `<div style="margin-bottom:4px">Contact Name : ${esc($('contactPerson').value).toUpperCase()}</div>` : ''}
               <div style="margin-bottom:4px">Contact : ${esc($('contactPhone').value)}</div>
               ${sameAsBuyerShip ? `<div>GSTIN : ${esc($('buyerGstin').value)}</div>` : ''}
+              ${invBankInlineHtml($('bankName').value, $('bankBranch').value, $('accountNumber').value, $('ifscCode').value)}
             </td>
             <td class="inv-flbl">P.Order No.</td>
             <td>${esc($('poNumber').value)}</td>
             <td class="inv-flbl">P.O. Date</td>
             <td>${poDate}</td>
-          </tr>
-          <tr>
-            <td class="inv-flbl">Bank name</td>
-            <td>${esc($('bankName').value)}</td>
-            <td class="inv-flbl">Branch</td>
-            <td>${esc($('bankBranch').value)}</td>
-          </tr>
-          <tr>
-            <td class="inv-flbl">Account<br>Number</td>
-            <td>${esc($('accountNumber').value)}</td>
-            <td class="inv-flbl">IFSC</td>
-            <td>${esc($('ifscCode').value)}</td>
           </tr>
         </table>
 
@@ -2464,26 +2462,19 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr><td class="bld">DATE :</td><td class="bld inv-meta-val">${shortDate}</td></tr>
         </table>
         <table class="inv-tbl inv-con">
-          <colgroup><col style="width:55%"><col style="width:10%"><col style="width:12.5%"><col style="width:10%"><col style="width:12.5%"></colgroup>
+          <colgroup><col style="width:52%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:12%"></colgroup>
           <tr>
-            <td rowspan="3" class="inv-buyer-cell">
+            <td class="inv-buyer-cell">
               <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
               <div style="font-weight:700;margin-bottom:4px">${esc(consigneeName).toUpperCase()}</div>
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
               ${(inv.contactPerson || '').trim() ? `<div style="margin-bottom:4px">Contact Name : ${esc(inv.contactPerson).toUpperCase()}</div>` : ''}
               <div style="margin-bottom:4px">Contact : ${esc(inv.contactPhone)}</div>
               ${sameAsBuyerShip ? `<div>GSTIN : ${esc(inv.buyerGstin)}</div>` : ''}
+              ${invBankInlineHtml(inv.bankName, inv.bankBranch, inv.accountNumber, inv.ifscCode)}
             </td>
             <td class="inv-flbl">P.Order No.</td><td>${esc(inv.poNumber)}</td>
             <td class="inv-flbl">P.O. Date</td><td>${poDate}</td>
-          </tr>
-          <tr>
-            <td class="inv-flbl">Bank name</td><td>${esc(inv.bankName)}</td>
-            <td class="inv-flbl">Branch</td><td>${esc(inv.bankBranch)}</td>
-          </tr>
-          <tr>
-            <td class="inv-flbl">Account<br>Number</td><td>${esc(inv.accountNumber)}</td>
-            <td class="inv-flbl">IFSC</td><td>${esc(inv.ifscCode)}</td>
           </tr>
         </table>
         <table class="inv-tbl inv-items">
