@@ -1089,9 +1089,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${dd}/${mm}/${yyyy} ${h}:${mi} ${ampm}`;
   }
 
+  /** Whole days from invoice date until today (aging). Uses invoiceDate, else createdAt. Future dates → 0. */
   function daysSince(dateStr) {
     if (!dateStr) return 0;
-    return Math.floor((new Date() - new Date(dateStr)) / 86400000);
+    const n = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    return Math.max(0, n);
   }
 
   function getPaymentSummarySnapshot(companyName) {
