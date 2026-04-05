@@ -201,6 +201,17 @@ legend {
   overflow: hidden;
 }
 
+/* Payment summary PDF uses #invoicePaper; html2canvas needs visible overflow & stable width */
+.invoice-paper.payment-summary-pdf {
+  overflow: visible !important;
+  max-width: 210mm !important;
+  width: 210mm !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+}
+
 /* ── Invoice Wrapper ── */
 .inv {
   font-family: 'Inter', Arial, sans-serif;

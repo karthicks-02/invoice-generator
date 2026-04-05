@@ -2297,22 +2297,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function downloadCompanyPaymentSummaryPDF(companyName) {
     if (!companyName) return;
-    const wrap = document.createElement('div');
-    wrap.innerHTML = buildPaymentSummaryPdfHtml(companyName);
-    wrap.style.cssText = 'position:fixed;left:0;top:0;width:794px;max-width:100%;background:#fff;box-sizing:border-box;z-index:1000;';
-    document.body.appendChild(wrap);
-    const shield = document.createElement('div');
-    shield.style.cssText = 'position:fixed;inset:0;background:#f0f2f5;z-index:99999;';
-    document.body.appendChild(shield);
+    const state = saveViewState();
+    const paper = $('invoicePaper');
+    paper.innerHTML = buildPaymentSummaryPdfHtml(companyName);
+    paper.classList.add('payment-summary-pdf');
+    const shield = showPaperForCapture();
     window.scrollTo(0, 0);
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
     const safe = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
     const fname = `payment-summary-${safe}.pdf`;
     try {
-      await html2pdf().set({ ...PDF_OPT, filename: fname }).from(wrap).save();
+      await html2pdf().set({ ...PDF_OPT, filename: fname }).from(paper).save();
     } finally {
       shield.remove();
-      wrap.remove();
+      restoreViewState(state);
+      paper.classList.remove('payment-summary-pdf');
       const tmp = document.getElementById('html2pdf__container');
       if (tmp) tmp.remove();
     }
