@@ -742,15 +742,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Date preset helpers ──
+  /** Sunday–Saturday week (matches typical calendar; Mon-start ISO week confused users on Sundays). */
   function getWeekRange(offset) {
     const now = new Date();
-    const day = now.getDay();
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayOffset + (offset * 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return { from: formatDateYMDLocal(monday), to: formatDateYMDLocal(sunday) };
+    const day = now.getDay(); // 0 = Sun … 6 = Sat
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - day + offset * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return { from: formatDateYMDLocal(weekStart), to: formatDateYMDLocal(weekEnd) };
   }
 
   function getMonthRange(offset) {
