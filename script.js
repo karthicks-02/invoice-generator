@@ -501,6 +501,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const n = Math.round(Number(row.qty));
             row.qty = Number.isFinite(n) ? n : null;
           }
+          const pk = Math.round(Number(row.packages));
+          row.packages = Number.isFinite(pk) && pk >= 0 ? pk : 0;
           return row;
         })
       : [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
@@ -1978,6 +1980,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return Math.round(n);
   }
 
+  function packagesInputDisplay(v) {
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n) || n <= 0) return '';
+    return String(n);
+  }
+
+  function parsePackagesToStore(raw) {
+    const t = String(raw).trim().replace(/,/g, '');
+    if (t === '') return 0;
+    const n = Math.round(Number(t));
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return n;
+  }
+
   function formatBags(n) {
     if (!n || n <= 0) return '';
     return n === 1 ? '1 Bag' : n + ' Bags';
@@ -1992,7 +2008,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
         <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" /></td>
         <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" /></td>
-        <td><input type="number" value="${item.packages || ''}" data-i="${i}" data-f="packages" min="0" step="1" /></td>
+        <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(packagesInputDisplay(item.packages))}" data-i="${i}" data-f="packages" /></td>
         <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(qtyInputDisplay(item.qty))}" data-i="${i}" data-f="qty" /></td>
         <td><input type="number" value="${rateInputDisplay(item.rate)}" data-i="${i}" data-f="rate" min="0" step="0.01" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
@@ -2010,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (f === 'description' || f === 'hsn') {
       items[i][f] = inp.value;
     } else if (f === 'packages') {
-      items[i].packages = parseInt(inp.value) || 0;
+      items[i].packages = parsePackagesToStore(inp.value);
     } else if (f === 'qty') {
       items[i].qty = parseQtyToStore(inp.value);
     } else if (f === 'rate') {
