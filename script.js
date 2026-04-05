@@ -639,18 +639,58 @@ document.addEventListener('DOMContentLoaded', () => {
   $('invPresetLastMonth').addEventListener('click', () => applyDatePreset(getMonthRange(-1)));
 
   $('invPresetCustom').addEventListener('click', () => {
-    const from = $('invDateFrom').value;
-    const to = $('invDateTo').value;
-    if (!from || !to) {
-      alert('Select From and To dates above first');
-      $('invDateFrom').focus();
-      return;
-    }
-    renderInvoiceList();
-    setTimeout(() => {
-      document.querySelectorAll('.inv-check').forEach(cb => { cb.checked = true; });
-      if ($('invSelectAll')) $('invSelectAll').checked = true;
-    }, 50);
+    $('customFrom').value = '';
+    $('customTo').value = '';
+    $('customRangeCount').textContent = '';
+    $('customRangeOverlay').classList.remove('hidden');
+    $('customFrom').focus();
+  });
+
+  function getCustomFilteredInvoices() {
+    const from = $('customFrom').value;
+    const to = $('customTo').value;
+    if (!from || !to) return [];
+    return invoices.filter(inv => inv.invoiceDate >= from && inv.invoiceDate <= to);
+  }
+
+  $('customFrom').addEventListener('change', () => {
+    const list = getCustomFilteredInvoices();
+    $('customRangeCount').textContent = list.length ? `${list.length} invoice${list.length > 1 ? 's' : ''} found` : '';
+  });
+  $('customTo').addEventListener('change', () => {
+    const list = getCustomFilteredInvoices();
+    $('customRangeCount').textContent = list.length ? `${list.length} invoice${list.length > 1 ? 's' : ''} found` : '';
+  });
+
+  $('customCancelBtn').addEventListener('click', () => {
+    $('customRangeOverlay').classList.add('hidden');
+  });
+
+  $('customDownloadBtn').addEventListener('click', () => {
+    const selected = getCustomFilteredInvoices();
+    if (!selected.length) { alert('No invoices found in this date range'); return; }
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;overflow:visible;z-index:-1;';
+    selected.forEach((inv, idx) => {
+      const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
+      container.innerHTML += types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
+      if (idx < selected.length - 1) container.innerHTML += '<div class="copy-separator"></div>';
+    });
+    document.body.appendChild(container);
+
+    const filename = `invoices-${$('customFrom').value}-to-${$('customTo').value}.pdf`;
+    const opt = {
+      margin: [0.3, 0.3, 0.3, 0.3],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
+    });
+    $('customRangeOverlay').classList.add('hidden');
   });
 
   // ── Bulk PDF download ──

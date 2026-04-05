@@ -122,6 +122,23 @@
           <canvas id="revenueChart" height="280"></canvas>
         </div>
       </div>
+
+      <!-- Custom Date Range Overlay -->
+      <div id="customRangeOverlay" class="overlay hidden">
+        <div class="overlay-box">
+          <h3>Custom Date Range</h3>
+          <p class="overlay-subtitle">Select a date range to download invoices</p>
+          <div class="row">
+            <div class="field"><label>From</label><input type="date" id="customFrom" /></div>
+            <div class="field"><label>To</label><input type="date" id="customTo" /></div>
+          </div>
+          <p id="customRangeCount" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem"></p>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="customDownloadBtn">Download PDF</button>
+            <button class="btn btn-secondary" id="customCancelBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ======== PAYMENT VIEW ======== -->
@@ -483,6 +500,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=31"></script>
+  <script src="script.js?v=32"></script>
 </body>
 </html>
