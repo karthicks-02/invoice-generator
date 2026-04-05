@@ -421,11 +421,43 @@ legend {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+/* Let table grow past container width so columns don’t clip; wrapper scrolls horizontally */
+.data-table-wrap > .data-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
 }
 .data-table {
   width: 100%;
   border-collapse: collapse;
+}
+/* Keep Edit / Delete visible when scrolling wide customer & invoice lists */
+.data-table-wrap > .data-table thead th:last-child,
+.data-table-wrap > .data-table td.actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: -8px 0 14px -10px rgba(15, 23, 42, 0.2);
+  white-space: nowrap;
+  min-width: max-content;
+}
+.data-table-wrap > .data-table thead th:last-child {
+  z-index: 2;
+  background: #fafbfc;
+}
+.data-table-wrap > .data-table tbody tr:hover td.actions {
+  background: #f8fafc;
+}
+.cust-po-cell {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .data-table th {
   text-align: left;

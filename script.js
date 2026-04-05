@@ -514,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (inv.items || []).forEach(it => { subtotal += (it.qty || 0) * (it.rate || 0); });
     const rate = inv.gstRate || 0;
     const tax = inv.gstType === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
-    return subtotal + tax;
+    return Math.round(subtotal + tax);
   }
 
   // ── Invoice List rendering + filtering ──
@@ -2115,8 +2115,8 @@ document.addEventListener('DOMContentLoaded', () => {
       igstAmt = subtotal * (gstRate / 100);
       totalTax = igstAmt;
     }
-    const grandTotal = subtotal + totalTax;
-    const wordsStr = numberToWords(Math.round(grandTotal));
+    const grandTotal = Math.round(subtotal + totalTax);
+    const wordsStr = numberToWords(grandTotal);
 
     return `
       <div class="inv">
@@ -2318,8 +2318,8 @@ document.addEventListener('DOMContentLoaded', () => {
       igstAmt = subtotal * (gstRate / 100);
       totalTax = igstAmt;
     }
-    const grandTotal = subtotal + totalTax;
-    const wordsStr = numberToWords(Math.round(grandTotal));
+    const grandTotal = Math.round(subtotal + totalTax);
+    const wordsStr = numberToWords(grandTotal);
 
     return `
       <div class="inv">
