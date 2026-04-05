@@ -510,6 +510,54 @@ legend {
 }
 .preview-copy-checks { align-items: center; }
 
+/* ===== Invoice list: total by period ===== */
+.inv-total-panel {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.inv-total-panel-title {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted, #64748b);
+  margin-bottom: .5rem;
+}
+.inv-total-period-tabs {
+  margin-bottom: 1rem;
+}
+.inv-total-panel-stats {
+  padding-top: .75rem;
+  border-top: 1px solid var(--border);
+}
+.inv-total-panel-period {
+  margin: 0 0 .35rem;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.inv-total-panel-value {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  color: var(--primary, #1e3a5f);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.inv-total-panel-count {
+  margin: .35rem 0 0;
+  font-size: .9rem;
+  color: var(--muted, #64748b);
+}
+.inv-total-panel-hint {
+  margin: .75rem 0 0;
+  font-size: .78rem;
+  color: var(--muted, #64748b);
+  line-height: 1.4;
+}
+
 /* ===== Download Toolbar ===== */
 .download-toolbar {
   display: flex;
@@ -521,6 +569,14 @@ legend {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+.download-toolbar-hint {
+  margin: 0;
+  font-size: .85rem;
+  color: var(--muted, #64748b);
+  flex: 1;
+  min-width: 10rem;
 }
 .download-presets {
   display: flex;

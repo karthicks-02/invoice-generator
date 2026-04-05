@@ -549,11 +549,56 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
     if ($('invSelectAll')) $('invSelectAll').checked = false;
+
+    const sum = filtered.reduce((s, inv) => s + computeGrandTotal(inv), 0);
+    const periodEl = $('invTotalSummaryPeriod');
+    const valueEl = $('invTotalSummaryValue');
+    const countEl = $('invTotalSummaryCount');
+    if (periodEl) periodEl.textContent = getInvoiceListSummaryPeriodLabel();
+    if (valueEl) valueEl.textContent = '₹' + fmtNum(sum);
+    if (countEl) {
+      countEl.textContent = filtered.length + ' invoice' + (filtered.length !== 1 ? 's' : '');
+    }
+  }
+
+  function getInvoiceListSummaryPeriodLabel() {
+    const presetLabels = {
+      invPresetThisWeek: 'This week',
+      invPresetLastWeek: 'Last week',
+      invPresetThisMonth: 'This month',
+      invPresetLastMonth: 'Last month',
+      invPresetThisYear: 'This year',
+      invPresetLastYear: 'Last year',
+      invPresetCustom: 'Custom date range'
+    };
+    if (activePreset && presetLabels[activePreset]) return presetLabels[activePreset];
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+    if (from && to) return `${formatShortDate(from)} – ${formatShortDate(to)}`;
+    if (from) return `From ${formatShortDate(from)}`;
+    if (to) return `Until ${formatShortDate(to)}`;
+    return 'All dates';
+  }
+
+  function clearPresetHighlightOnly() {
+    document.querySelectorAll('#invoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
+    activePreset = null;
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+    const hasAnyDate = !!(from || to);
+    const hasFullRange = !!(from && to);
+    if ($('invPresetClear')) $('invPresetClear').style.display = hasAnyDate ? 'inline-flex' : 'none';
+    if ($('downloadFilteredBtn')) $('downloadFilteredBtn').style.display = hasFullRange ? 'inline-flex' : 'none';
+  }
+
+  function onInvListDateRangeChange() {
+    clearPresetHighlightOnly();
+    renderInvoiceList();
   }
 
   $('invSearch').addEventListener('input', renderInvoiceList);
-  $('invDateFrom').addEventListener('change', renderInvoiceList);
-  $('invDateTo').addEventListener('change', renderInvoiceList);
+  $('invDateFrom').addEventListener('change', onInvListDateRangeChange);
+  $('invDateTo').addEventListener('change', onInvListDateRangeChange);
 
   $('invListBody').addEventListener('click', e => {
     const id = e.target.dataset.invId;
@@ -632,10 +677,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return { from: first.toISOString().split('T')[0], to: last.toISOString().split('T')[0] };
   }
 
+  function getYearRange(offset) {
+    const y = new Date().getFullYear() + offset;
+    return { from: `${y}-01-01`, to: `${y}-12-31` };
+  }
+
   let activePreset = null;
 
   function clearPresetActive() {
-    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#invoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
     activePreset = null;
     $('invPresetClear').style.display = 'none';
     $('downloadFilteredBtn').style.display = 'none';
@@ -663,6 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
   $('invPresetLastWeek').addEventListener('click', () => applyPresetFilter(getWeekRange(-1), 'invPresetLastWeek'));
   $('invPresetThisMonth').addEventListener('click', () => applyPresetFilter(getMonthRange(0), 'invPresetThisMonth'));
   $('invPresetLastMonth').addEventListener('click', () => applyPresetFilter(getMonthRange(-1), 'invPresetLastMonth'));
+  $('invPresetThisYear').addEventListener('click', () => applyPresetFilter(getYearRange(0), 'invPresetThisYear'));
+  $('invPresetLastYear').addEventListener('click', () => applyPresetFilter(getYearRange(-1), 'invPresetLastYear'));
 
   $('invPresetClear').addEventListener('click', () => {
     clearPresetActive();
