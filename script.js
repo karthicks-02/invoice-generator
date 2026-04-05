@@ -2078,16 +2078,14 @@ document.addEventListener('DOMContentLoaded', () => {
   $('downloadBtn').addEventListener('click', () => {
     const element = $('invoicePaper');
     element.style.overflow = 'visible';
+    window.scrollTo(0, 0);
     const invNum = $('invoiceNumber').value || 'invoice';
-    const opt = {
-      margin:      [0.3, 0.3, 0.3, 0.3],
-      filename:    `${invNum}.pdf`,
-      image:       { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF:       { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save().then(() => {
-      element.style.overflow = '';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        capturePDF(`${invNum}.pdf`).then(() => {
+          element.style.overflow = '';
+        });
+      });
     });
   });
 
