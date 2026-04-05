@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
       products = await db.loadProducts();
       invoices = await db.loadInvoices();
       payments = await db.loadPayments();
+      migratePaymentCreditIds();
 
       renderCustomers();
       renderProducts();
@@ -947,6 +948,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function savePayments() { db.savePayments(payments); }
 
+  function genCreditId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+  }
+
+  function migratePaymentCreditIds() {
+    let changed = false;
+    Object.keys(payments).forEach(name => {
+      const rec = payments[name];
+      if (!rec || !Array.isArray(rec.credits)) return;
+      rec.credits.forEach(c => {
+        if (!c.id) {
+          c.id = genCreditId();
+          changed = true;
+        }
+      });
+      const sum = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+      if (Math.abs((rec.totalCredited || 0) - sum) > 0.001) {
+        rec.totalCredited = sum;
+        changed = true;
+      }
+    });
+    if (changed) savePayments();
+  }
+
   function getCompanyPayment(name) {
     if (!payments[name]) payments[name] = { credits: [], totalCredited: 0, reminder: null };
     return payments[name];
@@ -954,9 +980,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function addCompanyCredit(name, amount, note) {
     const rec = getCompanyPayment(name);
-    rec.credits.push({ amount, date: new Date().toISOString(), note: note || '' });
-    rec.totalCredited = rec.credits.reduce((s, c) => s + c.amount, 0);
+    rec.credits.push({
+      id: genCreditId(),
+      amount: Number(amount),
+      date: new Date().toISOString(),
+      note: note || ''
+    });
+    rec.totalCredited = rec.credits.reduce((s, c) => s + (Number(c.amount) || 0), 0);
     savePayments();
+  }
+
+  function updateCompanyCredit(name, creditId, amount, note, dateIso) {
+    const rec = getCompanyPayment(name);
+    const c = rec.credits.find(x => x.id === creditId);
+    if (!c) return false;
+    c.amount = Number(amount);
+    c.note = note || '';
+    c.date = dateIso;
+    rec.totalCredited = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    savePayments();
+    return true;
+  }
+
+  function deleteCompanyCredit(name, creditId) {
+    const rec = payments[name];
+    if (!rec || !Array.isArray(rec.credits)) return false;
+    const next = rec.credits.filter(x => x.id !== creditId);
+    if (next.length === rec.credits.length) return false;
+    rec.credits = next;
+    rec.totalCredited = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    savePayments();
+    return true;
+  }
+
+  function isoToDatetimeLocal(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function datetimeLocalToIso(localStr) {
+    if (!localStr) return new Date().toISOString();
+    const d = new Date(localStr);
+    return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
   }
 
   function setCompanyReminder(name, date, note) {
@@ -1083,21 +1151,23 @@ document.addEventListener('DOMContentLoaded', () => {
       let runningCred = 0;
       const creditLogRows = creditEntries.map((c, i) => {
         runningCred += Number(c.amount) || 0;
+        const cid = escHtml(c.id || '');
         return `<tr>
           <td class="c pay-col-idx">${i + 1}</td>
           <td class="pay-col-when">${formatDateTime(c.date)}</td>
           <td class="r">₹${fmtNum(c.amount)}</td>
           <td class="pay-col-note">${escHtml(c.note || '—')}</td>
           <td class="r">₹${fmtNum(runningCred)}</td>
+          <td><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Edit</button></td>
         </tr>`;
       }).join('');
       const creditLogBlock = creditEntries.length
         ? `<div class="pay-credit-log">
             <h4 class="pay-subhead">Credits recorded</h4>
-            <p class="pay-fifo-hint">Each payment is listed with date &amp; time. Running total shows cumulative credits.</p>
+            <p class="pay-fifo-hint">Each payment is listed with date &amp; time. Running total shows cumulative credits. Use Edit to correct an amount.</p>
             <div class="pay-table-scroll">
               <table class="data-table pay-table-tight">
-                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Running total</th></tr></thead>
+                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Running total</th><th></th></tr></thead>
                 <tbody>${creditLogRows}</tbody>
               </table>
             </div>
@@ -1163,7 +1233,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Payment actions (delegated) ──
   let payFormCompany = null;
+  let payEditCreditId = null;
+  let payHistoryOpenCompany = null;
   let reminderCompany = null;
+
+  function setPayFormMode(edit) {
+    $('payFormHeading').textContent = edit ? 'Edit credit' : 'Add Credit';
+    $('payFormFifoHint').classList.toggle('hidden', edit);
+    $('payDateField').classList.toggle('hidden', !edit);
+    $('payFormDeleteBtn').classList.toggle('hidden', !edit);
+    $('payFormOutstanding').classList.toggle('hidden', edit);
+  }
+
+  function fillPayHistoryOverlay(name) {
+    const rec = payments[name];
+    const totalAmt = getCompanyInvoiceTotal(name);
+    const credited = rec ? rec.totalCredited : 0;
+    const out = Math.max(totalAmt - credited, 0);
+    $('payHistoryLabel').textContent = name;
+    const list = $('payHistoryList');
+    const entries = rec && rec.credits && rec.credits.length ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+    let run = 0;
+    const creditTable = entries.length
+      ? `<h4 class="pay-subhead">Payments / credits (full log)</h4>
+        <div class="pay-table-scroll">
+          <table class="data-table pay-table-tight">
+            <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Running total (₹)</th><th></th></tr></thead>
+            <tbody>${entries.map((c, i) => {
+              run += Number(c.amount) || 0;
+              const cid = escHtml(c.id || '');
+              return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(run)}</td>
+                <td><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(name)}" data-credit-id="${cid}">Edit</button></td></tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>`
+      : '<p class="pay-history-empty">No credits recorded yet.</p>';
+    const fifo = fifoAllocationsForCompany(name);
+    const fifoTable = `<h4 class="pay-subhead pay-subhead-spaced">How credits apply (oldest invoice date first)</h4>
+      <div class="pay-table-scroll">
+        <table class="data-table pay-table-tight">
+          <thead><tr><th>Invoice No.</th><th>Invoice date</th><th class="r">Total (₹)</th><th class="r">Settled (₹)</th><th class="r">Balance (₹)</th></tr></thead>
+          <tbody>${fifo.map(r => `<tr class="${r.balance <= 0.005 ? 'row-cleared' : ''}">
+            <td>${escHtml(r.inv.invoiceNumber)}</td>
+            <td>${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+            <td class="r">${fmtNum(r.gross)}</td>
+            <td class="r">${fmtNum(r.applied)}</td>
+            <td class="r">${fmtNum(r.balance)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+    list.innerHTML = creditTable + fifoTable;
+    $('payHistorySummary').textContent = `Billed total ₹${fmtNum(totalAmt)} · Credits ₹${fmtNum(credited)} · Outstanding ₹${fmtNum(out)}`;
+  }
 
   function viewInvoiceFromPayment(id) {
     const inv = invoices.find(x => x.id === id);
@@ -1189,6 +1310,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn && btn.classList.contains('btn-pay')) {
       const name = btn.dataset.company;
       payFormCompany = name;
+      payEditCreditId = null;
+      setPayFormMode(false);
       const outstanding = Math.max(getCompanyInvoiceTotal(name) - (payments[name] ? payments[name].totalCredited : 0), 0);
       $('payFormCompanyLabel').textContent = name;
       $('payFormOutstanding').textContent = `Outstanding: ₹${fmtNum(outstanding)}`;
@@ -1201,42 +1324,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btn && btn.classList.contains('btn-history')) {
       const name = btn.dataset.company;
-      const rec = payments[name];
-      const totalAmt = getCompanyInvoiceTotal(name);
-      const credited = rec ? rec.totalCredited : 0;
-      const out = Math.max(totalAmt - credited, 0);
-      $('payHistoryLabel').textContent = name;
-      const list = $('payHistoryList');
-      const entries = rec && rec.credits && rec.credits.length ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
-      let run = 0;
-      const creditTable = entries.length
-        ? `<h4 class="pay-subhead">Payments / credits (full log)</h4>
-          <div class="pay-table-scroll">
-            <table class="data-table pay-table-tight">
-              <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Running total (₹)</th></tr></thead>
-              <tbody>${entries.map((c, i) => {
-                run += Number(c.amount) || 0;
-                return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(run)}</td></tr>`;
-              }).join('')}</tbody>
-            </table>
-          </div>`
-        : '<p class="pay-history-empty">No credits recorded yet.</p>';
-      const fifo = fifoAllocationsForCompany(name);
-      const fifoTable = `<h4 class="pay-subhead pay-subhead-spaced">How credits apply (oldest invoice date first)</h4>
-        <div class="pay-table-scroll">
-          <table class="data-table pay-table-tight">
-            <thead><tr><th>Invoice No.</th><th>Invoice date</th><th class="r">Total (₹)</th><th class="r">Settled (₹)</th><th class="r">Balance (₹)</th></tr></thead>
-            <tbody>${fifo.map(r => `<tr class="${r.balance <= 0.005 ? 'row-cleared' : ''}">
-              <td>${escHtml(r.inv.invoiceNumber)}</td>
-              <td>${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
-              <td class="r">${fmtNum(r.gross)}</td>
-              <td class="r">${fmtNum(r.applied)}</td>
-              <td class="r">${fmtNum(r.balance)}</td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>`;
-      list.innerHTML = creditTable + fifoTable;
-      $('payHistorySummary').textContent = `Billed total ₹${fmtNum(totalAmt)} · Credits ₹${fmtNum(credited)} · Outstanding ₹${fmtNum(out)}`;
+      payHistoryOpenCompany = name;
+      fillPayHistoryOverlay(name);
       $('payHistoryOverlay').classList.remove('hidden');
       return;
     }
@@ -1260,17 +1349,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  $('payHistoryCloseBtn').addEventListener('click', () => { $('payHistoryOverlay').classList.add('hidden'); });
+  $('payHistoryCloseBtn').addEventListener('click', () => {
+    $('payHistoryOverlay').classList.add('hidden');
+    payHistoryOpenCompany = null;
+  });
+
+  function closePayCreditForm() {
+    $('payFormOverlay').classList.add('hidden');
+    payFormCompany = null;
+    payEditCreditId = null;
+    setPayFormMode(false);
+  }
+
+  function openEditCreditForm(company, creditId) {
+    migratePaymentCreditIds();
+    const rec = payments[company];
+    const c = rec && rec.credits && rec.credits.find(x => x.id === creditId);
+    if (!c) { alert('Credit entry not found'); return; }
+    payFormCompany = company;
+    payEditCreditId = creditId;
+    setPayFormMode(true);
+    $('payFormCompanyLabel').textContent = company;
+    $('payAmtInput').value = String(c.amount);
+    $('payNoteInput').value = c.note || '';
+    $('payDateInput').value = isoToDatetimeLocal(c.date);
+    $('payFormOverlay').classList.remove('hidden');
+    $('payAmtInput').focus();
+  }
+
+  $('paymentView').addEventListener('click', e => {
+    const ed = e.target.closest('.btn-edit-credit');
+    if (!ed || !ed.dataset.company || !ed.dataset.creditId) return;
+    e.stopPropagation();
+    openEditCreditForm(ed.dataset.company, ed.dataset.creditId);
+  });
 
   $('payFormSaveBtn').addEventListener('click', () => {
     const amount = parseFloat($('payAmtInput').value);
     if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
-    addCompanyCredit(payFormCompany, amount, $('payNoteInput').value.trim());
-    $('payFormOverlay').classList.add('hidden');
-    payFormCompany = null;
+    if (payEditCreditId) {
+      const d = $('payDateInput').value;
+      if (!d) { alert('Select credit date and time'); return; }
+      updateCompanyCredit(payFormCompany, payEditCreditId, amount, $('payNoteInput').value.trim(), datetimeLocalToIso(d));
+    } else {
+      addCompanyCredit(payFormCompany, amount, $('payNoteInput').value.trim());
+    }
+    const savedCompany = payFormCompany;
+    closePayCreditForm();
     renderPaymentView();
+    if (payHistoryOpenCompany === savedCompany) fillPayHistoryOverlay(savedCompany);
   });
-  $('payFormCancelBtn').addEventListener('click', () => { $('payFormOverlay').classList.add('hidden'); payFormCompany = null; });
+
+  $('payFormDeleteBtn').addEventListener('click', () => {
+    if (!payEditCreditId || !payFormCompany) return;
+    if (!confirm('Delete this credit entry? Totals and FIFO allocation will update.')) return;
+    const savedCompany = payFormCompany;
+    deleteCompanyCredit(payFormCompany, payEditCreditId);
+    closePayCreditForm();
+    renderPaymentView();
+    if (payHistoryOpenCompany === savedCompany) fillPayHistoryOverlay(savedCompany);
+  });
+
+  $('payFormCancelBtn').addEventListener('click', () => { closePayCreditForm(); });
 
   $('reminderSaveBtn').addEventListener('click', () => {
     const date = $('reminderDateInput').value;

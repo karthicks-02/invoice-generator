@@ -874,6 +874,32 @@ legend {
 .data-table tr.row-cleared td { color: var(--text-muted); }
 .pay-form-fifo-hint { margin-top: -.25rem; }
 
+.pay-form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .25rem;
+}
+.pay-form-actions-right {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.pay-form-delete {
+  color: var(--danger);
+  border-color: #fecaca;
+}
+.pay-form-delete:hover { background: #fef2f2; }
+
+.btn-edit-credit {
+  font-size: .72rem;
+  padding: .2rem .45rem;
+  white-space: nowrap;
+}
+
 .pay-history-box { max-width: 720px; width: calc(100% - 2rem); }
 .pay-history-scroll {
   max-height: min(70vh, 520px);
