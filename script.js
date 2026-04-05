@@ -1565,16 +1565,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Browser Notifications for Due Reminders ──
+  // Company reminders (Payments → Remind) and per-invoice Reminder Date both trigger when date ≤ today
+  // and there is still an outstanding balance (FIFO for invoice-level).
   function checkReminders() {
     const todayStr = new Date().toISOString().split('T')[0];
-    const due = [];
+    const items = [];
     Object.entries(payments).forEach(([name, rec]) => {
       if (!rec.reminder || rec.reminder.date > todayStr) return;
       const outstanding = Math.max(getCompanyInvoiceTotal(name) - (rec.totalCredited || 0), 0);
-      if (outstanding > 0) due.push({ name, outstanding });
+      if (outstanding > 0) {
+        items.push({ title: 'Payment reminder', body: `${name} — Outstanding ₹${fmtNum(outstanding)}` });
+      }
     });
-    if (!due.length || !('Notification' in window)) return;
-    const notify = () => due.forEach(d => new Notification('Payment Reminder', { body: `${d.name} — Outstanding ₹${fmtNum(d.outstanding)}` }));
+    const invoiceDueByCompany = new Map();
+    invoices.forEach(inv => {
+      if (!inv.reminderDate || inv.reminderDate > todayStr || !inv.buyerName) return;
+      const rows = fifoAllocationsForCompany(inv.buyerName);
+      const row = rows.find(r => r.inv.id === inv.id);
+      const balance = row ? row.balance : computeGrandTotal(inv);
+      if (balance <= 0.005) return;
+      if (!invoiceDueByCompany.has(inv.buyerName)) invoiceDueByCompany.set(inv.buyerName, []);
+      invoiceDueByCompany.get(inv.buyerName).push({
+        num: inv.invoiceNumber || inv.id,
+        balance
+      });
+    });
+    invoiceDueByCompany.forEach((list, name) => {
+      const parts = list.map(x => `${x.num} (₹${fmtNum(x.balance)})`);
+      items.push({
+        title: 'Invoice reminder due',
+        body: `${name}: ${parts.join(', ')}`
+      });
+    });
+    if (!items.length || !('Notification' in window)) return;
+    const notify = () => items.forEach(it => new Notification(it.title, { body: it.body }));
     if (Notification.permission === 'granted') notify();
     else if (Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') notify(); });
   }
@@ -1847,6 +1871,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     syncCopyChecks('copyType', 'copyTypePreview');
     saveCurrentInvoice();
+    checkReminders();
     buildAllInvoices();
     $('formPanel').classList.add('hidden');
     $('previewPanel').classList.remove('hidden');
