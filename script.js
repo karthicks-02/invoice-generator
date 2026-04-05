@@ -2199,96 +2199,121 @@ document.addEventListener('DOMContentLoaded', () => {
     const openFifo = fifoRows.filter(r => r.balance > 0.005);
     const pendCount = openFifo.length;
 
+    const td = 'padding:3px 4px;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word;';
+    const th = 'padding:3px 4px;font-weight:700;text-align:left;';
+    const thR = 'padding:3px 4px;font-weight:700;text-align:right;';
+    const thC = 'padding:3px 4px;font-weight:700;text-align:center;';
+    const amt = `${td}text-align:right;font-variant-numeric:tabular-nums;font-size:8px;line-height:1.25;`;
+    const tbl = 'width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;box-sizing:border-box;border:1px solid #94a3b8;font-size:8px;line-height:1.25;';
+
+    function pdfWhen(isoStr) {
+      if (!isoStr) return '—';
+      const raw = String(isoStr);
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return esc(formatShortDate(raw.split('T')[0]));
+      const day = formatShortDate(raw.split('T')[0]);
+      let h = d.getHours();
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const ap = h >= 12 ? 'P' : 'A';
+      h = h % 12;
+      if (h === 0) h = 12;
+      return esc(`${day} ${h}:${mi}${ap}`);
+    }
+
     let runningCred = 0;
     const payRows = creditEntries.map((c, i) => {
       runningCred += Number(c.amount) || 0;
       const outAfter = Math.max(0, totalAmt - runningCred);
-      return `<tr style="border-bottom:1px solid #e5e7eb">
-        <td style="padding:6px 8px">${i + 1}</td>
-        <td style="padding:6px 8px">${esc(formatDateTime(c.date))}</td>
-        <td style="padding:6px 8px;text-align:right;white-space:nowrap">₹${fmtNum(c.amount)}</td>
-        <td style="padding:6px 8px">${esc(c.note || '—')}</td>
-        <td style="padding:6px 8px;text-align:right;white-space:nowrap">₹${fmtNum(outAfter)}</td>
+      return `<tr style="border-bottom:1px solid #e2e8f0">
+        <td style="${td}text-align:center">${i + 1}</td>
+        <td style="${td}font-size:7px;">${pdfWhen(c.date)}</td>
+        <td style="${amt}">₹${fmtNum(c.amount)}</td>
+        <td style="${td}">${esc(c.note || '—')}</td>
+        <td style="${amt}font-weight:600;">₹${fmtNum(outAfter)}</td>
       </tr>`;
     }).join('');
 
     const pendRows = openFifo.length
-      ? openFifo.map(r => `<tr style="border-bottom:1px solid #e5e7eb">
-          <td style="padding:6px 8px">${esc(r.inv.invoiceNumber)}</td>
-          <td style="padding:6px 8px">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
-          <td style="padding:6px 8px;text-align:right">₹${fmtNum(r.gross)}</td>
-          <td style="padding:6px 8px;text-align:right">₹${fmtNum(r.applied)}</td>
-          <td style="padding:6px 8px;text-align:right;font-weight:600">₹${fmtNum(r.balance)}</td>
-          <td style="padding:6px 8px;text-align:center">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+      ? openFifo.map(r => `<tr style="border-bottom:1px solid #e2e8f0">
+          <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
+          <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
+          <td style="${amt}">₹${fmtNum(r.gross)}</td>
+          <td style="${amt}">₹${fmtNum(r.applied)}</td>
+          <td style="${amt}font-weight:600;">₹${fmtNum(r.balance)}</td>
+          <td style="${td}text-align:center;">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
         </tr>`).join('')
-      : `<tr><td colspan="6" style="padding:12px;text-align:center;color:#059669">No pending balances — all invoice amounts are covered by credits (FIFO).</td></tr>`;
+      : `<tr><td colspan="6" style="padding:8px;text-align:center;color:#059669">No pending balances — all covered (FIFO).</td></tr>`;
 
     const allInvRows = fifoRows.length
-      ? fifoRows.map(r => `<tr style="border-bottom:1px solid #e5e7eb;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
-        <td style="padding:5px 8px">${esc(r.inv.invoiceNumber)}</td>
-        <td style="padding:5px 8px">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
-        <td style="padding:5px 8px;text-align:right">₹${fmtNum(r.gross)}</td>
-        <td style="padding:5px 8px;text-align:right">₹${fmtNum(r.applied)}</td>
-        <td style="padding:5px 8px;text-align:right">₹${fmtNum(r.balance)}</td>
-        <td style="padding:5px 8px;text-align:center">${r.balance <= 0.005 ? 'Cleared' : 'Due'}</td>
+      ? fifoRows.map(r => `<tr style="border-bottom:1px solid #e2e8f0;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
+        <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
+        <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
+        <td style="${amt}">₹${fmtNum(r.gross)}</td>
+        <td style="${amt}">₹${fmtNum(r.applied)}</td>
+        <td style="${amt}">₹${fmtNum(r.balance)}</td>
+        <td style="${td}text-align:center;">${r.balance <= 0.005 ? 'Clr' : 'Due'}</td>
       </tr>`).join('')
-      : `<tr><td colspan="6" style="padding:12px;text-align:center">No invoices for this customer.</td></tr>`;
+      : `<tr><td colspan="6" style="padding:8px;text-align:center">No invoices.</td></tr>`;
 
     const genAt = formatDateTime(new Date().toISOString());
 
-    return `<div style="padding:16px 20px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.45">
-      <div style="border-bottom:2px solid #1e3a5f;padding-bottom:10px;margin-bottom:14px">
-        <div style="font-size:15px;font-weight:700;color:#1e3a5f">${esc(COMPANY.name)}</div>
-        <div style="font-size:14px;font-weight:700;margin-top:6px">Payment summary — outstanding &amp; credits</div>
-        <div style="margin-top:8px;font-size:12px"><strong>Customer / buyer:</strong> ${esc(companyName)}</div>
-        <div style="margin-top:4px;font-size:10px;color:#64748b">Generated: ${esc(genAt)}</div>
+    return `<div class="pay-pdf-root" style="box-sizing:border-box;width:100%;max-width:100%;padding:8px 6px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.35;">
+      <div style="border-bottom:2px solid #1e3a5f;padding-bottom:8px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#1e3a5f">${esc(COMPANY.name)}</div>
+        <div style="font-size:11px;font-weight:700;margin-top:4px">Payment summary — outstanding &amp; credits</div>
+        <div style="margin-top:6px;font-size:10px"><strong>Customer:</strong> ${esc(companyName)}</div>
+        <div style="margin-top:2px;font-size:8px;color:#64748b">Generated: ${esc(genAt)}</div>
       </div>
 
-      <div style="font-size:12px;font-weight:700;margin:12px 0 8px">Figures at a glance</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;border:1px solid #cbd5e1">
-        <tr style="background:#f1f5f9"><td style="padding:8px 10px">Total invoices billed (count)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${invs.length}</td></tr>
-        <tr><td style="padding:8px 10px">Total billed amount</td><td style="padding:8px 10px;text-align:right">₹${fmtNum(totalAmt)}</td></tr>
-        <tr style="background:#f8fafc"><td style="padding:8px 10px">Payments / credits recorded (count)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${payCount}</td></tr>
-        <tr><td style="padding:8px 10px">Total amount credited</td><td style="padding:8px 10px;text-align:right">₹${fmtNum(credited)}</td></tr>
-        <tr style="background:#fef2f2"><td style="padding:8px 10px"><strong>Current outstanding</strong></td><td style="padding:8px 10px;text-align:right"><strong>₹${fmtNum(outstanding)}</strong></td></tr>
-        <tr><td style="padding:8px 10px">Invoices with balance still due (count)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${pendCount}</td></tr>
+      <div style="font-size:10px;font-weight:700;margin:8px 0 4px">Figures at a glance</div>
+      <table style="${tbl}margin-bottom:10px">
+        <colgroup><col style="width:58%"><col style="width:42%"></colgroup>
+        <tr style="background:#f1f5f9"><td style="${td}">Invoices billed (no.)</td><td style="${amt}font-weight:700;">${invs.length}</td></tr>
+        <tr><td style="${td}">Total billed</td><td style="${amt}">₹${fmtNum(totalAmt)}</td></tr>
+        <tr style="background:#f8fafc"><td style="${td}">Payments recorded (no.)</td><td style="${amt}font-weight:700;">${payCount}</td></tr>
+        <tr><td style="${td}">Total credited</td><td style="${amt}">₹${fmtNum(credited)}</td></tr>
+        <tr style="background:#fef2f2"><td style="${td}"><strong>Outstanding</strong></td><td style="${amt}"><strong>₹${fmtNum(outstanding)}</strong></td></tr>
+        <tr><td style="${td}">Invoices with balance due (no.)</td><td style="${amt}font-weight:700;">${pendCount}</td></tr>
       </table>
-      <p style="margin:0 0 14px;font-size:10px;color:#475569">Credits are applied to the oldest invoice dates first (FIFO) until recorded credits are used up.</p>
+      <p style="margin:0 0 10px;font-size:7px;color:#475569">Credits apply oldest invoice date first (FIFO).</p>
 
-      <div style="font-size:12px;font-weight:700;margin:14px 0 6px">Payments recorded (chronological)</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Payments (chronological)</div>
+      <table style="${tbl}margin-bottom:10px">
+        <colgroup><col style="width:5%"><col style="width:20%"><col style="width:17%"><col style="width:30%"><col style="width:28%"></colgroup>
         <thead><tr style="background:#1e3a5f;color:#fff">
-          <th style="padding:7px 8px;text-align:left;font-size:10px">#</th>
-          <th style="padding:7px 8px;text-align:left;font-size:10px">Date &amp; time</th>
-          <th style="padding:7px 8px;text-align:right;font-size:10px">Amount</th>
-          <th style="padding:7px 8px;text-align:left;font-size:10px">Note</th>
-          <th style="padding:7px 8px;text-align:right;font-size:10px">Outstanding after</th>
+          <th style="${thC}font-size:7px;">#</th>
+          <th style="${th}font-size:7px;">When</th>
+          <th style="${thR}font-size:7px;">Amount</th>
+          <th style="${th}font-size:7px;">Note</th>
+          <th style="${thR}font-size:7px;">Outstd.</th>
         </tr></thead>
-        <tbody>${payCount ? payRows : '<tr><td colspan="5" style="padding:12px;text-align:center">No credits recorded yet.</td></tr>'}</tbody>
+        <tbody>${payCount ? payRows : `<tr><td colspan="5" style="padding:8px;text-align:center">No credits yet.</td></tr>`}</tbody>
       </table>
 
-      <div style="font-size:12px;font-weight:700;margin:14px 0 6px">Invoices pending (balance due)</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Invoices pending</div>
+      <table style="${tbl}margin-bottom:10px">
+        <colgroup><col style="width:17%"><col style="width:14%"><col style="width:16%"><col style="width:17%"><col style="width:18%"><col style="width:18%"></colgroup>
         <thead><tr style="background:#1e3a5f;color:#fff">
-          <th style="padding:7px 8px;text-align:left;font-size:10px">Invoice No.</th>
-          <th style="padding:7px 8px;text-align:left;font-size:10px">Invoice date</th>
-          <th style="padding:7px 8px;text-align:right;font-size:10px">Invoice total</th>
-          <th style="padding:7px 8px;text-align:right;font-size:10px">Settled by credits</th>
-          <th style="padding:7px 8px;text-align:right;font-size:10px">Balance due</th>
-          <th style="padding:7px 8px;text-align:center;font-size:10px">Days</th>
+          <th style="${th}font-size:7px;">Inv. no.</th>
+          <th style="${th}font-size:7px;">Date</th>
+          <th style="${thR}font-size:7px;">Total</th>
+          <th style="${thR}font-size:7px;">Settled</th>
+          <th style="${thR}font-size:7px;">Balance</th>
+          <th style="${thC}font-size:7px;">Days</th>
         </tr></thead>
         <tbody>${pendRows}</tbody>
       </table>
 
-      <div style="font-size:12px;font-weight:700;margin:14px 0 6px">All invoices — credit allocation (FIFO)</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1">
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">All invoices — FIFO allocation</div>
+      <table style="${tbl}">
+        <colgroup><col style="width:17%"><col style="width:14%"><col style="width:16%"><col style="width:17%"><col style="width:18%"><col style="width:18%"></colgroup>
         <thead><tr style="background:#334155;color:#fff">
-          <th style="padding:6px 8px;text-align:left;font-size:9px">Invoice No.</th>
-          <th style="padding:6px 8px;text-align:left;font-size:9px">Date</th>
-          <th style="padding:6px 8px;text-align:right;font-size:9px">Total</th>
-          <th style="padding:6px 8px;text-align:right;font-size:9px">Settled</th>
-          <th style="padding:6px 8px;text-align:right;font-size:9px">Balance</th>
-          <th style="padding:6px 8px;text-align:center;font-size:9px">Status</th>
+          <th style="${th}font-size:7px;">Inv. no.</th>
+          <th style="${th}font-size:7px;">Date</th>
+          <th style="${thR}font-size:7px;">Total</th>
+          <th style="${thR}font-size:7px;">Settled</th>
+          <th style="${thR}font-size:7px;">Balance</th>
+          <th style="${thC}font-size:7px;">St.</th>
         </tr></thead>
         <tbody>${allInvRows}</tbody>
       </table>
@@ -2307,8 +2332,13 @@ document.addEventListener('DOMContentLoaded', () => {
     await new Promise(r => setTimeout(r, 80));
     const safe = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
     const fname = `payment-summary-${safe}.pdf`;
+    const payPdfOpt = {
+      ...PDF_OPT,
+      margin: [0.35, 0.42, 0.35, 0.42],
+      html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 }
+    };
     try {
-      await html2pdf().set({ ...PDF_OPT, filename: fname }).from(paper).save();
+      await html2pdf().set({ ...payPdfOpt, filename: fname }).from(paper).save();
     } finally {
       shield.remove();
       restoreViewState(state);

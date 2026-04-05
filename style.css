@@ -201,15 +201,19 @@ legend {
   overflow: hidden;
 }
 
-/* Payment summary PDF uses #invoicePaper; html2canvas needs visible overflow & stable width */
+/* Payment summary PDF uses #invoicePaper; html2canvas needs visible overflow & width that fits A4 body */
 .invoice-paper.payment-summary-pdf {
   overflow: visible !important;
-  max-width: 210mm !important;
-  width: 210mm !important;
+  max-width: 100% !important;
+  width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
   box-shadow: none !important;
   min-height: auto !important;
+}
+.invoice-paper.payment-summary-pdf .pay-pdf-root {
+  max-width: 100%;
+  overflow: visible;
 }
 
 /* ── Invoice Wrapper ── */
