@@ -1726,6 +1726,97 @@ document.addEventListener('DOMContentLoaded', () => {
     gstin: '33AKKPR0176Q1ZK'
   };
 
+  /** GST state/UT codes (first 2 digits of GSTIN) — for e-way bill text helper */
+  const GST_STATE_NAMES = {
+    '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand',
+    '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim',
+    '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura',
+    '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha',
+    '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu',
+    '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '32': 'Kerala', '33': 'Tamil Nadu',
+    '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh',
+    '38': 'Ladakh', '97': 'Other Territory', '99': 'Foreign / Other'
+  };
+
+  function extractPincode(addr) {
+    if (!addr) return '';
+    const m = String(addr).match(/\b(\d{6})\b/);
+    return m ? m[1] : '';
+  }
+
+  function stateNameFromGstin(gstin) {
+    const g = (gstin || '').trim().toUpperCase();
+    if (g.length < 2) return '—';
+    return GST_STATE_NAMES[g.slice(0, 2)] || `State code ${g.slice(0, 2)}`;
+  }
+
+  /** Plain text aligned with common e-way bill fields; portal is filled manually (no API/login from this app). */
+  function buildEwayBillClipboardText() {
+    const data = collectInvoiceData();
+    const invNo = data.invoiceNumber.trim();
+    const buyer = data.buyerName.trim();
+    if (!invNo || !buyer) return null;
+    const gstRate = Number(data.gstRate) || 0;
+    const gstType = data.gstType || 'intra';
+    const dmy = data.invoiceDate ? formatShortDate(data.invoiceDate) : '—';
+    const shipName = data.sameAsBuyer !== false ? buyer : (data.consigneeName || '').trim();
+    const shipAddr = data.sameAsBuyer !== false ? (data.buyerAddress || '').trim() : (data.consigneeAddress || '').trim();
+    const lines = [];
+    lines.push('E-WAY BILL — GST portal (manual entry helper)');
+    lines.push('Portal: https://ewaybillgst.gov.in/BillGeneration/BillGeneration.aspx');
+    lines.push('');
+    lines.push('Supply type: Outward  |  Sub type: Supply  |  Document type: Tax Invoice');
+    lines.push(`Document No: ${invNo}`);
+    lines.push(`Document Date: ${dmy}`);
+    lines.push('Transaction type: Regular');
+    lines.push('');
+    lines.push('--- Bill from / Dispatch from ---');
+    lines.push(`Name: ${COMPANY.name}`);
+    lines.push(`GSTIN: ${COMPANY.gstin}`);
+    lines.push(`Address: ${COMPANY.address.replace(/\n/g, ', ')}`);
+    lines.push(`Pincode: ${extractPincode(COMPANY.address) || '—'}`);
+    lines.push(`State: ${stateNameFromGstin(COMPANY.gstin)}`);
+    lines.push('');
+    lines.push('--- Bill to ---');
+    lines.push(`Name: ${buyer}`);
+    lines.push(`GSTIN: ${(data.buyerGstin || '').trim() || '—'}`);
+    lines.push(`Address: ${(data.buyerAddress || '').replace(/\n/g, ', ')}`);
+    lines.push(`Pincode: ${extractPincode(data.buyerAddress) || '—'}`);
+    lines.push(`State: ${stateNameFromGstin(data.buyerGstin)}`);
+    lines.push('');
+    lines.push('--- Ship to ---');
+    lines.push(`Name: ${shipName || '—'}`);
+    lines.push(`Address: ${String(shipAddr || '').replace(/\n/g, ', ')}`);
+    lines.push(`Pincode: ${extractPincode(shipAddr) || '—'}`);
+    lines.push(`State: ${stateNameFromGstin(data.buyerGstin)}`);
+    lines.push('');
+    lines.push('--- Line items (taxable = qty × rate) ---');
+    let subtotal = 0;
+    let lineNo = 0;
+    (data.items || []).forEach(it => {
+      const qty = Number(it.qty) || 0;
+      const rate = Number(it.rate) || 0;
+      const taxable = qty * rate;
+      const hasLine = ((it.description || '').trim() || (it.hsn || '').trim()) || taxable > 0;
+      if (!hasLine) return;
+      subtotal += taxable;
+      lineNo += 1;
+      const unit = (it.packages || 0) > 0 ? 'BAG' : 'NOS';
+      lines.push(`${lineNo}. ${(it.description || '').trim() || '—'} | HSN: ${(it.hsn || '').trim() || '—'} | Qty: ${qty} ${unit} | Taxable ₹: ${fmtNum(taxable)}`);
+    });
+    lines.push(`Subtotal (taxable): ₹${fmtNum(subtotal)}`);
+    if (gstType === 'intra') {
+      lines.push(`GST: CGST ${gstRate}% + SGST ${gstRate}% (intra-state)`);
+    } else {
+      lines.push(`GST: IGST ${gstRate}% (inter-state)`);
+    }
+    lines.push('');
+    lines.push('--- Transport (complete distance / vehicle on portal) ---');
+    lines.push(`Mode / note: ${(data.transportMode || '').trim() || 'By Road'}`);
+    lines.push('On portal: Approx. distance (km), Transporter ID & name, Vehicle no., Part-B as applicable.');
+    return lines.join('\n');
+  }
+
   const today = new Date();
   $('invoiceDate').value = today.toISOString().split('T')[0];
 
@@ -2524,6 +2615,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('printBtn').addEventListener('click', () => window.print());
+
+  $('ewayPortalBtn').addEventListener('click', () => {
+    window.open('https://ewaybillgst.gov.in/BillGeneration/BillGeneration.aspx', '_blank', 'noopener,noreferrer');
+  });
+
+  $('ewayCopyBtn').addEventListener('click', async () => {
+    const text = buildEwayBillClipboardText();
+    if (!text) {
+      alert('Fill Invoice No. and Buyer name first (same fields as Preview).');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('E-way bill details copied. Keep this tab open, use the portal tab to log in and paste into Notepad—or read line by line while filling the form.');
+    } catch (err) {
+      window.prompt('Copy the text below (Ctrl+C / ⌘C):', text);
+    }
+  });
 
   // ── Helpers ──
   function esc(str) {
