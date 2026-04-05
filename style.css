@@ -899,9 +899,19 @@ legend {
   padding: .2rem .45rem;
   white-space: nowrap;
 }
-.pay-credit-actions .actions {
-  flex-wrap: nowrap;
-  justify-content: flex-end;
+.pay-history-pdf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: 1rem;
+}
+.pay-history-pdf-hint {
+  font-size: .78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  flex: 1;
+  min-width: 200px;
 }
 .pay-table-tight .pay-col-outstanding {
   font-variant-numeric: tabular-nums;

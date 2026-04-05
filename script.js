@@ -1159,16 +1159,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r">₹${fmtNum(c.amount)}</td>
           <td class="pay-col-note">${escHtml(c.note || '—')}</td>
           <td class="r pay-col-outstanding">₹${fmtNum(outstandingAfter)}</td>
-          <td class="pay-credit-actions"><span class="actions">
-            <button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Edit</button>
-            <button type="button" class="btn-view btn-download-credit" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Download</button>
-          </span></td>
+          <td class="pay-credit-actions"><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" data-credit-id="${cid}">Edit</button></td>
         </tr>`;
       }).join('');
       const creditLogBlock = creditEntries.length
         ? `<div class="pay-credit-log">
             <h4 class="pay-subhead">Credits recorded</h4>
-            <p class="pay-fifo-hint">Each payment shows date &amp; time. <strong>Outstanding</strong> is billed total minus credits recorded up to that row (chronological). Use Edit to correct an amount; Download saves a text receipt for that entry.</p>
+            <p class="pay-fifo-hint">Each payment shows date &amp; time. <strong>Outstanding</strong> is billed total minus credits recorded up to that row (chronological). Use Edit to correct an amount. Use <strong>Summary PDF</strong> in the row above for a full printable report.</p>
             <div class="pay-table-scroll">
               <table class="data-table pay-table-tight">
                 <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
@@ -1214,6 +1211,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
+            <button type="button" class="btn-pay-summary-pdf btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" title="Download PDF: payments, outstanding, pending invoices">Summary PDF</button>
             <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Summary</button>
             ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
@@ -1259,7 +1257,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const entries = rec && rec.credits && rec.credits.length ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
     let run = 0;
     const creditTable = entries.length
-      ? `<h4 class="pay-subhead">Payments / credits (full log)</h4>
+      ? `<div class="pay-history-pdf-row">
+          <button type="button" class="btn btn-primary btn-sm btn-pay-summary-pdf" data-company="${escHtml(name)}">Download summary PDF</button>
+          <span class="pay-history-pdf-hint">Includes payment count, totals, outstanding, pending invoices, and full FIFO allocation.</span>
+        </div>
+        <h4 class="pay-subhead">Payments / credits (full log)</h4>
         <div class="pay-table-scroll">
           <table class="data-table pay-table-tight">
             <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount (₹)</th><th>Note</th><th class="r">Outstanding (₹)</th><th></th></tr></thead>
@@ -1268,14 +1270,14 @@ document.addEventListener('DOMContentLoaded', () => {
               const outstandingAfter = Math.max(0, totalAmt - run);
               const cid = escHtml(c.id || '');
               return `<tr><td class="c">${i + 1}</td><td>${formatDateTime(c.date)}</td><td class="r">${fmtNum(c.amount)}</td><td>${escHtml(c.note || '—')}</td><td class="r">${fmtNum(outstandingAfter)}</td>
-                <td class="pay-credit-actions"><span class="actions">
-                  <button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(name)}" data-credit-id="${cid}">Edit</button>
-                  <button type="button" class="btn-view btn-download-credit" data-company="${escHtml(name)}" data-credit-id="${cid}">Download</button>
-                </span></td></tr>`;
+                <td class="pay-credit-actions"><button type="button" class="btn-edit-credit btn btn-sm btn-secondary" data-company="${escHtml(name)}" data-credit-id="${cid}">Edit</button></td></tr>`;
             }).join('')}</tbody>
           </table>
         </div>`
-      : '<p class="pay-history-empty">No credits recorded yet.</p>';
+      : `<div class="pay-history-pdf-row">
+          <button type="button" class="btn btn-primary btn-sm btn-pay-summary-pdf" data-company="${escHtml(name)}">Download summary PDF</button>
+        </div>
+        <p class="pay-history-empty">No credits recorded yet.</p>`;
     const fifo = fifoAllocationsForCompany(name);
     const fifoTable = `<h4 class="pay-subhead pay-subhead-spaced">How credits apply (oldest invoice date first)</h4>
       <div class="pay-table-scroll">
@@ -1385,51 +1387,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('payAmtInput').focus();
   }
 
-  function downloadCompanyCreditReceipt(companyName, creditId) {
-    migratePaymentCreditIds();
-    const rec = payments[companyName];
-    if (!rec || !rec.credits) return;
-    const credit = rec.credits.find(x => x.id === creditId);
-    if (!credit) return;
-    const totalBilled = getCompanyInvoiceTotal(companyName);
-    const sorted = [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date));
-    let cum = 0;
-    for (let j = 0; j < sorted.length; j++) {
-      cum += Number(sorted[j].amount) || 0;
-      if (sorted[j].id === creditId) break;
-    }
-    const outstanding = Math.max(0, totalBilled - cum);
-    const lines = [
-      'Credit / payment record',
-      '─────────────────────────',
-      `Company: ${companyName}`,
-      `Credit date & time: ${formatDateTime(credit.date)}`,
-      `Amount credited: ₹${fmtNum(credit.amount)}`,
-      `Note: ${credit.note ? credit.note : '—'}`,
-      '',
-      `Total billed (all invoices): ₹${fmtNum(totalBilled)}`,
-      `Cumulative credits up to this entry: ₹${fmtNum(cum)}`,
-      `Outstanding after this entry: ₹${fmtNum(outstanding)}`,
-      '',
-      `Generated: ${formatDateTime(new Date().toISOString())}`
-    ];
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const safeCo = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
-    const safeTs = String(credit.date || '').replace(/[T:]/g, '-').split('.')[0] || String(Date.now());
-    a.download = `credit-${safeCo}-${safeTs}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
-  }
-
   $('paymentView').addEventListener('click', e => {
-    const dl = e.target.closest('.btn-download-credit');
-    if (dl && dl.dataset.company && dl.dataset.creditId) {
+    const pdfBtn = e.target.closest('.btn-pay-summary-pdf');
+    if (pdfBtn && pdfBtn.dataset.company) {
       e.stopPropagation();
-      downloadCompanyCreditReceipt(dl.dataset.company, dl.dataset.creditId);
+      e.preventDefault();
+      downloadCompanyPaymentSummaryPDF(pdfBtn.dataset.company).catch(() => alert('Could not generate PDF. Try again.'));
       return;
     }
     const ed = e.target.closest('.btn-edit-credit');
@@ -2222,6 +2185,138 @@ document.addEventListener('DOMContentLoaded', () => {
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
+
+  function buildPaymentSummaryPdfHtml(companyName) {
+    migratePaymentCreditIds();
+    const invs = invoices.filter(inv => inv.buyerName === companyName);
+    const totalAmt = getCompanyInvoiceTotal(companyName);
+    const rec = payments[companyName];
+    const credited = rec ? rec.totalCredited : 0;
+    const outstanding = Math.max(totalAmt - credited, 0);
+    const creditEntries = rec && rec.credits ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+    const payCount = creditEntries.length;
+    const fifoRows = fifoAllocationsForCompany(companyName);
+    const openFifo = fifoRows.filter(r => r.balance > 0.005);
+    const pendCount = openFifo.length;
+
+    let runningCred = 0;
+    const payRows = creditEntries.map((c, i) => {
+      runningCred += Number(c.amount) || 0;
+      const outAfter = Math.max(0, totalAmt - runningCred);
+      return `<tr style="border-bottom:1px solid #e5e7eb">
+        <td style="padding:6px 8px">${i + 1}</td>
+        <td style="padding:6px 8px">${esc(formatDateTime(c.date))}</td>
+        <td style="padding:6px 8px;text-align:right;white-space:nowrap">₹${fmtNum(c.amount)}</td>
+        <td style="padding:6px 8px">${esc(c.note || '—')}</td>
+        <td style="padding:6px 8px;text-align:right;white-space:nowrap">₹${fmtNum(outAfter)}</td>
+      </tr>`;
+    }).join('');
+
+    const pendRows = openFifo.length
+      ? openFifo.map(r => `<tr style="border-bottom:1px solid #e5e7eb">
+          <td style="padding:6px 8px">${esc(r.inv.invoiceNumber)}</td>
+          <td style="padding:6px 8px">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
+          <td style="padding:6px 8px;text-align:right">₹${fmtNum(r.gross)}</td>
+          <td style="padding:6px 8px;text-align:right">₹${fmtNum(r.applied)}</td>
+          <td style="padding:6px 8px;text-align:right;font-weight:600">₹${fmtNum(r.balance)}</td>
+          <td style="padding:6px 8px;text-align:center">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+        </tr>`).join('')
+      : `<tr><td colspan="6" style="padding:12px;text-align:center;color:#059669">No pending balances — all invoice amounts are covered by credits (FIFO).</td></tr>`;
+
+    const allInvRows = fifoRows.length
+      ? fifoRows.map(r => `<tr style="border-bottom:1px solid #e5e7eb;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
+        <td style="padding:5px 8px">${esc(r.inv.invoiceNumber)}</td>
+        <td style="padding:5px 8px">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
+        <td style="padding:5px 8px;text-align:right">₹${fmtNum(r.gross)}</td>
+        <td style="padding:5px 8px;text-align:right">₹${fmtNum(r.applied)}</td>
+        <td style="padding:5px 8px;text-align:right">₹${fmtNum(r.balance)}</td>
+        <td style="padding:5px 8px;text-align:center">${r.balance <= 0.005 ? 'Cleared' : 'Due'}</td>
+      </tr>`).join('')
+      : `<tr><td colspan="6" style="padding:12px;text-align:center">No invoices for this customer.</td></tr>`;
+
+    const genAt = formatDateTime(new Date().toISOString());
+
+    return `<div style="padding:16px 20px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.45">
+      <div style="border-bottom:2px solid #1e3a5f;padding-bottom:10px;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:#1e3a5f">${esc(COMPANY.name)}</div>
+        <div style="font-size:14px;font-weight:700;margin-top:6px">Payment summary — outstanding &amp; credits</div>
+        <div style="margin-top:8px;font-size:12px"><strong>Customer / buyer:</strong> ${esc(companyName)}</div>
+        <div style="margin-top:4px;font-size:10px;color:#64748b">Generated: ${esc(genAt)}</div>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;margin:12px 0 8px">Figures at a glance</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;border:1px solid #cbd5e1">
+        <tr style="background:#f1f5f9"><td style="padding:8px 10px">Total invoices billed (count)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${invs.length}</td></tr>
+        <tr><td style="padding:8px 10px">Total billed amount</td><td style="padding:8px 10px;text-align:right">₹${fmtNum(totalAmt)}</td></tr>
+        <tr style="background:#f8fafc"><td style="padding:8px 10px">Payments / credits recorded (count)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${payCount}</td></tr>
+        <tr><td style="padding:8px 10px">Total amount credited</td><td style="padding:8px 10px;text-align:right">₹${fmtNum(credited)}</td></tr>
+        <tr style="background:#fef2f2"><td style="padding:8px 10px"><strong>Current outstanding</strong></td><td style="padding:8px 10px;text-align:right"><strong>₹${fmtNum(outstanding)}</strong></td></tr>
+        <tr><td style="padding:8px 10px">Invoices with balance still due (count)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${pendCount}</td></tr>
+      </table>
+      <p style="margin:0 0 14px;font-size:10px;color:#475569">Credits are applied to the oldest invoice dates first (FIFO) until recorded credits are used up.</p>
+
+      <div style="font-size:12px;font-weight:700;margin:14px 0 6px">Payments recorded (chronological)</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;margin-bottom:16px">
+        <thead><tr style="background:#1e3a5f;color:#fff">
+          <th style="padding:7px 8px;text-align:left;font-size:10px">#</th>
+          <th style="padding:7px 8px;text-align:left;font-size:10px">Date &amp; time</th>
+          <th style="padding:7px 8px;text-align:right;font-size:10px">Amount</th>
+          <th style="padding:7px 8px;text-align:left;font-size:10px">Note</th>
+          <th style="padding:7px 8px;text-align:right;font-size:10px">Outstanding after</th>
+        </tr></thead>
+        <tbody>${payCount ? payRows : '<tr><td colspan="5" style="padding:12px;text-align:center">No credits recorded yet.</td></tr>'}</tbody>
+      </table>
+
+      <div style="font-size:12px;font-weight:700;margin:14px 0 6px">Invoices pending (balance due)</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;margin-bottom:16px">
+        <thead><tr style="background:#1e3a5f;color:#fff">
+          <th style="padding:7px 8px;text-align:left;font-size:10px">Invoice No.</th>
+          <th style="padding:7px 8px;text-align:left;font-size:10px">Invoice date</th>
+          <th style="padding:7px 8px;text-align:right;font-size:10px">Invoice total</th>
+          <th style="padding:7px 8px;text-align:right;font-size:10px">Settled by credits</th>
+          <th style="padding:7px 8px;text-align:right;font-size:10px">Balance due</th>
+          <th style="padding:7px 8px;text-align:center;font-size:10px">Days</th>
+        </tr></thead>
+        <tbody>${pendRows}</tbody>
+      </table>
+
+      <div style="font-size:12px;font-weight:700;margin:14px 0 6px">All invoices — credit allocation (FIFO)</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1">
+        <thead><tr style="background:#334155;color:#fff">
+          <th style="padding:6px 8px;text-align:left;font-size:9px">Invoice No.</th>
+          <th style="padding:6px 8px;text-align:left;font-size:9px">Date</th>
+          <th style="padding:6px 8px;text-align:right;font-size:9px">Total</th>
+          <th style="padding:6px 8px;text-align:right;font-size:9px">Settled</th>
+          <th style="padding:6px 8px;text-align:right;font-size:9px">Balance</th>
+          <th style="padding:6px 8px;text-align:center;font-size:9px">Status</th>
+        </tr></thead>
+        <tbody>${allInvRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  async function downloadCompanyPaymentSummaryPDF(companyName) {
+    if (!companyName) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = buildPaymentSummaryPdfHtml(companyName);
+    wrap.style.cssText = 'position:fixed;left:0;top:0;width:794px;max-width:100%;background:#fff;box-sizing:border-box;z-index:1000;';
+    document.body.appendChild(wrap);
+    const shield = document.createElement('div');
+    shield.style.cssText = 'position:fixed;inset:0;background:#f0f2f5;z-index:99999;';
+    document.body.appendChild(shield);
+    window.scrollTo(0, 0);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const safe = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
+    const fname = `payment-summary-${safe}.pdf`;
+    try {
+      await html2pdf().set({ ...PDF_OPT, filename: fname }).from(wrap).save();
+    } finally {
+      shield.remove();
+      wrap.remove();
+      const tmp = document.getElementById('html2pdf__container');
+      if (tmp) tmp.remove();
+    }
+  }
 
   function prepareInvoiceForCapture(inv) {
     loadInvoiceIntoForm(inv);
