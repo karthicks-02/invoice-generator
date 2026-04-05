@@ -74,6 +74,17 @@ legend {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
+.field-error {
+  margin: .35rem 0 0;
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--danger);
+  line-height: 1.35;
+}
+input[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25);
+}
 .field label input[type="checkbox"] {
   margin-right: .4rem;
   vertical-align: middle;
@@ -182,8 +193,14 @@ legend {
 .form-actions { text-align: center; margin-top: .5rem; }
 
 /* ===== Preview Panel ===== */
-.preview-panel { animation: fadeIn .3s ease; }
+.preview-panel {
+  animation: fadeIn .3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .preview-actions {
+  align-self: stretch;
   display: flex;
   gap: .75rem;
   margin-bottom: 1.25rem;
@@ -199,6 +216,9 @@ legend {
   box-shadow: var(--shadow-lg);
   padding: 0;
   max-width: 800px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   overflow: hidden;
 }
 
@@ -226,13 +246,19 @@ legend {
   border: 2px solid #000;
 }
 
-/* ── Shared Table Styles ── */
-.inv-tbl { width: 100%; border-collapse: collapse; }
+/* ── Shared Table Styles (fixed layout keeps columns aligned across stacked tables) ── */
+.inv .inv-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
 .inv-tbl td, .inv-tbl th {
   border: 1px solid #000;
   padding: 4px 8px;
   font-size: 11px;
   vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 .inv .c { text-align: center; }
 .inv .l { text-align: left; }
@@ -277,7 +303,7 @@ legend {
 /* ── Buyer + Invoice Meta ── */
 .inv-buyer-cell {
   vertical-align: top;
-  padding: 6px 10px;
+  padding: 8px 10px;
 }
 .inv-lbl {
   font-size: 10px;
@@ -302,8 +328,9 @@ legend {
   font-size: 15px;
 }
 
-/* ── Consignee ── */
-.inv-con td { font-size: 11px; padding: 6px 10px; }
+/* ── Consignee (first column matches buyer block: 55%) ── */
+.inv-con td { font-size: 11px; padding: 6px 10px; vertical-align: middle; }
+.inv-con td.inv-buyer-cell { vertical-align: top; }
 .inv-flbl { font-size: 10px; font-weight: 600; color: #333; white-space: nowrap; }
 
 /* ── Items ── */
@@ -315,10 +342,18 @@ legend {
   background: #f8f8f8;
   vertical-align: middle;
 }
-.inv-items td { padding: 5px 6px; }
+.inv-items td { padding: 5px 6px; vertical-align: middle; }
+.inv-items tbody td:nth-child(1),
+.inv-items tbody td:nth-child(3),
+.inv-items tbody td:nth-child(4),
+.inv-items tbody td:nth-child(5),
+.inv-items tbody td:nth-child(6) { text-align: center; }
+.inv-items tbody td:nth-child(2) { text-align: left; }
+.inv-items tbody td:nth-child(7) { text-align: right; }
 
 /* ── Bottom Section (Totals + Footer combined) ── */
 .inv-bottom td { vertical-align: middle; }
+.inv-bottom td[rowspan] { vertical-align: top; padding-top: 10px; }
 .inv-cert {
   font-style: italic;
   font-size: 10px;

@@ -391,6 +391,33 @@ document.addEventListener('DOMContentLoaded', () => {
   let invoices = [];
   let editingInvoiceId = null;
 
+  function normalizeInvoiceNo(s) {
+    return (s || '').trim().toLowerCase();
+  }
+
+  /** Another saved invoice (not excludeId) already uses this number — comparison is case-insensitive, trimmed. */
+  function getInvoiceNumberConflict(rawNo, excludeId) {
+    const key = normalizeInvoiceNo(rawNo);
+    if (!key) return null;
+    return invoices.find(inv => normalizeInvoiceNo(inv.invoiceNumber) === key && inv.id !== excludeId) || null;
+  }
+
+  function refreshInvoiceNumberDuplicateHint() {
+    const errEl = $('invoiceNumberError');
+    const inp = $('invoiceNumber');
+    if (!errEl || !inp) return;
+    const conflict = getInvoiceNumberConflict(inp.value, editingInvoiceId);
+    if (conflict) {
+      errEl.textContent = 'This invoice number is already used. Pick a new number or edit the existing invoice in All Invoices.';
+      errEl.classList.remove('hidden');
+      inp.setAttribute('aria-invalid', 'true');
+    } else {
+      errEl.textContent = '';
+      errEl.classList.add('hidden');
+      inp.removeAttribute('aria-invalid');
+    }
+  }
+
   function saveInvoices() {
     db.saveInvoices(invoices);
   }
@@ -423,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveCurrentInvoice() {
+    if (getInvoiceNumberConflict($('invoiceNumber').value, editingInvoiceId)) return false;
     const data = collectInvoiceData();
     if (editingInvoiceId) {
       const idx = invoices.findIndex(inv => inv.id === editingInvoiceId);
@@ -439,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
       editingInvoiceId = data.id;
     }
     saveInvoices();
+    return true;
   }
 
   function loadInvoiceIntoForm(inv) {
@@ -482,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cb.checked = inv.copyTypes.includes(cb.value);
       });
     }
+    refreshInvoiceNumberDuplicateHint();
   }
 
   function resetInvoiceForm() {
@@ -489,6 +519,12 @@ document.addEventListener('DOMContentLoaded', () => {
     cameFromInvoiceList = false;
     cameFromPayment = false;
     $('invoiceNumber').value = '';
+    const invNoErr = $('invoiceNumberError');
+    if (invNoErr) {
+      invNoErr.textContent = '';
+      invNoErr.classList.add('hidden');
+    }
+    $('invoiceNumber').removeAttribute('aria-invalid');
     $('invoiceDate').value = new Date().toISOString().split('T')[0];
     $('buyerName').value = '';
     $('buyerGstin').value = '';
@@ -2067,6 +2103,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  $('invoiceNumber').addEventListener('input', refreshInvoiceNumberDuplicateHint);
+  $('invoiceNumber').addEventListener('blur', refreshInvoiceNumberDuplicateHint);
+
   // ── Preview ──
   $('previewBtn').addEventListener('click', () => {
     const invNo = $('invoiceNumber').value.trim();
@@ -2075,9 +2114,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!invNo) { alert('Invoice No. is required'); $('invoiceNumber').focus(); return; }
     if (!buyer) { alert('Buyer Company Name is required'); $('buyerName').focus(); return; }
     if (!reminder) { alert('Reminder Date is required'); $('invoiceReminder').focus(); return; }
+    if (getInvoiceNumberConflict(invNo, editingInvoiceId)) {
+      refreshInvoiceNumberDuplicateHint();
+      alert('This invoice number already exists. Enter a different invoice number.');
+      $('invoiceNumber').focus();
+      return;
+    }
 
     syncCopyChecks('copyType', 'copyTypePreview');
-    saveCurrentInvoice();
+    if (!saveCurrentInvoice()) return;
     checkReminders();
     buildAllInvoices();
     $('formPanel').classList.add('hidden');
@@ -2200,14 +2245,14 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Consignee ─── -->
         <table class="inv-tbl inv-con">
           <colgroup>
-            <col style="width:34%">
-            <col style="width:11%">
-            <col style="width:22%">
-            <col style="width:11%">
-            <col style="width:22%">
+            <col style="width:55%">
+            <col style="width:10%">
+            <col style="width:12.5%">
+            <col style="width:10%">
+            <col style="width:12.5%">
           </colgroup>
           <tr>
-            <td rowspan="3" style="vertical-align:top;padding:8px 10px">
+            <td rowspan="3" class="inv-buyer-cell">
               <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
               <div style="font-weight:700;margin-bottom:4px">${esc(consigneeName).toUpperCase()}</div>
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
@@ -2238,12 +2283,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <table class="inv-tbl inv-items">
           <colgroup>
             <col style="width:5%">
-            <col style="width:29%">
+            <col style="width:50%">
             <col style="width:11%">
-            <col style="width:10%">
-            <col style="width:11%">
-            <col style="width:10%">
-            <col style="width:14%">
+            <col style="width:9%">
+            <col style="width:9%">
+            <col style="width:8%">
+            <col style="width:8%">
           </colgroup>
         <thead>
           <tr>
@@ -2262,10 +2307,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Bottom Section (Totals + Footer) ─── -->
         <table class="inv-tbl inv-bottom">
           <colgroup>
-            <col style="width:18%">
-            <col style="width:32%">
-            <col style="width:30%">
-            <col style="width:20%">
+            <col style="width:22%">
+            <col style="width:33%">
+            <col style="width:22.5%">
+            <col style="width:22.5%">
           </colgroup>
           <tr>
             <td style="white-space:nowrap"><strong>Mode Of Transport :</strong></td>
@@ -2392,9 +2437,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr><td class="bld">DATE :</td><td class="bld inv-meta-val">${shortDate}</td></tr>
         </table>
         <table class="inv-tbl inv-con">
-          <colgroup><col style="width:34%"><col style="width:11%"><col style="width:22%"><col style="width:11%"><col style="width:22%"></colgroup>
+          <colgroup><col style="width:55%"><col style="width:10%"><col style="width:12.5%"><col style="width:10%"><col style="width:12.5%"></colgroup>
           <tr>
-            <td rowspan="3" style="vertical-align:top;padding:8px 10px">
+            <td rowspan="3" class="inv-buyer-cell">
               <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>
               <div style="font-weight:700;margin-bottom:4px">${esc(consigneeName).toUpperCase()}</div>
               <div style="margin-bottom:4px">${esc(consigneeAddr).replace(/\n/g, '<br>')}</div>
@@ -2415,7 +2460,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
         </table>
         <table class="inv-tbl inv-items">
-          <colgroup><col style="width:5%"><col style="width:29%"><col style="width:11%"><col style="width:10%"><col style="width:11%"><col style="width:10%"><col style="width:14%"></colgroup>
+          <colgroup><col style="width:5%"><col style="width:50%"><col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:8%"><col style="width:8%"></colgroup>
           <thead><tr>
             <th>SL.No.</th><th>NAME OF THE COMMODITY / SERVICE</th><th>HSN CODE</th>
             <th>No.Of<br>Packages</th><th>Total Qty IN<br>NOS</th><th>Rate Per No.</th><th>GOODS VALUE<br>(in Rs.)</th>
@@ -2423,7 +2468,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <tbody>${itemRows}</tbody>
         </table>
         <table class="inv-tbl inv-bottom">
-          <colgroup><col style="width:18%"><col style="width:32%"><col style="width:30%"><col style="width:20%"></colgroup>
+          <colgroup><col style="width:22%"><col style="width:33%"><col style="width:22.5%"><col style="width:22.5%"></colgroup>
           <tr>
             <td style="white-space:nowrap"><strong>Mode Of Transport :</strong></td>
             <td>${esc(inv.transportMode)}</td>
