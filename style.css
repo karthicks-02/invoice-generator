@@ -353,23 +353,6 @@ input.inv-rate-input {
 /* ── Consignee (first column matches buyer block: 55%) ── */
 .inv-con td { font-size: 11px; padding: 6px 10px; vertical-align: middle; }
 .inv-con td.inv-buyer-cell { vertical-align: top; }
-.inv-con .inv-bank-inline {
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid #bbb;
-  font-size: 10px;
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow-x: auto;
-  max-width: 100%;
-}
-.inv-con .inv-bank-piece { white-space: nowrap; }
-.inv-con .inv-bank-sep {
-  display: inline-block;
-  color: #555;
-  font-weight: 400;
-  padding: 0 0.4rem;
-}
 .inv-flbl { font-size: 10px; font-weight: 600; color: #333; white-space: nowrap; }
 
 /* ── Items ── */
