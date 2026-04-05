@@ -2029,26 +2029,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return shield;
   }
 
-  function capturePDF(filename) {
-    const opt = {
-      margin: [0.3, 0.3, 0.3, 0.3],
-      filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'], before: '.pdf-page-break' }
-    };
-    return html2pdf().set(opt).from($('invoicePaper')).save();
+  const PDF_OPT = {
+    margin: [0.3, 0.3, 0.3, 0.3],
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+
+  function prepareInvoiceForCapture(inv) {
+    loadInvoiceIntoForm(inv);
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
   }
 
   async function downloadInvoicePDF(inv) {
     const state = saveViewState();
-    loadInvoiceIntoForm(inv);
-    syncCopyChecks('copyType', 'copyTypePreview');
-    buildAllInvoices();
+    prepareInvoiceForCapture(inv);
     const shield = showPaperForCapture();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await capturePDF(`${inv.invoiceNumber || 'invoice'}.pdf`);
+    await html2pdf().set({ ...PDF_OPT, filename: `${inv.invoiceNumber || 'invoice'}.pdf` }).from($('invoicePaper')).save();
     shield.remove();
     restoreViewState(state);
   }
@@ -2056,22 +2055,34 @@ document.addEventListener('DOMContentLoaded', () => {
   async function downloadBulkPDF(selected, filename) {
     if (!selected.length) return;
     if (selected.length === 1) return downloadInvoicePDF(selected[0]);
-    const state = saveViewState();
 
-    let allHtml = '';
-    selected.forEach((inv, idx) => {
-      loadInvoiceIntoForm(inv);
-      syncCopyChecks('copyType', 'copyTypePreview');
-      const types = getSelectedCopyTypes('copyType');
-      if (!types.length) types.push('');
-      allHtml += types.map(t => buildInvoice(t)).join('<div class="copy-separator"></div>');
-      if (idx < selected.length - 1) allHtml += '<div class="pdf-page-break"></div>';
-    });
-    $('invoicePaper').innerHTML = allHtml;
-    const shield = showPaperForCapture();
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await capturePDF(filename);
-    shield.remove();
+    const state = saveViewState();
+    const paper = $('invoicePaper');
+    let pdf = null;
+
+    for (let i = 0; i < selected.length; i++) {
+      prepareInvoiceForCapture(selected[i]);
+      const shield = showPaperForCapture();
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      if (i === 0) {
+        pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(paper).toPdf().get('pdf');
+      } else {
+        const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const pageW = pdf.internal.pageSize.getWidth();
+        const margin = 0.3;
+        const usableW = pageW - margin * 2;
+        const imgH = (canvas.height * usableW) / canvas.width;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+        const tmpContainer = document.getElementById('html2pdf__container');
+        if (tmpContainer) tmpContainer.remove();
+      }
+      shield.remove();
+    }
+
+    pdf.save(filename);
     restoreViewState(state);
   }
 
@@ -2083,7 +2094,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const invNum = $('invoiceNumber').value || 'invoice';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        capturePDF(`${invNum}.pdf`).then(() => {
+        html2pdf().set({ ...PDF_OPT, filename: `${invNum}.pdf` }).from(element).save().then(() => {
           element.style.overflow = '';
         });
       });
