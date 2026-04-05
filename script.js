@@ -2035,7 +2035,8 @@ document.addEventListener('DOMContentLoaded', () => {
       filename,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'], before: '.pdf-page-break' }
     };
     return html2pdf().set(opt).from($('invoicePaper')).save();
   }
@@ -2064,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const types = getSelectedCopyTypes('copyType');
       if (!types.length) types.push('');
       allHtml += types.map(t => buildInvoice(t)).join('<div class="copy-separator"></div>');
-      if (idx < selected.length - 1) allHtml += '<div style="page-break-before:always"></div>';
+      if (idx < selected.length - 1) allHtml += '<div class="pdf-page-break"></div>';
     });
     $('invoicePaper').innerHTML = allHtml;
     const shield = showPaperForCapture();

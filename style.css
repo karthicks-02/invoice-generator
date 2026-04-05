@@ -460,6 +460,11 @@ legend {
   border-top: 2px dashed #ccc;
   page-break-after: always;
 }
+.pdf-page-break {
+  page-break-before: always;
+  break-before: page;
+  height: 0;
+}
 
 /* ===== Copy Type Checkboxes ===== */
 .copy-type-row {
