@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!selected.length) return;
 
     const container = document.createElement('div');
-    container.className = 'invoice-paper';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;overflow:visible;z-index:-1;';
     selected.forEach((inv, idx) => {
       const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
       container.innerHTML += types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
@@ -1827,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const types = inv.copyTypes && inv.copyTypes.length ? inv.copyTypes : [''];
     const html = types.map(t => buildInvoiceFromData(inv, t)).join('<div class="copy-separator"></div>');
     const container = document.createElement('div');
-    container.className = 'invoice-paper';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;overflow:visible;z-index:-1;';
     container.innerHTML = html;
     document.body.appendChild(container);
     const opt = {
