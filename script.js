@@ -2272,11 +2272,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- ─── Consignee ─── -->
         <table class="inv-tbl inv-con">
           <colgroup>
-            <col style="width:55%">
-            <col style="width:10%">
-            <col style="width:12.5%">
-            <col style="width:10%">
-            <col style="width:12.5%">
+            <col style="width:40%">
+            <col style="width:12%">
+            <col style="width:18%">
+            <col style="width:12%">
+            <col style="width:18%">
           </colgroup>
           <tr>
             <td rowspan="3" class="inv-buyer-cell">
@@ -2464,7 +2464,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr><td class="bld">DATE :</td><td class="bld inv-meta-val">${shortDate}</td></tr>
         </table>
         <table class="inv-tbl inv-con">
-          <colgroup><col style="width:55%"><col style="width:10%"><col style="width:12.5%"><col style="width:10%"><col style="width:12.5%"></colgroup>
+          <colgroup><col style="width:40%"><col style="width:12%"><col style="width:18%"><col style="width:12%"><col style="width:18%"></colgroup>
           <tr>
             <td rowspan="3" class="inv-buyer-cell">
               <div class="inv-lbl" style="margin-bottom:4px">Details of Consignee / shipped to :</div>

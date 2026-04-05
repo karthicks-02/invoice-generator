@@ -350,7 +350,7 @@ input.inv-rate-input {
   font-size: 15px;
 }
 
-/* ── Consignee (first column matches buyer block: 55%) ── */
+/* ── Consignee: 40% shipped-to, 60% PO + bank grid ── */
 .inv-con td { font-size: 11px; padding: 6px 10px; vertical-align: middle; }
 .inv-con td.inv-buyer-cell { vertical-align: top; }
 .inv-flbl { font-size: 10px; font-weight: 600; color: #333; white-space: nowrap; }
