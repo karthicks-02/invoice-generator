@@ -509,6 +509,12 @@
       </section>
     </div>
 
+    <!-- PDF Rendering Area (hidden behind overlay during generation) -->
+    <div id="pdfOverlay" class="overlay hidden" style="z-index:9998">
+      <div class="auth-box" style="text-align:center"><p>Generating PDF...</p></div>
+    </div>
+    <div id="pdfRenderArea" style="position:fixed;left:0;top:0;width:800px;background:#fff;z-index:9999;display:none;"></div>
+
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -520,6 +526,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=34"></script>
+  <script src="script.js?v=35"></script>
 </body>
 </html>
