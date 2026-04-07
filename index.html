@@ -306,6 +306,19 @@
               </div>
             </div>
           </div>
+          <div class="consignee-section">
+            <div class="consignee-header">
+              <label class="consignee-label">Associated Products</label>
+              <button type="button" class="btn btn-secondary btn-sm" id="addCustProdBtn">+ Add</button>
+            </div>
+            <div id="custProdList"></div>
+            <div id="custProdFormRow" class="hidden">
+              <div class="field"><label>Product</label><input type="text" id="custProdInput" autocomplete="off" placeholder="Type to search products..." /></div>
+              <div style="display:flex;gap:8px;margin-bottom:.75rem">
+                <button type="button" class="btn btn-secondary btn-sm" id="cancelCustProdBtn">Cancel</button>
+              </div>
+            </div>
+          </div>
           <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
             <button class="btn btn-primary" id="saveCustBtn">Save</button>
             <button class="btn btn-secondary" id="cancelCustBtn">Cancel</button>
@@ -556,6 +569,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=91"></script>
+  <script src="script.js?v=92"></script>
 </body>
 </html>

@@ -345,8 +345,11 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custPoDate').value = '';
     $('custGstType').value = 'intra';
     tempConsignees = [];
+    tempCustProducts = [];
     renderConsigneeList();
+    renderCustProdList();
     resetConsigneeForm();
+    $('custProdFormRow').classList.add('hidden');
     showCustForm();
   });
 
@@ -364,7 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
       poNumber: $('custPoNumber').value.trim(),
       poDate: $('custPoDate').value,
       gstType: $('custGstType').value,
-      consignees: [...tempConsignees]
+      consignees: [...tempConsignees],
+      associatedProducts: [...tempCustProducts]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
     if (editCustIdx >= 0) {
@@ -392,8 +396,11 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPoDate').value = c.poDate || '';
       $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
+      tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
       renderConsigneeList();
+      renderCustProdList();
       resetConsigneeForm();
+      $('custProdFormRow').classList.add('hidden');
       showCustForm();
     }
     if (e.target.classList.contains('btn-del')) {
@@ -402,6 +409,57 @@ document.addEventListener('DOMContentLoaded', () => {
         saveCustomers();
         renderCustomers();
       }
+    }
+  });
+
+  // ══════════════════════════════════════
+  // ── Customer Associated Products ──
+  // ══════════════════════════════════════
+  let tempCustProducts = [];
+
+  function renderCustProdList() {
+    const wrap = $('custProdList');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    tempCustProducts.forEach((pName, i) => {
+      const prod = products.find(p => p.name === pName);
+      const div = document.createElement('div');
+      div.className = 'consignee-item';
+      const info = document.createElement('div');
+      info.className = 'consignee-item-info';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'consignee-item-name';
+      nameEl.textContent = pName;
+      info.appendChild(nameEl);
+      if (prod) {
+        const detailEl = document.createElement('div');
+        detailEl.className = 'consignee-item-addr';
+        detailEl.textContent = 'HSN: ' + (prod.hsn || '—') + '  |  Rate: ₹' + Number(prod.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        info.appendChild(detailEl);
+      }
+      div.appendChild(info);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del';
+      delBtn.textContent = 'Remove';
+      delBtn.dataset.cpi = i;
+      div.appendChild(delBtn);
+      wrap.appendChild(div);
+    });
+  }
+
+  $('addCustProdBtn').addEventListener('click', () => {
+    $('custProdInput').value = '';
+    $('custProdFormRow').classList.remove('hidden');
+    $('custProdInput').focus();
+  });
+
+  $('cancelCustProdBtn').addEventListener('click', () => {
+    $('custProdFormRow').classList.add('hidden');
+  });
+
+  $('custProdList').addEventListener('click', e => {
+    if (e.target.classList.contains('btn-del')) {
+      tempCustProducts.splice(+e.target.dataset.cpi, 1);
+      renderCustProdList();
     }
   });
 
@@ -2027,7 +2085,9 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPoDate').value = c.poDate || '';
       $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
+      tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
       renderConsigneeList();
+      renderCustProdList();
     },
     { showOnEmpty: false }
   );
@@ -2047,9 +2107,28 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPoDate').value = c.poDate || '';
       $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
+      tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
       renderConsigneeList();
+      renderCustProdList();
     },
     { showOnEmpty: false }
+  );
+
+  // ── Associated Products Autocomplete (in customer form) ──
+  createAutocomplete(
+    $('custProdInput'),
+    val => products
+      .filter(p => !tempCustProducts.includes(p.name) &&
+        (p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val)))
+      .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)} | ₹${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</small>`, data: p })),
+    p => {
+      if (!tempCustProducts.includes(p.name)) {
+        tempCustProducts.push(p.name);
+        renderCustProdList();
+      }
+      $('custProdInput').value = '';
+      $('custProdFormRow').classList.add('hidden');
+    }
   );
 
   // ══════════════════════════════════════
@@ -2334,10 +2413,23 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   // ── Product Autocomplete on Item Description & HSN fields ──
+  function getAssociatedProductNames() {
+    const buyerName = $('buyerName').value.trim().toLowerCase();
+    const buyer = customers.find(c => c.name.toLowerCase() === buyerName);
+    return (buyer && buyer.associatedProducts) ? buyer.associatedProducts : [];
+  }
+
   function matchProducts(val) {
-    return products
-      .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val))
-      .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p }));
+    const assocNames = getAssociatedProductNames();
+    const matched = products
+      .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val));
+    const assoc = matched.filter(p => assocNames.includes(p.name));
+    const rest = matched.filter(p => !assocNames.includes(p.name));
+    return [...assoc, ...rest]
+      .map(p => {
+        const isAssoc = assocNames.includes(p.name);
+        return { label: `${escHtml(p.name)}<small>${isAssoc ? '★ ' : ''}HSN: ${escHtml(p.hsn)}</small>`, data: p };
+      });
   }
 
   function fillProduct(inp, p) {
