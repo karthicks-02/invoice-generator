@@ -576,6 +576,35 @@ input.inv-rate-input {
   font-size: .9rem;
 }
 
+.suggestions-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 50;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.suggestions-dropdown.hidden { display: none; }
+.suggestion-item {
+  padding: .5rem .75rem;
+  cursor: pointer;
+  font-size: .85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background: var(--bg); }
+.suggestion-item-name { font-weight: 500; }
+.suggestion-item-detail { color: var(--text-muted); font-size: .8rem; }
+
 /* ===== Copy Separator ===== */
 .copy-separator {
   margin: 20px 0;

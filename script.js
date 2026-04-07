@@ -394,16 +394,60 @@ document.addEventListener('DOMContentLoaded', () => {
     showProdForm();
   }
 
+  function updateProdSuggestions() {
+    const box = $('prodSuggestions');
+    if (editProdIdx >= 0) { box.classList.add('hidden'); return; }
+    const q = $('prodName').value.trim().toLowerCase();
+    if (!q) { box.classList.add('hidden'); return; }
+    const matches = products
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.name.toLowerCase().includes(q))
+      .slice(0, 8);
+    if (!matches.length) { box.classList.add('hidden'); return; }
+    while (box.firstChild) box.removeChild(box.firstChild);
+    matches.forEach(({ p, i }) => {
+      const div = document.createElement('div');
+      div.className = 'suggestion-item';
+      div.dataset.i = i;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'suggestion-item-name';
+      nameSpan.textContent = p.name;
+      const detailSpan = document.createElement('span');
+      detailSpan.className = 'suggestion-item-detail';
+      detailSpan.textContent = 'HSN: ' + (p.hsn || '—') + '  |  ₹' + Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      div.appendChild(nameSpan);
+      div.appendChild(detailSpan);
+      box.appendChild(div);
+    });
+    box.classList.remove('hidden');
+  }
+
+  $('prodName').addEventListener('input', updateProdSuggestions);
+  $('prodName').addEventListener('focus', updateProdSuggestions);
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#prodSuggestions') && e.target !== $('prodName')) {
+      $('prodSuggestions').classList.add('hidden');
+    }
+  });
+  $('prodSuggestions').addEventListener('click', (e) => {
+    const item = e.target.closest('.suggestion-item');
+    if (!item) return;
+    openProdEdit(+item.dataset.i);
+    $('prodSuggestions').classList.add('hidden');
+  });
+
   $('addProdBtn').addEventListener('click', () => {
     editProdIdx = -1;
     $('prodFormTitle').textContent = 'Add Product';
     $('prodName').value = '';
     $('prodHsn').value = '';
     $('prodRate').value = '';
+    $('prodSuggestions').classList.add('hidden');
     showProdForm();
   });
 
   $('cancelProdBtn').addEventListener('click', () => {
+    $('prodSuggestions').classList.add('hidden');
     hideProdForm();
   });
 
