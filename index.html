@@ -86,6 +86,10 @@
         <input type="text" id="invSearch" class="filter-input" placeholder="Search by invoice no, customer, or product..." />
         <input type="date" id="invDateFrom" class="filter-date" title="From date" />
         <input type="date" id="invDateTo" class="filter-date" title="To date" />
+        <select id="invSortOrder" class="filter-select" title="Sort by date">
+          <option value="desc">Date: Newest first</option>
+          <option value="asc">Date: Oldest first</option>
+        </select>
       </div>
       <div class="inv-total-panel" id="invTotalPanel">
         <div class="inv-total-panel-title">Total invoice value</div>
@@ -546,6 +550,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=86"></script>
+  <script src="script.js?v=87"></script>
 </body>
 </html>

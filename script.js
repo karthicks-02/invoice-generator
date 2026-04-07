@@ -696,7 +696,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    filtered.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    const sortAsc = ($('invSortOrder').value === 'asc');
+    filtered.sort((a, b) => {
+      const da = a.invoiceDate || a.createdAt || '';
+      const db = b.invoiceDate || b.createdAt || '';
+      return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
+    });
 
     tbody.innerHTML = '';
     $('invListEmpty').style.display = filtered.length ? 'none' : 'block';
@@ -771,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('invSearch').addEventListener('input', renderInvoiceList);
   $('invDateFrom').addEventListener('change', onInvListDateRangeChange);
   $('invDateTo').addEventListener('change', onInvListDateRangeChange);
+  $('invSortOrder').addEventListener('change', renderInvoiceList);
 
   $('invListBody').addEventListener('click', e => {
     const id = e.target.dataset.invId;
@@ -895,11 +901,22 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInvoiceList();
   });
 
+  function applySortOrder(list) {
+    const sortAsc = ($('invSortOrder').value === 'asc');
+    return list.sort((a, b) => {
+      const da = a.invoiceDate || a.createdAt || '';
+      const db = b.invoiceDate || b.createdAt || '';
+      return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
+    });
+  }
+
   function getFilteredInvoices() {
     const from = $('invDateFrom').value;
     const to = $('invDateTo').value;
-    if (!from || !to) return invoices.slice();
-    return invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    const result = (!from || !to)
+      ? invoices.slice()
+      : invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    return applySortOrder(result);
   }
 
   $('downloadFilteredBtn').addEventListener('click', () => {
@@ -965,7 +982,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const checked = document.querySelectorAll('.inv-check:checked');
     if (!checked.length) { alert('Select at least one invoice'); return; }
     const ids = Array.from(checked).map(cb => cb.dataset.invId);
-    const selected = invoices.filter(inv => ids.includes(inv.id));
+    const selected = applySortOrder(invoices.filter(inv => ids.includes(inv.id)));
     if (!selected.length) return;
     const filename = selected.length === 1 ? `${selected[0].invoiceNumber || 'invoice'}.pdf` : `invoices-${formatDateYMDLocal(new Date())}.pdf`;
     downloadBulkPDF(selected, filename);
