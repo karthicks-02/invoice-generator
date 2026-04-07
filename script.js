@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       $('loadingPanel').classList.add('hidden');
       hideCustForm();
-      $('prodFormWrap').classList.add('hidden');
+      hideProdForm();
       $('previewPanel').classList.add('hidden');
       goHome();
     } else {
