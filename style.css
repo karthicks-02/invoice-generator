@@ -464,6 +464,11 @@ input.inv-rate-input {
   font-weight: 700;
   color: var(--text);
 }
+.view-header-actions {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+}
 
 /* ===== Filter Row ===== */
 .filter-row {

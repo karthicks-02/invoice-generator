@@ -298,6 +298,32 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custTableWrap').classList.remove('hidden');
   }
 
+  function downloadCSV(rows, filename) {
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  $('downloadCustBtn').addEventListener('click', () => {
+    if (!customers.length) { alert('No customers to download'); return; }
+    const header = ['#', 'Company Name', 'GSTIN', 'GST Type', 'Address', 'Contact Person', 'Phone', 'P.Order No.', 'P.O. Date', 'Consignees'];
+    const rows = [header];
+    customers.forEach((c, i) => {
+      const conNames = (c.consignees || []).map(cn => cn.name).join('; ');
+      rows.push([
+        i + 1, c.name, c.gstin,
+        c.gstType === 'inter' ? 'Inter-State' : 'Intra-State',
+        c.address, c.contact, c.phone,
+        c.poNumber || '', c.poDate || '', conNames
+      ]);
+    });
+    downloadCSV(rows, 'customers.csv');
+  });
+
   $('addCustBtn').addEventListener('click', () => {
     editCustIdx = -1;
     $('custFormTitle').textContent = 'Add Customer';
@@ -470,6 +496,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!item) return;
     openProdEdit(+item.dataset.i);
     $('prodSuggestions').classList.add('hidden');
+  });
+
+  $('downloadProdBtn').addEventListener('click', () => {
+    if (!products.length) { alert('No products to download'); return; }
+    const header = ['#', 'Product Name', 'HSN Code', 'Rate'];
+    const rows = [header];
+    products.forEach((p, i) => {
+      rows.push([i + 1, p.name, p.hsn, Number(p.rate).toFixed(2)]);
+    });
+    downloadCSV(rows, 'products.csv');
   });
 
   $('addProdBtn').addEventListener('click', () => {
