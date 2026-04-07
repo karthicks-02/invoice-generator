@@ -163,10 +163,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderCustomers() {
     const tbody = $('custBody');
-    tbody.innerHTML = '';
-    $('custEmpty').style.display = customers.length ? 'none' : 'block';
-    $('custTable').style.display = customers.length ? 'table' : 'none';
-    customers.forEach((c, i) => {
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    const query = ($('custSearch').value || '').toLowerCase().trim();
+    const filtered = customers.map((c, i) => ({ c, i })).filter(({ c }) => {
+      if (!query) return true;
+      return (c.name || '').toLowerCase().includes(query)
+        || (c.gstin || '').toLowerCase().includes(query)
+        || (c.contact || '').toLowerCase().includes(query)
+        || (c.phone || '').toLowerCase().includes(query);
+    });
+    $('custEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('custEmpty').textContent = customers.length ? 'No matching customers.' : 'No customers added yet.';
+    $('custTable').style.display = filtered.length ? 'table' : 'none';
+    filtered.forEach(({ c, i }) => {
       const conCount = c.consignees ? c.consignees.length : 0;
       const poParts = [];
       if (c.poNumber) poParts.push(escHtml(c.poNumber));
@@ -189,6 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
   }
+
+  $('custSearch').addEventListener('input', () => renderCustomers());
 
   let tempConsignees = [];
 
@@ -333,10 +344,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderProducts() {
     const tbody = $('prodBody');
-    tbody.innerHTML = '';
-    $('prodEmpty').style.display = products.length ? 'none' : 'block';
-    $('prodTable').style.display = products.length ? 'table' : 'none';
-    products.forEach((p, i) => {
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    const query = ($('prodSearch').value || '').toLowerCase().trim();
+    const filtered = products.map((p, i) => ({ p, i })).filter(({ p }) => {
+      if (!query) return true;
+      return (p.name || '').toLowerCase().includes(query)
+        || (p.hsn || '').toLowerCase().includes(query)
+        || String(p.rate).includes(query);
+    });
+    $('prodEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('prodEmpty').textContent = products.length ? 'No matching products.' : 'No products added yet.';
+    $('prodTable').style.display = filtered.length ? 'table' : 'none';
+    filtered.forEach(({ p, i }) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
@@ -350,6 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
   }
+
+  $('prodSearch').addEventListener('input', () => renderProducts());
 
   $('addProdBtn').addEventListener('click', () => {
     editProdIdx = -1;

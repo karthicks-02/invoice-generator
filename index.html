@@ -306,8 +306,12 @@
         </fieldset>
       </div>
 
-      <!-- Customer Table -->
-      <div class="data-table-wrap" id="custTableWrap">
+      <!-- Customer Search + Table -->
+      <div id="custTableWrap">
+        <div class="filter-row">
+          <input type="text" id="custSearch" class="filter-input" placeholder="Search by company, GSTIN, contact, or phone..." />
+        </div>
+        <div class="data-table-wrap">
         <table class="data-table" id="custTable">
           <thead>
             <tr>
@@ -325,6 +329,7 @@
           <tbody id="custBody"></tbody>
         </table>
         <p id="custEmpty" class="empty-msg">No customers added yet.</p>
+        </div>
       </div>
     </div>
 
@@ -352,7 +357,10 @@
         </fieldset>
       </div>
 
-      <!-- Product Table -->
+      <!-- Product Search + Table -->
+      <div class="filter-row">
+        <input type="text" id="prodSearch" class="filter-input" placeholder="Search by product name, HSN code, or rate..." />
+      </div>
       <div class="data-table-wrap">
         <table class="data-table" id="prodTable">
           <thead>
@@ -536,6 +544,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=81"></script>
+  <script src="script.js?v=82"></script>
 </body>
 </html>
