@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('prodBackBtn').addEventListener('click', () => {
     if (!$('prodFormWrap').classList.contains('hidden')) {
-      $('prodFormWrap').classList.add('hidden');
+      hideProdForm();
     } else {
       goHome();
     }
@@ -144,6 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (card.dataset.view === 'invoiceListView') renderInvoiceList();
       if (card.dataset.view === 'invoiceView') { resetInvoiceForm(); }
       if (card.dataset.view === 'paymentView') renderPaymentView();
+      if (card.dataset.view === 'productView') hideProdForm();
+      if (card.dataset.view === 'customerView') hideCustForm();
     });
   });
 
