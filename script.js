@@ -372,17 +372,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('prodSearch').addEventListener('input', () => renderProducts());
 
+  function showProdForm() {
+    $('prodFormWrap').classList.remove('hidden');
+    $('prodTableWrap').classList.add('hidden');
+  }
+  function hideProdForm() {
+    $('prodFormWrap').classList.add('hidden');
+    $('prodTableWrap').classList.remove('hidden');
+  }
+
+  function openProdEdit(i) {
+    editProdIdx = i;
+    const p = products[i];
+    $('prodFormTitle').textContent = 'Edit Product';
+    $('prodName').value = p.name;
+    $('prodHsn').value = p.hsn;
+    const pr = Number(p.rate);
+    $('prodRate').value = Number.isFinite(pr) ? String(Math.round(pr * 100) / 100) : '';
+    showProdForm();
+  }
+
   $('addProdBtn').addEventListener('click', () => {
     editProdIdx = -1;
     $('prodFormTitle').textContent = 'Add Product';
     $('prodName').value = '';
     $('prodHsn').value = '';
     $('prodRate').value = '';
-    $('prodFormWrap').classList.remove('hidden');
+    showProdForm();
   });
 
   $('cancelProdBtn').addEventListener('click', () => {
-    $('prodFormWrap').classList.add('hidden');
+    hideProdForm();
   });
 
   $('saveProdBtn').addEventListener('click', () => {
@@ -393,6 +413,15 @@ document.addEventListener('DOMContentLoaded', () => {
       rate: parsedRate == null ? 0 : parsedRate
     };
     if (!obj.name) { alert('Product Name is required'); return; }
+    if (editProdIdx < 0) {
+      const dupIdx = products.findIndex(p => p.name.trim().toLowerCase() === obj.name.toLowerCase());
+      if (dupIdx >= 0) {
+        if (confirm('A product named "' + products[dupIdx].name + '" already exists. Edit it instead?')) {
+          openProdEdit(dupIdx);
+          return;
+        }
+      }
+    }
     if (editProdIdx >= 0) {
       products[editProdIdx] = obj;
     } else {
@@ -400,20 +429,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     saveProducts();
     renderProducts();
-    $('prodFormWrap').classList.add('hidden');
+    hideProdForm();
   });
 
   $('prodBody').addEventListener('click', e => {
     const i = +e.target.dataset.i;
     if (e.target.classList.contains('btn-edit')) {
-      editProdIdx = i;
-      const p = products[i];
-      $('prodFormTitle').textContent = 'Edit Product';
-      $('prodName').value = p.name;
-      $('prodHsn').value = p.hsn;
-      const pr = Number(p.rate);
-      $('prodRate').value = Number.isFinite(pr) ? String(Math.round(pr * 100) / 100) : '';
-      $('prodFormWrap').classList.remove('hidden');
+      openProdEdit(i);
     }
     if (e.target.classList.contains('btn-del')) {
       if (confirm('Delete this product?')) {

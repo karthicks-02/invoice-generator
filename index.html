@@ -358,23 +358,25 @@
       </div>
 
       <!-- Product Search + Table -->
-      <div class="filter-row">
-        <input type="text" id="prodSearch" class="filter-input" placeholder="Search by product name, HSN code, or rate..." />
-      </div>
-      <div class="data-table-wrap">
-        <table class="data-table" id="prodTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Product Name</th>
-              <th>HSN Code</th>
-              <th>Rate</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="prodBody"></tbody>
-        </table>
-        <p id="prodEmpty" class="empty-msg">No products added yet.</p>
+      <div id="prodTableWrap">
+        <div class="filter-row">
+          <input type="text" id="prodSearch" class="filter-input" placeholder="Search by product name, HSN code, or rate..." />
+        </div>
+        <div class="data-table-wrap">
+          <table class="data-table" id="prodTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product Name</th>
+                <th>HSN Code</th>
+                <th>Rate</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="prodBody"></tbody>
+          </table>
+          <p id="prodEmpty" class="empty-msg">No products added yet.</p>
+        </div>
       </div>
     </div>
 
@@ -544,6 +546,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=82"></script>
+  <script src="script.js?v=83"></script>
 </body>
 </html>
