@@ -2883,11 +2883,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const state = saveViewState();
     const paper = $('invoicePaper');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pdfBulkOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+    msg.textContent = 'Preparing PDFs...';
+    const bar = document.createElement('div');
+    bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width .3s;';
+    bar.appendChild(fill);
+    overlay.appendChild(msg);
+    overlay.appendChild(bar);
+    document.body.appendChild(overlay);
+
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('invoiceView').classList.remove('hidden');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+    paper.style.overflow = 'visible';
+
     let pdf = null;
 
     for (let i = 0; i < selected.length; i++) {
+      msg.textContent = `Generating PDF ${i + 1} of ${selected.length}...`;
+      fill.style.width = Math.round(((i + 1) / selected.length) * 100) + '%';
+
       prepareInvoiceForCapture(selected[i]);
-      const shield = showPaperForCapture();
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       if (i === 0) {
@@ -2904,10 +2929,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const tmpContainer = document.getElementById('html2pdf__container');
         if (tmpContainer) tmpContainer.remove();
       }
-      shield.remove();
     }
 
     pdf.save(filename);
+    overlay.remove();
     restoreViewState(state);
   }
 
