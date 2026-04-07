@@ -205,18 +205,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let tempConsignees = [];
 
+  let editConIdx = -1;
+
   function renderConsigneeList() {
     const wrap = $('consigneeList');
-    wrap.innerHTML = '';
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
     tempConsignees.forEach((con, i) => {
       const div = document.createElement('div');
       div.className = 'consignee-item';
-      div.innerHTML = `
-        <div class="consignee-item-info">
-          <div class="consignee-item-name">${escHtml(con.name)}</div>
-          <div class="consignee-item-addr">${escHtml(con.address)}</div>
-        </div>
-        <button class="btn-del" data-ci="${i}">&times;</button>`;
+      const info = document.createElement('div');
+      info.className = 'consignee-item-info';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'consignee-item-name';
+      nameEl.textContent = con.name;
+      const addrEl = document.createElement('div');
+      addrEl.className = 'consignee-item-addr';
+      addrEl.textContent = con.address;
+      info.appendChild(nameEl);
+      info.appendChild(addrEl);
+      div.appendChild(info);
+      const actions = document.createElement('div');
+      actions.className = 'consignee-item-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-edit';
+      editBtn.textContent = 'Edit';
+      editBtn.dataset.ci = i;
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del';
+      delBtn.textContent = 'Delete';
+      delBtn.dataset.ci = i;
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      div.appendChild(actions);
       wrap.appendChild(div);
     });
   }
@@ -225,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('conName').value = '';
     $('conAddress').value = '';
     $('consigneeFormRow').classList.add('hidden');
+    editConIdx = -1;
+    $('saveConsigneeBtn').textContent = 'Add Consignee';
   }
 
   $('addConsigneeBtn').addEventListener('click', () => {
@@ -240,16 +262,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = $('conName').value.trim();
     const address = $('conAddress').value.trim();
     if (!name) { alert('Consignee Name is required'); return; }
-    tempConsignees.push({ name, address });
+    if (editConIdx >= 0) {
+      tempConsignees[editConIdx] = { name, address };
+    } else {
+      tempConsignees.push({ name, address });
+    }
     renderConsigneeList();
     resetConsigneeForm();
   });
 
   $('consigneeList').addEventListener('click', e => {
-    if (e.target.classList.contains('btn-del')) {
-      const ci = +e.target.dataset.ci;
+    const btn = e.target;
+    const ci = +btn.dataset.ci;
+    if (btn.classList.contains('btn-edit')) {
+      editConIdx = ci;
+      const con = tempConsignees[ci];
+      $('conName').value = con.name;
+      $('conAddress').value = con.address;
+      $('saveConsigneeBtn').textContent = 'Update Consignee';
+      $('consigneeFormRow').classList.remove('hidden');
+    }
+    if (btn.classList.contains('btn-del')) {
       tempConsignees.splice(ci, 1);
       renderConsigneeList();
+      if (editConIdx === ci) resetConsigneeForm();
     }
   });
 
@@ -2212,6 +2248,17 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poDate').value = c.poDate || '';
       $('gstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       $('gstType').dispatchEvent(new Event('change'));
+      if (c.consignees && c.consignees.length > 0) {
+        $('sameAsBuyer').checked = false;
+        $('consigneeFields').classList.remove('hidden');
+        $('consigneeName').value = c.consignees[0].name;
+        $('consigneeAddress').value = c.consignees[0].address;
+      } else {
+        $('sameAsBuyer').checked = true;
+        $('consigneeFields').classList.add('hidden');
+        $('consigneeName').value = '';
+        $('consigneeAddress').value = '';
+      }
     }
   );
 
