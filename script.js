@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const poSummary = poParts.length ? poParts.join(' · ') : '—';
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${i + 1}</td>
+        <td><input type="checkbox" class="cust-check" data-i="${i}" /></td>
         <td>${escHtml(c.name)}</td>
         <td>${escHtml(c.gstin)}</td>
         <td>${escHtml(customerGstTypeLabel(c.gstType))}</td>
@@ -199,9 +199,14 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>`;
       tbody.appendChild(tr);
     });
+    if ($('custSelectAll')) $('custSelectAll').checked = false;
   }
 
   $('custSearch').addEventListener('input', () => renderCustomers());
+
+  $('custSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('.cust-check').forEach(cb => cb.checked = e.target.checked);
+  });
 
   let tempConsignees = [];
 
@@ -310,9 +315,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('downloadCustBtn').addEventListener('click', () => {
     if (!customers.length) { alert('No customers to download'); return; }
+    const checked = document.querySelectorAll('.cust-check:checked');
+    const selected = checked.length
+      ? Array.from(checked).map(cb => ({ c: customers[+cb.dataset.i], i: +cb.dataset.i }))
+      : customers.map((c, i) => ({ c, i }));
     const header = ['#', 'Company Name', 'GSTIN', 'GST Type', 'Address', 'Contact Person', 'Phone', 'P.Order No.', 'P.O. Date', 'Consignees'];
     const rows = [header];
-    customers.forEach((c, i) => {
+    selected.forEach(({ c, i }) => {
       const conNames = (c.consignees || []).map(cn => cn.name).join('; ');
       rows.push([
         i + 1, c.name, c.gstin,
@@ -321,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         c.poNumber || '', c.poDate || '', conNames
       ]);
     });
-    downloadCSV(rows, 'customers.csv');
+    downloadCSV(rows, checked.length ? 'customers-selected.csv' : 'customers.csv');
   });
 
   $('addCustBtn').addEventListener('click', () => {
@@ -422,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(({ p, i }) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${i + 1}</td>
+        <td><input type="checkbox" class="prod-check" data-i="${i}" /></td>
         <td>${escHtml(p.name)}</td>
         <td>${escHtml(p.hsn)}</td>
         <td>${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -432,9 +441,14 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>`;
       tbody.appendChild(tr);
     });
+    if ($('prodSelectAll')) $('prodSelectAll').checked = false;
   }
 
   $('prodSearch').addEventListener('input', () => renderProducts());
+
+  $('prodSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('.prod-check').forEach(cb => cb.checked = e.target.checked);
+  });
 
   function showProdForm() {
     $('prodFormWrap').classList.remove('hidden');
@@ -500,12 +514,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('downloadProdBtn').addEventListener('click', () => {
     if (!products.length) { alert('No products to download'); return; }
+    const checked = document.querySelectorAll('.prod-check:checked');
+    const selected = checked.length
+      ? Array.from(checked).map(cb => ({ p: products[+cb.dataset.i], i: +cb.dataset.i }))
+      : products.map((p, i) => ({ p, i }));
     const header = ['#', 'Product Name', 'HSN Code', 'Rate'];
     const rows = [header];
-    products.forEach((p, i) => {
+    selected.forEach(({ p, i }) => {
       rows.push([i + 1, p.name, p.hsn, Number(p.rate).toFixed(2)]);
     });
-    downloadCSV(rows, 'products.csv');
+    downloadCSV(rows, checked.length ? 'products-selected.csv' : 'products.csv');
   });
 
   $('addProdBtn').addEventListener('click', () => {
