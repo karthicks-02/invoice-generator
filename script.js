@@ -820,7 +820,9 @@ document.addEventListener('DOMContentLoaded', () => {
     $('transportMode').value = 'By Road';
     $('gstRate').value = 9;
     $('gstType').value = 'intra';
-    $('invoiceReminder').value = '';
+    const rem30 = new Date();
+    rem30.setDate(rem30.getDate() + 30);
+    $('invoiceReminder').value = formatDateYMDLocal(rem30);
     items = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
     renderItems();
     document.querySelectorAll('.copyType').forEach(cb => {
