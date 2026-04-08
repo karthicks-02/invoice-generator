@@ -844,11 +844,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    const sortAsc = ($('invSortOrder').value === 'asc');
+    const sortVal = $('invSortOrder').value;
     filtered.sort((a, b) => {
+      if (sortVal === 'inv-asc' || sortVal === 'inv-desc') {
+        const na = getInvSortNum(a.invoiceNumber);
+        const nb = getInvSortNum(b.invoiceNumber);
+        return sortVal === 'inv-asc' ? na - nb : nb - na;
+      }
       const da = a.invoiceDate || a.createdAt || '';
       const db = b.invoiceDate || b.createdAt || '';
-      return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
+      return sortVal === 'date-asc' ? da.localeCompare(db) : db.localeCompare(da);
     });
 
     tbody.innerHTML = '';
@@ -888,6 +893,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getInvoiceListSummaryPeriodLabel() {
     const presetLabels = {
+      invPresetToday: 'Today',
+      invPresetYesterday: 'Yesterday',
       invPresetThisWeek: 'This week',
       invPresetLastWeek: 'Last week',
       invPresetThisMonth: 'This month',
@@ -1003,6 +1010,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return { from: formatDateYMDLocal(first), to: formatDateYMDLocal(last) };
   }
 
+  function getDayRange(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    const s = formatDateYMDLocal(d);
+    return { from: s, to: s };
+  }
+
   function getYearRange(offset) {
     const y = new Date().getFullYear() + offset;
     return { from: `${y}-01-01`, to: `${y}-12-31` };
@@ -1035,6 +1049,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('downloadFilteredBtn').style.display = 'inline-flex';
   }
 
+  $('invPresetToday').addEventListener('click', () => applyPresetFilter(getDayRange(0), 'invPresetToday'));
+  $('invPresetYesterday').addEventListener('click', () => applyPresetFilter(getDayRange(-1), 'invPresetYesterday'));
   $('invPresetThisWeek').addEventListener('click', () => applyPresetFilter(getWeekRange(0), 'invPresetThisWeek'));
   $('invPresetLastWeek').addEventListener('click', () => applyPresetFilter(getWeekRange(-1), 'invPresetLastWeek'));
   $('invPresetThisMonth').addEventListener('click', () => applyPresetFilter(getMonthRange(0), 'invPresetThisMonth'));
@@ -1049,12 +1065,22 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInvoiceList();
   });
 
+  function getInvSortNum(invNumber) {
+    const m = (invNumber || '').match(/(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
   function applySortOrder(list) {
-    const sortAsc = ($('invSortOrder').value === 'asc');
+    const sortVal = $('invSortOrder').value;
     return list.sort((a, b) => {
+      if (sortVal === 'inv-asc' || sortVal === 'inv-desc') {
+        const na = getInvSortNum(a.invoiceNumber);
+        const nb = getInvSortNum(b.invoiceNumber);
+        return sortVal === 'inv-asc' ? na - nb : nb - na;
+      }
       const da = a.invoiceDate || a.createdAt || '';
       const db = b.invoiceDate || b.createdAt || '';
-      return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
+      return sortVal === 'date-asc' ? da.localeCompare(db) : db.localeCompare(da);
     });
   }
 
