@@ -844,16 +844,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    const sortVal = $('invSortOrder').value;
+    const sortAsc = ($('invSortOrder').value === 'asc');
     filtered.sort((a, b) => {
-      if (sortVal === 'inv-asc' || sortVal === 'inv-desc') {
-        const na = getInvSortNum(a.invoiceNumber);
-        const nb = getInvSortNum(b.invoiceNumber);
-        return sortVal === 'inv-asc' ? na - nb : nb - na;
-      }
       const da = a.invoiceDate || a.createdAt || '';
       const db = b.invoiceDate || b.createdAt || '';
-      return sortVal === 'date-asc' ? da.localeCompare(db) : db.localeCompare(da);
+      const dateCmp = da.localeCompare(db);
+      if (dateCmp !== 0) return sortAsc ? dateCmp : -dateCmp;
+      const na = getInvSortNum(a.invoiceNumber);
+      const nb = getInvSortNum(b.invoiceNumber);
+      return sortAsc ? na - nb : nb - na;
     });
 
     tbody.innerHTML = '';
@@ -1071,16 +1070,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function applySortOrder(list) {
-    const sortVal = $('invSortOrder').value;
+    const sortAsc = ($('invSortOrder').value === 'asc');
     return list.sort((a, b) => {
-      if (sortVal === 'inv-asc' || sortVal === 'inv-desc') {
-        const na = getInvSortNum(a.invoiceNumber);
-        const nb = getInvSortNum(b.invoiceNumber);
-        return sortVal === 'inv-asc' ? na - nb : nb - na;
-      }
       const da = a.invoiceDate || a.createdAt || '';
       const db = b.invoiceDate || b.createdAt || '';
-      return sortVal === 'date-asc' ? da.localeCompare(db) : db.localeCompare(da);
+      const dateCmp = da.localeCompare(db);
+      if (dateCmp !== 0) return sortAsc ? dateCmp : -dateCmp;
+      const na = getInvSortNum(a.invoiceNumber);
+      const nb = getInvSortNum(b.invoiceNumber);
+      return sortAsc ? na - nb : nb - na;
     });
   }
 
