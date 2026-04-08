@@ -775,11 +775,26 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshInvoiceNumberDuplicateHint();
   }
 
+  function getNextInvoiceNumber() {
+    if (!invoices.length) return '';
+    let maxNum = 0;
+    let prefix = '';
+    invoices.forEach(inv => {
+      const m = (inv.invoiceNumber || '').match(/^(.*?)(\d+)$/);
+      if (m) {
+        const n = parseInt(m[2], 10);
+        if (n > maxNum) { maxNum = n; prefix = m[1]; }
+      }
+    });
+    if (!maxNum) return '';
+    return prefix + (maxNum + 1);
+  }
+
   function resetInvoiceForm() {
     editingInvoiceId = null;
     cameFromInvoiceList = false;
     cameFromPayment = false;
-    $('invoiceNumber').value = '';
+    $('invoiceNumber').value = getNextInvoiceNumber();
     const invNoErr = $('invoiceNumberError');
     if (invNoErr) {
       invNoErr.textContent = '';
