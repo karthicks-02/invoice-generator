@@ -62,22 +62,33 @@ document.addEventListener('DOMContentLoaded', () => {
       products = await db.loadProducts();
       invoices = await db.loadInvoices();
       payments = await db.loadPayments();
+      vendors = await db.loadVendors();
+      poInvoices = await db.loadPoInvoices();
+      vendorPayments = await db.loadVendorPayments();
       migratePaymentCreditIds();
+      migrateVendorPaymentCreditIds();
 
       renderCustomers();
       renderProducts();
+      renderVendors();
       checkReminders();
+      checkVendorReminders();
 
       $('loadingPanel').classList.add('hidden');
       hideCustForm();
       hideProdForm();
+      hideVendForm();
       $('previewPanel').classList.add('hidden');
+      $('poPreviewPanel').classList.add('hidden');
       goHome();
     } else {
       customers = [];
       products = [];
       invoices = [];
       payments = {};
+      vendors = [];
+      poInvoices = [];
+      vendorPayments = {};
       db.setUser(null);
 
       $('userBar').classList.add('hidden');
@@ -104,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let cameFromInvoiceList = false;
   let cameFromPayment = false;
+  let cameFromVendorPayment = false;
 
   $('custBackBtn').addEventListener('click', () => {
     if (!$('custFormWrap').classList.contains('hidden')) {
@@ -137,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('invListBackBtn').addEventListener('click', goHome);
 
   $('payBackBtn').addEventListener('click', goHome);
+  $('vpayBackBtn').addEventListener('click', goHome);
 
   document.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -144,8 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (card.dataset.view === 'invoiceListView') renderInvoiceList();
       if (card.dataset.view === 'invoiceView') { resetInvoiceForm(); }
       if (card.dataset.view === 'paymentView') renderPaymentView();
+      if (card.dataset.view === 'vendorPayView') renderVendorPaymentView();
       if (card.dataset.view === 'productView') hideProdForm();
       if (card.dataset.view === 'customerView') hideCustForm();
+      if (card.dataset.view === 'vendorView') hideVendForm();
+      if (card.dataset.view === 'poInvoiceView') { resetPoInvoiceForm(); }
+      if (card.dataset.view === 'poInvoiceListView') renderPoInvoiceList();
     });
   });
 
@@ -3241,5 +3258,1832 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     return convert(num);
+  }
+
+  // ══════════════════════════════════════
+  // ── Vendor Payment Tracking ──
+  // ══════════════════════════════════════
+  let vendorPayments = {};
+
+  function saveVendorPayments() { db.saveVendorPayments(vendorPayments); }
+
+  function migrateVendorPaymentCreditIds() {
+    let changed = false;
+    Object.keys(vendorPayments).forEach(name => {
+      const rec = vendorPayments[name];
+      if (!rec || !Array.isArray(rec.credits)) return;
+      rec.credits.forEach(c => {
+        if (!c.id) { c.id = genCreditId(); changed = true; }
+      });
+      const sum = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+      if (Math.abs((rec.totalCredited || 0) - sum) > 0.001) {
+        rec.totalCredited = sum;
+        changed = true;
+      }
+    });
+    if (changed) saveVendorPayments();
+  }
+
+  function getVendorPayment(name) {
+    if (!vendorPayments[name]) vendorPayments[name] = { credits: [], totalCredited: 0, reminder: null };
+    return vendorPayments[name];
+  }
+
+  function addVendorCredit(name, amount, note, dateIso) {
+    const rec = getVendorPayment(name);
+    rec.credits.push({
+      id: genCreditId(),
+      amount: Number(amount),
+      date: dateIso || new Date().toISOString(),
+      note: note || ''
+    });
+    rec.totalCredited = rec.credits.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    saveVendorPayments();
+  }
+
+  function updateVendorCredit(name, creditId, amount, note, dateIso) {
+    const rec = getVendorPayment(name);
+    const c = rec.credits.find(x => x.id === creditId);
+    if (!c) return false;
+    c.amount = Number(amount);
+    c.note = note || '';
+    c.date = dateIso;
+    rec.totalCredited = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    saveVendorPayments();
+    return true;
+  }
+
+  function deleteVendorCredit(name, creditId) {
+    const rec = vendorPayments[name];
+    if (!rec || !Array.isArray(rec.credits)) return false;
+    const next = rec.credits.filter(x => x.id !== creditId);
+    if (next.length === rec.credits.length) return false;
+    rec.credits = next;
+    rec.totalCredited = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    saveVendorPayments();
+    return true;
+  }
+
+  function setVendorReminder(name, date, note) {
+    const rec = getVendorPayment(name);
+    rec.reminder = { date, note: note || '' };
+    saveVendorPayments();
+  }
+
+  function getVendorInvoiceTotal(name) {
+    return poInvoices.filter(inv => inv.vendorName === name).reduce((s, inv) => s + computePoGrandTotal(inv), 0);
+  }
+
+  function sortPoInvoicesFifo(invs) {
+    return [...invs].sort((a, b) => {
+      const da = (a.invoiceDate || a.createdAt || '').toString();
+      const db2 = (b.invoiceDate || b.createdAt || '').toString();
+      const cmp = da.localeCompare(db2);
+      if (cmp !== 0) return cmp;
+      const na = (a.invoiceNumber || '').toString();
+      const nb = (b.invoiceNumber || '').toString();
+      const c2 = na.localeCompare(nb);
+      if (c2 !== 0) return c2;
+      return (a.id || '').toString().localeCompare((b.id || '').toString());
+    });
+  }
+
+  function fifoAllocationsForVendor(name) {
+    const invs = sortPoInvoicesFifo(poInvoices.filter(inv => inv.vendorName === name));
+    const rec = vendorPayments[name];
+    let pool = rec ? Number(rec.totalCredited) : 0;
+    if (Number.isNaN(pool) || pool < 0) pool = 0;
+    return invs.map(inv => {
+      const gross = computePoGrandTotal(inv);
+      const applied = Math.min(pool, gross);
+      pool = Math.max(0, pool - applied);
+      return {
+        inv,
+        gross,
+        applied: Math.round(applied * 100) / 100,
+        balance: Math.round((gross - applied) * 100) / 100
+      };
+    });
+  }
+
+  function getVendorPaymentSnapshot(vendorName) {
+    migrateVendorPaymentCreditIds();
+    const invs = poInvoices.filter(inv => inv.vendorName === vendorName);
+    const totalAmt = getVendorInvoiceTotal(vendorName);
+    const rec = vendorPayments[vendorName];
+    const credited = rec ? rec.totalCredited : 0;
+    const outstanding = Math.max(totalAmt - credited, 0);
+    const creditEntries = rec && rec.credits ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+    const fifoRows = fifoAllocationsForVendor(vendorName);
+    const openFifo = fifoRows.filter(r => r.balance > 0.005);
+    return {
+      companyName: vendorName,
+      invCount: invs.length,
+      totalAmt,
+      credited,
+      outstanding,
+      payCount: creditEntries.length,
+      pendCount: openFifo.length,
+      creditEntries,
+      fifoRows,
+      openFifo,
+      generatedAt: formatDateTime(new Date().toISOString())
+    };
+  }
+
+  let vpayExpandedVendor = null;
+
+  function renderVendorPaymentView() {
+    const query = ($('vpaySearch').value || '').trim().toLowerCase();
+    const vendorNames = [...new Set(poInvoices.map(inv => inv.vendorName).filter(Boolean))].sort();
+
+    const companies = vendorNames.map(name => {
+      const invs = poInvoices.filter(inv => inv.vendorName === name);
+      const totalAmt = invs.reduce((s, inv) => s + computePoGrandTotal(inv), 0);
+      const rec = vendorPayments[name];
+      const credited = rec ? rec.totalCredited : 0;
+      const outstanding = Math.max(totalAmt - credited, 0);
+      const reminder = rec ? rec.reminder : null;
+      const oldestDate = invs.reduce((oldest, inv) => {
+        const d = inv.invoiceDate || inv.createdAt || '';
+        return (!oldest || d < oldest) ? d : oldest;
+      }, '');
+      return { name, invs, totalAmt, credited, outstanding, reminder, oldestDate, count: invs.length };
+    }).filter(c => !query || c.name.toLowerCase().includes(query));
+
+    companies.sort((a, b) => (b.outstanding > 0 ? 1 : 0) - (a.outstanding > 0 ? 1 : 0) || a.name.localeCompare(b.name));
+
+    const totalOutstanding = companies.reduce((s, c) => s + c.outstanding, 0);
+    $('vpayTotalOutstanding').textContent = '₹' + fmtNum(totalOutstanding);
+
+    const container = $('vpayCompanyList');
+    container.innerHTML = '';
+    $('vpayEmpty').classList.toggle('hidden', companies.length > 0);
+
+    const todayStr = formatDateYMDLocal(new Date());
+
+    companies.forEach(co => {
+      const isPaid = co.outstanding <= 0;
+      const isOverdue = co.reminder && co.reminder.date <= todayStr && !isPaid;
+      const isExpanded = vpayExpandedVendor === co.name;
+
+      const section = document.createElement('div');
+      section.className = 'pay-company-section' + (isPaid ? ' paid' : '') + (isOverdue ? ' overdue' : '');
+
+      let reminderBadge = '';
+      if (co.reminder && !isPaid) {
+        const cls = isOverdue ? 'reminder-badge overdue' : 'reminder-badge';
+        reminderBadge = `<span class="${cls}" title="Reminder: ${formatShortDate(co.reminder.date)}${co.reminder.note ? ' - ' + escHtml(co.reminder.note) : ''}"></span>`;
+      }
+
+      const rec = vendorPayments[co.name];
+      const lastCredit = rec && rec.credits && rec.credits.length ? rec.credits[rec.credits.length - 1] : null;
+      const lastCreditDate = lastCredit ? formatDateTime(lastCredit.date) : '';
+      const fifoRows = fifoAllocationsForVendor(co.name);
+      const openFifo = fifoRows.filter(r => r.balance > 0.005);
+      const creditEntries = rec && rec.credits && rec.credits.length
+        ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date))
+        : [];
+      let runningCred = 0;
+      const creditLogRows = creditEntries.map((c, i) => {
+        runningCred += Number(c.amount) || 0;
+        const outstandingAfter = Math.max(0, co.totalAmt - runningCred);
+        const cid = escHtml(c.id || '');
+        return `<tr>
+          <td class="c pay-col-idx">${i + 1}</td>
+          <td class="pay-col-when">${formatDateTime(c.date)}</td>
+          <td class="r">₹${fmtNum(c.amount)}</td>
+          <td class="pay-col-note">${escHtml(c.note || '—')}</td>
+          <td class="r pay-col-outstanding">₹${fmtNum(outstandingAfter)}</td>
+          <td class="pay-credit-actions"><button type="button" class="btn-edit-vcredit btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}" data-credit-id="${cid}">Edit</button></td>
+        </tr>`;
+      }).join('');
+      const creditLogBlock = creditEntries.length
+        ? `<div class="pay-credit-log">
+            <h4 class="pay-subhead">Payments recorded</h4>
+            <p class="pay-fifo-hint">Each payment shows date &amp; time. <strong>Payable</strong> is billed total minus payments recorded up to that row (chronological). Use Edit to correct an amount. Use <strong>Summary PDF</strong> in the row above for a full printable report.</p>
+            <div class="pay-table-scroll">
+              <table class="data-table pay-table-tight">
+                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Payable</th><th></th></tr></thead>
+                <tbody>${creditLogRows}</tbody>
+              </table>
+            </div>
+          </div>`
+        : `<p class="pay-fifo-hint">No payments yet. Open PO invoices show full amounts until you add payments (applied to oldest invoice dates first).</p>`;
+
+      const invoiceRows = openFifo.map(r => `<tr>
+          <td>${escHtml(r.inv.invoiceNumber)}</td>
+          <td class="pay-col-date">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+          <td class="r">₹${fmtNum(r.gross)}</td>
+          <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
+          <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
+          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td><button class="btn-vpay-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
+        </tr>`).join('');
+      const invoiceTable = openFifo.length
+        ? `<div class="pay-table-scroll">
+            <table class="data-table pay-table-tight" style="margin:0">
+              <thead><tr>
+                <th>PO Inv. No.</th>
+                <th class="pay-col-date">Invoice date</th>
+                <th class="r">Invoice total</th>
+                <th class="r">Paid</th>
+                <th class="r">Balance due</th>
+                <th class="c">Days</th>
+                <th></th>
+              </tr></thead>
+              <tbody>${invoiceRows}</tbody>
+            </table>
+          </div>`
+        : `<p class="pay-all-settled">No open balances — payments (oldest PO invoices first) cover every invoice for this vendor.</p>`;
+
+      section.innerHTML = `
+        <div class="pay-company-header" data-vendor="${escHtml(co.name)}">
+          <div class="pay-company-top">
+            <span class="pay-company-toggle">${isExpanded ? '▾' : '▸'}</span>
+            <span class="pay-company-name">${escHtml(co.name)}</span> ${reminderBadge}
+            <span class="pay-company-meta">${openFifo.length} with balance · ${co.count} PO invoice${co.count !== 1 ? 's' : ''} billed</span>
+            ${lastCreditDate ? `<span class="pay-company-date">Last payment: ${lastCreditDate}</span>` : ''}
+          </div>
+          <div class="pay-company-actions">
+            ${!isPaid ? `<button class="btn-vpay btn btn-sm btn-primary" data-vendor="${escHtml(co.name)}">+ Payment</button>` : ''}
+            <button type="button" class="btn-vpay-summary-pdf btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}" title="Download PDF: payments, payable, pending PO invoices">Summary PDF</button>
+            <button class="btn-vhistory btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}">Summary</button>
+            ${!isPaid ? `<button class="btn-vremind btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}">Remind</button>` : ''}
+          </div>
+          <div class="pay-company-nums">
+            <span class="pay-num-group">Total <strong>₹${fmtNum(co.totalAmt)}</strong></span>
+            <span class="pay-num-group">Paid <strong>₹${fmtNum(co.credited)}</strong></span>
+            <span class="pay-num-group pay-outstanding">${isPaid ? '<span style="color:#059669">Fully Paid</span>' : `Payable <strong>₹${fmtNum(co.outstanding)}</strong>`}</span>
+          </div>
+        </div>
+        <div class="pay-company-invoices ${isExpanded ? '' : 'hidden'}">
+          <p class="pay-fifo-hint pay-fifo-hint-strong">Payments are applied in order of PO invoice date (oldest first) until the recorded payments are used up.</p>
+          ${creditLogBlock}
+          <h4 class="pay-subhead pay-subhead-spaced">PO Invoices still due</h4>
+          ${invoiceTable}
+        </div>`;
+      container.appendChild(section);
+    });
+  }
+
+  $('vpaySearch').addEventListener('input', renderVendorPaymentView);
+
+  let vpayFormVendor = null;
+  let vpayEditCreditId = null;
+  let vpayHistoryOpenVendor = null;
+  let vpayReminderVendor = null;
+
+  function setVpayFormMode(edit) {
+    $('vpayFormHeading').textContent = edit ? 'Edit payment' : 'Add Payment';
+    $('vpayFormFifoHint').classList.toggle('hidden', edit);
+    $('vpayDateField').classList.remove('hidden');
+    $('vpayFormDeleteBtn').classList.toggle('hidden', !edit);
+    $('vpayFormOutstanding').classList.toggle('hidden', edit);
+  }
+
+  function buildVendorPaymentSummaryDialogHtml(s) {
+    const ne = escHtml(s.companyName);
+    let runningCred = 0;
+    const payRows = s.creditEntries.map((c, i) => {
+      runningCred += Number(c.amount) || 0;
+      const outstandingAfter = Math.max(0, s.totalAmt - runningCred);
+      const cid = escHtml(c.id || '');
+      return `<tr>
+        <td class="c">${i + 1}</td>
+        <td class="pay-sum-nowrap">${formatDateTime(c.date)}</td>
+        <td class="r pay-sum-num">₹${fmtNum(c.amount)}</td>
+        <td>${escHtml(c.note || '—')}</td>
+        <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(outstandingAfter)}</td>
+        <td class="pay-sum-act"><button type="button" class="btn-edit-vcredit btn btn-sm btn-secondary" data-vendor="${ne}" data-credit-id="${cid}">Edit</button></td>
+      </tr>`;
+    }).join('');
+
+    const pendRows = s.openFifo.length
+      ? s.openFifo.map(r => `<tr>
+          <td>${escHtml(r.inv.invoiceNumber)}</td>
+          <td class="pay-sum-nowrap">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.gross)}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.applied)}</td>
+          <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(r.balance)}</td>
+          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td class="pay-sum-act"><button type="button" class="btn-vpay-view" data-inv-id="${r.inv.id}">View</button></td>
+        </tr>`).join('')
+      : `<tr><td colspan="7" class="pay-sum-empty">No pending balances — all covered (FIFO).</td></tr>`;
+
+    const fifoRowsHtml = s.fifoRows.length
+      ? s.fifoRows.map(r => `<tr class="${r.balance <= 0.005 ? 'pay-sum-row-cleared' : ''}">
+          <td>${escHtml(r.inv.invoiceNumber)}</td>
+          <td class="pay-sum-nowrap">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.gross)}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.applied)}</td>
+          <td class="r pay-sum-num">₹${fmtNum(r.balance)}</td>
+          <td class="c">${r.balance <= 0.005 ? 'Cleared' : 'Due'}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="6" class="pay-sum-empty">No PO invoices.</td></tr>`;
+
+    const paymentsTbody = s.payCount
+      ? payRows
+      : `<tr><td colspan="6" class="pay-sum-empty">No payments recorded yet.</td></tr>`;
+
+    return `<div class="pay-sum-dialog">
+        <div class="pay-sum-toolbar">
+          <button type="button" class="btn btn-primary btn-sm btn-vpay-summary-pdf" data-vendor="${ne}">Download summary PDF</button>
+        </div>
+        <div class="pay-sum-hdr">
+          <div class="pay-sum-co">${escHtml(COMPANY.name)}</div>
+          <div class="pay-sum-title">Vendor payment summary — payable &amp; payments</div>
+          <div class="pay-sum-meta"><strong>Vendor:</strong> ${ne}</div>
+          <div class="pay-sum-gen">Generated: ${escHtml(s.generatedAt)}</div>
+        </div>
+
+        <h4 class="pay-sum-h4">Figures at a glance</h4>
+        <table class="pay-sum-table pay-sum-figures">
+          <colgroup><col style="width:58%"><col style="width:42%"></colgroup>
+          <tbody>
+            <tr class="pay-sum-zebra"><td>PO Invoices billed (no.)</td><td class="r pay-sum-strong">${s.invCount}</td></tr>
+            <tr><td>Total billed</td><td class="r pay-sum-num">₹${fmtNum(s.totalAmt)}</td></tr>
+            <tr class="pay-sum-zebra"><td>Payments recorded (no.)</td><td class="r pay-sum-strong">${s.payCount}</td></tr>
+            <tr><td>Total paid</td><td class="r pay-sum-num">₹${fmtNum(s.credited)}</td></tr>
+            <tr class="pay-sum-out-row"><td><strong>Payable</strong></td><td class="r pay-sum-strong">₹${fmtNum(s.outstanding)}</td></tr>
+            <tr><td>PO Invoices with balance due (no.)</td><td class="r pay-sum-strong">${s.pendCount}</td></tr>
+          </tbody>
+        </table>
+        <p class="pay-sum-fifo-note">Payments apply oldest PO invoice date first (FIFO).</p>
+
+        <h4 class="pay-sum-h4">Payments (chronological)</h4>
+        <div class="pay-table-scroll pay-sum-scroll">
+          <table class="pay-sum-table pay-sum-payments">
+            <colgroup><col class="pay-sum-c5"><col class="pay-sum-c20"><col class="pay-sum-c17"><col class="pay-sum-c30"><col class="pay-sum-c18"><col class="pay-sum-c10"></colgroup>
+            <thead><tr><th class="c">#</th><th>When</th><th class="r">Amount</th><th>Note</th><th class="r">Payable</th><th></th></tr></thead>
+            <tbody>${paymentsTbody}</tbody>
+          </table>
+        </div>
+
+        <h4 class="pay-sum-h4">PO Invoices pending</h4>
+        <div class="pay-table-scroll pay-sum-scroll">
+          <table class="pay-sum-table pay-sum-pending">
+            <colgroup><col class="pay-sum-p17"><col class="pay-sum-p14"><col class="pay-sum-p16"><col class="pay-sum-p17"><col class="pay-sum-p18"><col class="pay-sum-p10"><col class="pay-sum-p8"></colgroup>
+            <thead><tr><th>PO Inv. no.</th><th>Date</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Balance</th><th class="c">Days</th><th></th></tr></thead>
+            <tbody>${pendRows}</tbody>
+          </table>
+        </div>
+
+        <h4 class="pay-sum-h4">All PO invoices — FIFO allocation</h4>
+        <div class="pay-table-scroll pay-sum-scroll">
+          <table class="pay-sum-table pay-sum-fifoalloc">
+            <colgroup><col class="pay-sum-p17"><col class="pay-sum-p14"><col class="pay-sum-p16"><col class="pay-sum-p17"><col class="pay-sum-p18"><col class="pay-sum-p18"></colgroup>
+            <thead><tr><th>PO Inv. no.</th><th>Date</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Balance</th><th class="c">Status</th></tr></thead>
+            <tbody>${fifoRowsHtml}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  function fillVpayHistoryOverlay(name) {
+    $('vpayHistoryLabel').textContent = name;
+    const snapshot = getVendorPaymentSnapshot(name);
+    $('vpayHistoryList').innerHTML = buildVendorPaymentSummaryDialogHtml(snapshot);
+    $('vpayHistorySummary').textContent = `Billed ₹${fmtNum(snapshot.totalAmt)} · Paid ₹${fmtNum(snapshot.credited)} · Payable ₹${fmtNum(snapshot.outstanding)}`;
+  }
+
+  function viewPoInvoiceFromVendorPayment(id) {
+    const inv = poInvoices.find(x => x.id === id);
+    if (!inv) return;
+    cameFromVendorPayment = true;
+    loadPoInvoiceIntoForm(inv);
+    syncPoCopyChecks('poCopyType', 'poCopyTypePreview');
+    buildAllPoInvoices();
+    showView('poInvoiceView');
+    $('poFormPanel').classList.add('hidden');
+    $('poPreviewPanel').classList.remove('hidden');
+  }
+
+  $('vpayCompanyList').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    const header = e.target.closest('.pay-company-header');
+
+    if (btn && btn.classList.contains('btn-vpay-view')) {
+      viewPoInvoiceFromVendorPayment(btn.dataset.invId);
+      return;
+    }
+
+    if (btn && btn.classList.contains('btn-vpay')) {
+      const name = btn.dataset.vendor;
+      vpayFormVendor = name;
+      vpayEditCreditId = null;
+      setVpayFormMode(false);
+      const outstanding = Math.max(getVendorInvoiceTotal(name) - (vendorPayments[name] ? vendorPayments[name].totalCredited : 0), 0);
+      $('vpayFormCompanyLabel').textContent = name;
+      $('vpayFormOutstanding').textContent = `Payable: ₹${fmtNum(outstanding)}`;
+      $('vpayAmtInput').value = '';
+      $('vpayNoteInput').value = '';
+      $('vpayDateInput').value = isoToDatetimeLocal(new Date().toISOString());
+      $('vpayFormOverlay').classList.remove('hidden');
+      $('vpayAmtInput').focus();
+      return;
+    }
+
+    if (btn && btn.classList.contains('btn-vhistory')) {
+      const name = btn.dataset.vendor;
+      vpayHistoryOpenVendor = name;
+      fillVpayHistoryOverlay(name);
+      $('vpayHistoryOverlay').classList.remove('hidden');
+      return;
+    }
+
+    if (btn && btn.classList.contains('btn-vremind')) {
+      const name = btn.dataset.vendor;
+      vpayReminderVendor = name;
+      $('vpayReminderInvLabel').textContent = name;
+      const rec = vendorPayments[name];
+      $('vpayReminderDateInput').value = (rec && rec.reminder) ? rec.reminder.date : '';
+      $('vpayReminderNoteInput').value = (rec && rec.reminder) ? rec.reminder.note : '';
+      $('vpayReminderOverlay').classList.remove('hidden');
+      $('vpayReminderDateInput').focus();
+      return;
+    }
+
+    if (header && !btn) {
+      const name = header.dataset.vendor;
+      vpayExpandedVendor = vpayExpandedVendor === name ? null : name;
+      renderVendorPaymentView();
+    }
+  });
+
+  $('vpayHistoryCloseBtn').addEventListener('click', () => {
+    $('vpayHistoryOverlay').classList.add('hidden');
+    vpayHistoryOpenVendor = null;
+  });
+
+  function closeVpayCreditForm() {
+    $('vpayFormOverlay').classList.add('hidden');
+    vpayFormVendor = null;
+    vpayEditCreditId = null;
+    setVpayFormMode(false);
+  }
+
+  function openEditVendorCreditForm(vendor, creditId) {
+    migrateVendorPaymentCreditIds();
+    const rec = vendorPayments[vendor];
+    const c = rec && rec.credits && rec.credits.find(x => x.id === creditId);
+    if (!c) { alert('Payment entry not found'); return; }
+    vpayFormVendor = vendor;
+    vpayEditCreditId = creditId;
+    setVpayFormMode(true);
+    $('vpayFormCompanyLabel').textContent = vendor;
+    $('vpayAmtInput').value = String(c.amount);
+    $('vpayNoteInput').value = c.note || '';
+    $('vpayDateInput').value = isoToDatetimeLocal(c.date);
+    $('vpayFormOverlay').classList.remove('hidden');
+    $('vpayAmtInput').focus();
+  }
+
+  $('vendorPayView').addEventListener('click', e => {
+    const pdfBtn = e.target.closest('.btn-vpay-summary-pdf');
+    if (pdfBtn && pdfBtn.dataset.vendor) {
+      e.stopPropagation();
+      e.preventDefault();
+      downloadVendorPaymentSummaryPDF(pdfBtn.dataset.vendor).catch(() => alert('Could not generate PDF. Try again.'));
+      return;
+    }
+    const vw = e.target.closest('.btn-vpay-view');
+    if (vw && vw.dataset.invId && e.target.closest('#vpayHistoryOverlay')) {
+      e.stopPropagation();
+      viewPoInvoiceFromVendorPayment(vw.dataset.invId);
+      $('vpayHistoryOverlay').classList.add('hidden');
+      vpayHistoryOpenVendor = null;
+      return;
+    }
+    const ed = e.target.closest('.btn-edit-vcredit');
+    if (!ed || !ed.dataset.vendor || !ed.dataset.creditId) return;
+    e.stopPropagation();
+    openEditVendorCreditForm(ed.dataset.vendor, ed.dataset.creditId);
+  });
+
+  $('vpayFormSaveBtn').addEventListener('click', () => {
+    const amount = parseFloat($('vpayAmtInput').value);
+    if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+    const d = $('vpayDateInput').value;
+    if (!d) { alert(vpayEditCreditId ? 'Select payment date and time' : 'Select payment date and time'); return; }
+    const dateIso = datetimeLocalToIso(d);
+    if (vpayEditCreditId) {
+      updateVendorCredit(vpayFormVendor, vpayEditCreditId, amount, $('vpayNoteInput').value.trim(), dateIso);
+    } else {
+      addVendorCredit(vpayFormVendor, amount, $('vpayNoteInput').value.trim(), dateIso);
+    }
+    const savedVendor = vpayFormVendor;
+    closeVpayCreditForm();
+    renderVendorPaymentView();
+    if (vpayHistoryOpenVendor === savedVendor) fillVpayHistoryOverlay(savedVendor);
+  });
+
+  $('vpayFormDeleteBtn').addEventListener('click', () => {
+    if (!vpayEditCreditId || !vpayFormVendor) return;
+    if (!confirm('Delete this payment entry? Totals and FIFO allocation will update.')) return;
+    const savedVendor = vpayFormVendor;
+    deleteVendorCredit(vpayFormVendor, vpayEditCreditId);
+    closeVpayCreditForm();
+    renderVendorPaymentView();
+    if (vpayHistoryOpenVendor === savedVendor) fillVpayHistoryOverlay(savedVendor);
+  });
+
+  $('vpayFormCancelBtn').addEventListener('click', () => { closeVpayCreditForm(); });
+
+  $('vpayReminderSaveBtn').addEventListener('click', () => {
+    const date = $('vpayReminderDateInput').value;
+    if (!date) { alert('Select a reminder date'); return; }
+    setVendorReminder(vpayReminderVendor, date, $('vpayReminderNoteInput').value.trim());
+    $('vpayReminderOverlay').classList.add('hidden');
+    vpayReminderVendor = null;
+    renderVendorPaymentView();
+  });
+  $('vpayReminderCancelBtn').addEventListener('click', () => { $('vpayReminderOverlay').classList.add('hidden'); vpayReminderVendor = null; });
+
+  document.querySelectorAll('#vpayReminderPresets .preset-pill').forEach(btn => {
+    btn.addEventListener('click', () => { $('vpayReminderDateInput').value = addDays(+btn.dataset.days); });
+  });
+
+  function buildVendorPaymentSummaryPdfHtml(vendorName) {
+    const s = getVendorPaymentSnapshot(vendorName);
+    const esc = str => escHtml(str);
+    const td = 'padding:3px 4px;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word;';
+    const th = 'padding:3px 4px;font-weight:700;text-align:left;';
+    const thR = 'padding:3px 4px;font-weight:700;text-align:right;';
+    const thC = 'padding:3px 4px;font-weight:700;text-align:center;';
+    const amt = `${td}text-align:right;font-variant-numeric:tabular-nums;font-size:8px;line-height:1.25;`;
+    const tbl = 'width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;box-sizing:border-box;border:1px solid #94a3b8;font-size:8px;line-height:1.25;';
+
+    function pdfWhen(isoStr) {
+      if (!isoStr) return '—';
+      const raw = String(isoStr);
+      const d2 = new Date(raw);
+      if (Number.isNaN(d2.getTime())) return esc(formatShortDate(raw.split('T')[0]));
+      const day = formatShortDate(raw.split('T')[0]);
+      let h = d2.getHours();
+      const mi = String(d2.getMinutes()).padStart(2, '0');
+      const ap = h >= 12 ? 'P' : 'A';
+      h = h % 12;
+      if (h === 0) h = 12;
+      return esc(`${day} ${h}:${mi}${ap}`);
+    }
+
+    let runningCred = 0;
+    const payRows = s.creditEntries.map((c, i) => {
+      runningCred += Number(c.amount) || 0;
+      const outAfter = Math.max(0, s.totalAmt - runningCred);
+      return `<tr style="border-bottom:1px solid #e2e8f0">
+        <td style="${td}text-align:center">${i + 1}</td>
+        <td style="${td}font-size:7px;">${pdfWhen(c.date)}</td>
+        <td style="${amt}">₹${fmtNum(c.amount)}</td>
+        <td style="${td}">${esc(c.note || '—')}</td>
+        <td style="${amt}font-weight:600;">₹${fmtNum(outAfter)}</td>
+      </tr>`;
+    }).join('');
+
+    const pendRows = s.openFifo.length
+      ? s.openFifo.map(r => `<tr style="border-bottom:1px solid #e2e8f0">
+          <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
+          <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
+          <td style="${amt}">₹${fmtNum(r.gross)}</td>
+          <td style="${amt}">₹${fmtNum(r.applied)}</td>
+          <td style="${amt}font-weight:600;">₹${fmtNum(r.balance)}</td>
+          <td style="${td}text-align:center;">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+        </tr>`).join('')
+      : `<tr><td colspan="6" style="padding:8px;text-align:center;color:#059669">No pending balances — all covered (FIFO).</td></tr>`;
+
+    const allInvRows = s.fifoRows.length
+      ? s.fifoRows.map(r => `<tr style="border-bottom:1px solid #e2e8f0;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
+        <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
+        <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
+        <td style="${amt}">₹${fmtNum(r.gross)}</td>
+        <td style="${amt}">₹${fmtNum(r.applied)}</td>
+        <td style="${amt}">₹${fmtNum(r.balance)}</td>
+        <td style="${td}text-align:center;">${r.balance <= 0.005 ? 'Clr' : 'Due'}</td>
+      </tr>`).join('')
+      : `<tr><td colspan="6" style="padding:8px;text-align:center">No PO invoices.</td></tr>`;
+
+    return `<div class="pay-pdf-root" style="box-sizing:border-box;width:100%;max-width:100%;padding:8px 6px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.35;">
+      <div style="border-bottom:2px solid #1e3a5f;padding-bottom:8px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#1e3a5f">${esc(COMPANY.name)}</div>
+        <div style="font-size:11px;font-weight:700;margin-top:4px">Vendor payment summary — payable &amp; payments</div>
+        <div style="margin-top:6px;font-size:10px"><strong>Vendor:</strong> ${esc(s.companyName)}</div>
+        <div style="margin-top:2px;font-size:8px;color:#64748b">Generated: ${esc(s.generatedAt)}</div>
+      </div>
+
+      <div style="font-size:10px;font-weight:700;margin:8px 0 4px">Figures at a glance</div>
+      <table style="${tbl}margin-bottom:10px">
+        <colgroup><col style="width:58%"><col style="width:42%"></colgroup>
+        <tr style="background:#f1f5f9"><td style="${td}">PO Invoices billed (no.)</td><td style="${amt}font-weight:700;">${s.invCount}</td></tr>
+        <tr><td style="${td}">Total billed</td><td style="${amt}">₹${fmtNum(s.totalAmt)}</td></tr>
+        <tr style="background:#f8fafc"><td style="${td}">Payments recorded (no.)</td><td style="${amt}font-weight:700;">${s.payCount}</td></tr>
+        <tr><td style="${td}">Total paid</td><td style="${amt}">₹${fmtNum(s.credited)}</td></tr>
+        <tr style="background:#fef2f2"><td style="${td}"><strong>Payable</strong></td><td style="${amt}"><strong>₹${fmtNum(s.outstanding)}</strong></td></tr>
+        <tr><td style="${td}">PO Invoices with balance due (no.)</td><td style="${amt}font-weight:700;">${s.pendCount}</td></tr>
+      </table>
+      <p style="margin:0 0 10px;font-size:7px;color:#475569">Payments apply oldest PO invoice date first (FIFO).</p>
+
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Payments (chronological)</div>
+      <table style="${tbl}margin-bottom:10px">
+        <colgroup><col style="width:5%"><col style="width:20%"><col style="width:17%"><col style="width:30%"><col style="width:28%"></colgroup>
+        <thead><tr style="background:#1e3a5f;color:#fff">
+          <th style="${thC}font-size:7px;">#</th>
+          <th style="${th}font-size:7px;">When</th>
+          <th style="${thR}font-size:7px;">Amount</th>
+          <th style="${th}font-size:7px;">Note</th>
+          <th style="${thR}font-size:7px;">Payable</th>
+        </tr></thead>
+        <tbody>${s.payCount ? payRows : `<tr><td colspan="5" style="padding:8px;text-align:center">No payments yet.</td></tr>`}</tbody>
+      </table>
+
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">PO Invoices pending</div>
+      <table style="${tbl}margin-bottom:10px">
+        <colgroup><col style="width:17%"><col style="width:14%"><col style="width:16%"><col style="width:17%"><col style="width:18%"><col style="width:18%"></colgroup>
+        <thead><tr style="background:#1e3a5f;color:#fff">
+          <th style="${th}font-size:7px;">PO Inv. no.</th>
+          <th style="${th}font-size:7px;">Date</th>
+          <th style="${thR}font-size:7px;">Total</th>
+          <th style="${thR}font-size:7px;">Paid</th>
+          <th style="${thR}font-size:7px;">Balance</th>
+          <th style="${thC}font-size:7px;">Days</th>
+        </tr></thead>
+        <tbody>${pendRows}</tbody>
+      </table>
+
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">All PO invoices — FIFO allocation</div>
+      <table style="${tbl}">
+        <colgroup><col style="width:17%"><col style="width:14%"><col style="width:16%"><col style="width:17%"><col style="width:18%"><col style="width:18%"></colgroup>
+        <thead><tr style="background:#334155;color:#fff">
+          <th style="${th}font-size:7px;">PO Inv. no.</th>
+          <th style="${th}font-size:7px;">Date</th>
+          <th style="${thR}font-size:7px;">Total</th>
+          <th style="${thR}font-size:7px;">Paid</th>
+          <th style="${thR}font-size:7px;">Balance</th>
+          <th style="${thC}font-size:7px;">St.</th>
+        </tr></thead>
+        <tbody>${allInvRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  async function downloadVendorPaymentSummaryPDF(vendorName) {
+    if (!vendorName) return;
+    const state = saveViewState();
+    const paper = $('invoicePaper');
+    paper.innerHTML = buildVendorPaymentSummaryPdfHtml(vendorName);
+    paper.classList.add('payment-summary-pdf');
+    const shield = showPaperForCapture();
+    window.scrollTo(0, 0);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
+    const safe = (vendorName || 'vendor').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
+    const fname = `vendor-payment-summary-${safe}.pdf`;
+    const payPdfOpt = {
+      ...PDF_OPT,
+      margin: [0.35, 0.42, 0.35, 0.42],
+      html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 }
+    };
+    try {
+      await html2pdf().set({ ...payPdfOpt, filename: fname }).from(paper).save();
+    } finally {
+      shield.remove();
+      restoreViewState(state);
+      paper.classList.remove('payment-summary-pdf');
+      const tmp = document.getElementById('html2pdf__container');
+      if (tmp) tmp.remove();
+    }
+  }
+
+  function checkVendorReminders() {
+    const todayStr = formatDateYMDLocal(new Date());
+    const items = [];
+    Object.entries(vendorPayments).forEach(([name, rec]) => {
+      if (!rec.reminder || rec.reminder.date > todayStr) return;
+      const outstanding = Math.max(getVendorInvoiceTotal(name) - (rec.totalCredited || 0), 0);
+      if (outstanding > 0) {
+        items.push({ title: 'Vendor payment reminder', body: `${name} — Payable ₹${fmtNum(outstanding)}` });
+      }
+    });
+    if (!items.length || !('Notification' in window)) return;
+    const notify = () => items.forEach(it => new Notification(it.title, { body: it.body }));
+    if (Notification.permission === 'granted') notify();
+    else if (Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') notify(); });
+  }
+
+  // ══════════════════════════════════════
+  // ── Vendor / Supplier List CRUD ──
+  // ══════════════════════════════════════
+  let vendors = [];
+  let editVendIdx = -1;
+
+  function saveVendors() {
+    db.saveVendors(vendors);
+  }
+
+  function renderVendors() {
+    const tbody = $('vendBody');
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    const query = ($('vendSearch').value || '').toLowerCase().trim();
+    const filtered = vendors.map((v, i) => ({ v, i })).filter(({ v }) => {
+      if (!query) return true;
+      return (v.name || '').toLowerCase().includes(query)
+        || (v.gstin || '').toLowerCase().includes(query)
+        || (v.contact || '').toLowerCase().includes(query)
+        || (v.phone || '').toLowerCase().includes(query);
+    });
+    $('vendEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('vendEmpty').textContent = vendors.length ? 'No matching vendors.' : 'No vendors added yet.';
+    $('vendTable').style.display = filtered.length ? 'table' : 'none';
+    filtered.forEach(({ v, i }) => {
+      const conCount = v.consignees ? v.consignees.length : 0;
+      const poParts = [];
+      if (v.poNumber) poParts.push(escHtml(v.poNumber));
+      if (v.poDate) poParts.push(formatShortDate(v.poDate));
+      const poSummary = poParts.length ? poParts.join(' · ') : '—';
+      const tr = document.createElement('tr');
+      const tdCheck = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'vend-check';
+      cb.dataset.i = i;
+      tdCheck.appendChild(cb);
+      tr.appendChild(tdCheck);
+
+      const fields = [
+        escHtml(v.name),
+        escHtml(v.gstin),
+        escHtml(customerGstTypeLabel(v.gstType)),
+        poSummary,
+        escHtml(v.contact),
+        escHtml(v.phone),
+        String(conCount)
+      ];
+      fields.forEach((text, fi) => {
+        const td = document.createElement('td');
+        if (fi === 3) td.className = 'cust-po-cell';
+        td.textContent = '';
+        if (fi === 3) { td.textContent = ''; td.insertAdjacentHTML('afterbegin', text); }
+        else td.textContent = text;
+        tr.appendChild(td);
+      });
+
+      const tdAct = document.createElement('td');
+      tdAct.className = 'actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-edit';
+      editBtn.dataset.i = i;
+      editBtn.textContent = 'Edit';
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del';
+      delBtn.dataset.i = i;
+      delBtn.textContent = 'Delete';
+      tdAct.appendChild(editBtn);
+      tdAct.appendChild(delBtn);
+      tr.appendChild(tdAct);
+
+      tbody.appendChild(tr);
+    });
+    if ($('vendSelectAll')) $('vendSelectAll').checked = false;
+  }
+
+  $('vendSearch').addEventListener('input', () => renderVendors());
+
+  $('vendSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('.vend-check').forEach(cb => cb.checked = e.target.checked);
+  });
+
+  function showVendForm() {
+    $('vendFormWrap').classList.remove('hidden');
+    $('vendTableWrap').classList.add('hidden');
+  }
+  function hideVendForm() {
+    $('vendFormWrap').classList.add('hidden');
+    $('vendTableWrap').classList.remove('hidden');
+  }
+
+  let tempVendConsignees = [];
+  let editVendConIdx = -1;
+  let tempVendProducts = [];
+
+  function renderVendConsigneeList() {
+    const wrap = $('vendConsigneeList');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    tempVendConsignees.forEach((con, i) => {
+      const div = document.createElement('div');
+      div.className = 'consignee-item';
+      const info = document.createElement('div');
+      info.className = 'consignee-item-info';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'consignee-item-name';
+      nameEl.textContent = con.name;
+      const addrEl = document.createElement('div');
+      addrEl.className = 'consignee-item-addr';
+      addrEl.textContent = con.address;
+      info.appendChild(nameEl);
+      info.appendChild(addrEl);
+      div.appendChild(info);
+      const acts = document.createElement('div');
+      acts.className = 'consignee-item-actions';
+      const eBtn = document.createElement('button');
+      eBtn.className = 'btn-edit';
+      eBtn.dataset.ci = i;
+      eBtn.textContent = 'Edit';
+      const dBtn = document.createElement('button');
+      dBtn.className = 'btn-del';
+      dBtn.dataset.ci = i;
+      dBtn.textContent = '×';
+      acts.appendChild(eBtn);
+      acts.appendChild(dBtn);
+      div.appendChild(acts);
+      wrap.appendChild(div);
+    });
+  }
+
+  function resetVendConsigneeForm() {
+    editVendConIdx = -1;
+    $('vendConName').value = '';
+    $('vendConAddress').value = '';
+    $('vendConsigneeFormRow').classList.add('hidden');
+  }
+
+  $('addVendConsigneeBtn').addEventListener('click', () => {
+    editVendConIdx = -1;
+    $('vendConName').value = '';
+    $('vendConAddress').value = '';
+    $('vendConsigneeFormRow').classList.remove('hidden');
+    $('vendConName').focus();
+  });
+
+  $('cancelVendConsigneeBtn').addEventListener('click', () => resetVendConsigneeForm());
+
+  $('saveVendConsigneeBtn').addEventListener('click', () => {
+    const name = $('vendConName').value.trim();
+    const address = $('vendConAddress').value.trim();
+    if (!name) { alert('Consignee name required'); return; }
+    if (editVendConIdx >= 0) {
+      tempVendConsignees[editVendConIdx] = { name, address };
+    } else {
+      tempVendConsignees.push({ name, address });
+    }
+    renderVendConsigneeList();
+    resetVendConsigneeForm();
+  });
+
+  $('vendConsigneeList').addEventListener('click', e => {
+    const ci = e.target.dataset.ci;
+    if (ci == null) return;
+    if (e.target.classList.contains('btn-del')) {
+      tempVendConsignees.splice(+ci, 1);
+      renderVendConsigneeList();
+    }
+    if (e.target.classList.contains('btn-edit')) {
+      editVendConIdx = +ci;
+      const con = tempVendConsignees[+ci];
+      $('vendConName').value = con.name;
+      $('vendConAddress').value = con.address;
+      $('vendConsigneeFormRow').classList.remove('hidden');
+      $('vendConName').focus();
+    }
+  });
+
+  function renderVendProdList() {
+    const wrap = $('vendProdList');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    tempVendProducts.forEach((pName, i) => {
+      const prod = products.find(p => p.name === pName);
+      const div = document.createElement('div');
+      div.className = 'consignee-item';
+      const info = document.createElement('div');
+      info.className = 'consignee-item-info';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'consignee-item-name';
+      nameEl.textContent = pName;
+      info.appendChild(nameEl);
+      if (prod) {
+        const detailEl = document.createElement('div');
+        detailEl.className = 'consignee-item-addr';
+        detailEl.textContent = 'HSN: ' + (prod.hsn || '—') + '  |  Rate: \u20B9' + Number(prod.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        info.appendChild(detailEl);
+      }
+      div.appendChild(info);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del';
+      delBtn.dataset.cpi = i;
+      delBtn.textContent = 'Remove';
+      div.appendChild(delBtn);
+      wrap.appendChild(div);
+    });
+  }
+
+  $('addVendProdBtn').addEventListener('click', () => {
+    $('vendProdInput').value = '';
+    $('vendProdFormRow').classList.remove('hidden');
+    $('vendProdInput').focus();
+  });
+
+  $('cancelVendProdBtn').addEventListener('click', () => {
+    $('vendProdFormRow').classList.add('hidden');
+  });
+
+  $('vendProdList').addEventListener('click', e => {
+    if (e.target.classList.contains('btn-del')) {
+      tempVendProducts.splice(+e.target.dataset.cpi, 1);
+      renderVendProdList();
+    }
+  });
+
+  createAutocomplete(
+    $('vendProdInput'),
+    val => products
+      .filter(p => !tempVendProducts.includes(p.name) &&
+        (p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val)))
+      .map(p => ({ label: escHtml(p.name) + '<small>HSN: ' + escHtml(p.hsn) + ' | \u20B9' + Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '</small>', data: p })),
+    p => {
+      if (!tempVendProducts.includes(p.name)) {
+        tempVendProducts.push(p.name);
+        renderVendProdList();
+      }
+      $('vendProdInput').value = '';
+      $('vendProdFormRow').classList.add('hidden');
+    }
+  );
+
+  $('vendBackBtn').addEventListener('click', () => {
+    if (!$('vendFormWrap').classList.contains('hidden')) {
+      hideVendForm();
+    } else {
+      goHome();
+    }
+  });
+
+  $('addVendBtn').addEventListener('click', () => {
+    editVendIdx = -1;
+    $('vendFormTitle').textContent = 'Add Vendor';
+    $('vendName').value = '';
+    $('vendGstin').value = '';
+    $('vendAddress').value = '';
+    $('vendContact').value = '';
+    $('vendPhone').value = '';
+    $('vendPoNumber').value = '';
+    $('vendPoDate').value = '';
+    $('vendGstType').value = 'intra';
+    tempVendConsignees = [];
+    tempVendProducts = [];
+    renderVendConsigneeList();
+    renderVendProdList();
+    resetVendConsigneeForm();
+    $('vendProdFormRow').classList.add('hidden');
+    showVendForm();
+  });
+
+  $('cancelVendBtn').addEventListener('click', hideVendForm);
+
+  $('saveVendBtn').addEventListener('click', () => {
+    const obj = {
+      name: $('vendName').value.trim(),
+      gstin: $('vendGstin').value.trim(),
+      address: $('vendAddress').value.trim(),
+      contact: $('vendContact').value.trim(),
+      phone: $('vendPhone').value.trim(),
+      poNumber: $('vendPoNumber').value.trim(),
+      poDate: $('vendPoDate').value,
+      gstType: $('vendGstType').value,
+      consignees: tempVendConsignees.map(x => ({ ...x })),
+      associatedProducts: [...tempVendProducts]
+    };
+    if (!obj.name) { alert('Company Name is required'); return; }
+    if (editVendIdx >= 0) {
+      vendors[editVendIdx] = obj;
+    } else {
+      vendors.push(obj);
+    }
+    saveVendors();
+    renderVendors();
+    hideVendForm();
+  });
+
+  $('vendBody').addEventListener('click', e => {
+    const i = +e.target.dataset.i;
+    if (e.target.classList.contains('btn-edit')) {
+      editVendIdx = i;
+      const v = vendors[i];
+      $('vendFormTitle').textContent = 'Edit Vendor';
+      $('vendName').value = v.name;
+      $('vendGstin').value = v.gstin;
+      $('vendAddress').value = v.address;
+      $('vendContact').value = v.contact;
+      $('vendPhone').value = v.phone;
+      $('vendPoNumber').value = v.poNumber || '';
+      $('vendPoDate').value = v.poDate || '';
+      $('vendGstType').value = v.gstType || 'intra';
+      tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
+      tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
+      renderVendConsigneeList();
+      renderVendProdList();
+      resetVendConsigneeForm();
+      $('vendProdFormRow').classList.add('hidden');
+      showVendForm();
+    }
+    if (e.target.classList.contains('btn-del')) {
+      if (confirm('Delete this vendor?')) {
+        vendors.splice(i, 1);
+        saveVendors();
+        renderVendors();
+      }
+    }
+  });
+
+  $('downloadVendBtn').addEventListener('click', () => {
+    if (!vendors.length) { alert('No vendors to download'); return; }
+    const checked = document.querySelectorAll('.vend-check:checked');
+    const selected = checked.length
+      ? Array.from(checked).map(cb => ({ v: vendors[+cb.dataset.i], i: +cb.dataset.i }))
+      : vendors.map((v, i) => ({ v, i }));
+    const header = ['#', 'Company Name', 'GSTIN', 'GST Type', 'Contact', 'Phone'];
+    const rows = [header];
+    selected.forEach(({ v }, idx) => {
+      rows.push([idx + 1, v.name, v.gstin, customerGstTypeLabel(v.gstType), v.contact, v.phone]);
+    });
+    downloadCSV(rows, checked.length ? 'vendors-selected.csv' : 'vendors.csv');
+  });
+
+  createAutocomplete(
+    $('vendName'),
+    val => vendors
+      .filter((v, i) => i !== editVendIdx && v.name.toLowerCase().includes(val))
+      .map(v => ({ label: escHtml(v.name) + '<small>' + escHtml(v.gstin) + '</small>', data: v })),
+    v => {
+      $('vendName').value = v.name;
+      $('vendGstin').value = v.gstin;
+      $('vendAddress').value = v.address;
+      $('vendContact').value = v.contact;
+      $('vendPhone').value = v.phone;
+      $('vendPoNumber').value = v.poNumber || '';
+      $('vendPoDate').value = v.poDate || '';
+      $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
+      tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
+      tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
+      renderVendConsigneeList();
+      renderVendProdList();
+    },
+    { showOnEmpty: false }
+  );
+
+  createAutocomplete(
+    $('vendGstin'),
+    val => vendors
+      .filter((v, i) => i !== editVendIdx && v.gstin.toLowerCase().includes(val))
+      .map(v => ({ label: escHtml(v.gstin) + '<small>' + escHtml(v.name) + '</small>', data: v })),
+    v => {
+      $('vendName').value = v.name;
+      $('vendGstin').value = v.gstin;
+      $('vendAddress').value = v.address;
+      $('vendContact').value = v.contact;
+      $('vendPhone').value = v.phone;
+      $('vendPoNumber').value = v.poNumber || '';
+      $('vendPoDate').value = v.poDate || '';
+      $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
+      tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
+      tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
+      renderVendConsigneeList();
+      renderVendProdList();
+    },
+    { showOnEmpty: false }
+  );
+
+  // ══════════════════════════════════════
+  // ── PO Invoice Storage & Logic ──
+  // ══════════════════════════════════════
+  let poInvoices = [];
+  let editingPoInvoiceId = null;
+  let poItems = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
+  let cameFromPoInvoiceList = false;
+
+  function savePoInvoices() {
+    db.savePoInvoices(poInvoices);
+  }
+
+  function getNextPoInvoiceNumber() {
+    if (!poInvoices.length) return '';
+    let maxNum = 0;
+    let prefix = '';
+    poInvoices.forEach(inv => {
+      const m = (inv.invoiceNumber || '').match(/^(.*?)(\d+)$/);
+      if (m) {
+        const n = parseInt(m[2], 10);
+        if (n > maxNum) { maxNum = n; prefix = m[1]; }
+      }
+    });
+    if (!maxNum) return '';
+    return prefix + (maxNum + 1);
+  }
+
+  function computePoGrandTotal(inv) {
+    let subtotal = 0;
+    (inv.items || []).forEach(it => {
+      const q = Math.round(Number(it.qty) || 0);
+      subtotal += q * (Number(it.rate) || 0);
+    });
+    const rate = inv.gstRate || 0;
+    const tax = inv.gstType === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
+    return Math.round(subtotal + tax);
+  }
+
+  function collectPoInvoiceData() {
+    return {
+      invoiceNumber: $('poInvoiceNumber').value.trim(),
+      invoiceDate: $('poInvoiceDate').value,
+      copyTypes: Array.from(document.querySelectorAll('.poCopyType:checked')).map(cb => cb.value),
+      vendorName: $('poVendorName').value.trim(),
+      vendorGstin: $('poVendorGstin').value.trim(),
+      vendorAddress: $('poVendorAddress').value.trim(),
+      sameAsVendor: $('poSameAsVendor').checked,
+      consigneeName: $('poConsigneeName').value.trim(),
+      consigneeAddress: $('poConsigneeAddress').value.trim(),
+      contactPerson: $('poContactPerson').value.trim(),
+      contactPhone: $('poContactPhone').value.trim(),
+      poNumber: $('poPoNumber').value.trim(),
+      poDate: $('poPoDate').value,
+      bankName: $('poBankName').value.trim(),
+      bankBranch: $('poBankBranch').value.trim(),
+      accountNumber: $('poAccountNumber').value.trim(),
+      ifscCode: $('poIfscCode').value.trim(),
+      items: poItems.map(it => ({ ...it })),
+      transportMode: $('poTransportMode').value.trim(),
+      gstRate: parseFloat($('poGstRate').value) || 0,
+      gstType: $('poGstType').value,
+      reminderDate: $('poInvoiceReminder').value || ''
+    };
+  }
+
+  function saveCurrentPoInvoice() {
+    const data = collectPoInvoiceData();
+    if (editingPoInvoiceId) {
+      const idx = poInvoices.findIndex(inv => inv.id === editingPoInvoiceId);
+      if (idx >= 0) {
+        data.id = editingPoInvoiceId;
+        data.createdAt = poInvoices[idx].createdAt;
+        data.updatedAt = new Date().toISOString();
+        poInvoices[idx] = data;
+      }
+    } else {
+      data.id = Date.now().toString();
+      data.createdAt = new Date().toISOString();
+      poInvoices.push(data);
+      editingPoInvoiceId = data.id;
+    }
+    savePoInvoices();
+    return true;
+  }
+
+  function loadPoInvoiceIntoForm(inv) {
+    editingPoInvoiceId = inv.id;
+    $('poInvoiceNumber').value = inv.invoiceNumber || '';
+    $('poInvoiceDate').value = inv.invoiceDate || '';
+    $('poVendorName').value = inv.vendorName || '';
+    $('poVendorGstin').value = inv.vendorGstin || '';
+    $('poVendorAddress').value = inv.vendorAddress || '';
+    $('poSameAsVendor').checked = inv.sameAsVendor !== false;
+    $('poConsigneeFields').classList.toggle('hidden', inv.sameAsVendor !== false);
+    $('poConsigneeName').value = inv.consigneeName || '';
+    $('poConsigneeAddress').value = inv.consigneeAddress || '';
+    $('poContactPerson').value = inv.contactPerson || '';
+    $('poContactPhone').value = inv.contactPhone || '';
+    $('poPoNumber').value = inv.poNumber || '';
+    $('poPoDate').value = inv.poDate || '';
+    $('poBankName').value = inv.bankName || '';
+    $('poBankBranch').value = inv.bankBranch || '';
+    $('poAccountNumber').value = inv.accountNumber || '';
+    $('poIfscCode').value = inv.ifscCode || '';
+    $('poTransportMode').value = inv.transportMode || '';
+    $('poGstRate').value = inv.gstRate || 0;
+    $('poGstType').value = inv.gstType || 'intra';
+    $('poInvoiceReminder').value = inv.reminderDate || '';
+
+    poItems = (inv.items && inv.items.length)
+      ? inv.items.map(it => {
+          const row = { ...it };
+          if (row.qty != null && row.qty !== '') {
+            const n = Math.round(Number(row.qty));
+            row.qty = Number.isFinite(n) ? n : null;
+          }
+          const pk = Math.round(Number(row.packages));
+          row.packages = Number.isFinite(pk) && pk >= 0 ? pk : 0;
+          if (row.rate != null && row.rate !== '') {
+            const r = Math.round(Number(row.rate) * 100) / 100;
+            row.rate = Number.isFinite(r) && r >= 0 ? r : null;
+          }
+          return row;
+        })
+      : [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
+    renderPoItems();
+
+    if (inv.copyTypes && inv.copyTypes.length) {
+      document.querySelectorAll('.poCopyType').forEach(cb => {
+        cb.checked = inv.copyTypes.includes(cb.value);
+      });
+    }
+  }
+
+  function resetPoInvoiceForm() {
+    editingPoInvoiceId = null;
+    cameFromPoInvoiceList = false;
+    $('poInvoiceNumber').value = getNextPoInvoiceNumber();
+    $('poInvoiceDate').value = formatDateYMDLocal(new Date());
+    $('poVendorName').value = '';
+    $('poVendorGstin').value = '';
+    $('poVendorAddress').value = '';
+    $('poSameAsVendor').checked = true;
+    $('poConsigneeFields').classList.add('hidden');
+    $('poConsigneeName').value = '';
+    $('poConsigneeAddress').value = '';
+    $('poContactPerson').value = '';
+    $('poContactPhone').value = '';
+    $('poPoNumber').value = '';
+    $('poPoDate').value = '';
+    $('poBankName').value = 'Bank of Baroda';
+    $('poBankBranch').value = 'Noothancheri Branch';
+    $('poAccountNumber').value = '69550200000025';
+    $('poIfscCode').value = 'BARBOVJNOOT';
+    $('poTransportMode').value = 'By Road';
+    $('poGstRate').value = 9;
+    $('poGstType').value = 'intra';
+    const rem30 = new Date();
+    rem30.setDate(rem30.getDate() + 30);
+    $('poInvoiceReminder').value = formatDateYMDLocal(rem30);
+    poItems = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
+    renderPoItems();
+    document.querySelectorAll('.poCopyType').forEach(cb => {
+      cb.checked = cb.value === 'ORIGINAL FOR BUYER';
+    });
+    $('poFormPanel').classList.remove('hidden');
+    $('poPreviewPanel').classList.add('hidden');
+  }
+
+  // ── PO Invoice Items ──
+  function renderPoItems() {
+    const tbody = $('poItemsBody');
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    poItems.forEach((item, i) => {
+      const tr = document.createElement('tr');
+
+      const descTd = document.createElement('td');
+      const descInp = document.createElement('input');
+      descInp.type = 'text';
+      descInp.value = item.description || '';
+      descInp.dataset.i = i;
+      descInp.dataset.f = 'po-description';
+      descInp.autocomplete = 'off';
+      descInp.addEventListener('input', () => { poItems[i].description = descInp.value; });
+      descTd.appendChild(descInp);
+      tr.appendChild(descTd);
+
+      const hsnTd = document.createElement('td');
+      const hsnInp = document.createElement('input');
+      hsnInp.type = 'text';
+      hsnInp.value = item.hsn || '';
+      hsnInp.dataset.i = i;
+      hsnInp.dataset.f = 'po-hsn';
+      hsnInp.autocomplete = 'off';
+      hsnInp.addEventListener('input', () => { poItems[i].hsn = hsnInp.value; });
+      hsnTd.appendChild(hsnInp);
+      tr.appendChild(hsnTd);
+
+      const pkgTd = document.createElement('td');
+      const pkgInp = document.createElement('input');
+      pkgInp.type = 'number';
+      pkgInp.value = item.packages || 0;
+      pkgInp.min = '0';
+      pkgInp.addEventListener('input', () => {
+        poItems[i].packages = parseInt(pkgInp.value) || 0;
+      });
+      pkgTd.appendChild(pkgInp);
+      tr.appendChild(pkgTd);
+
+      const qtyTd = document.createElement('td');
+      const qtyInp = document.createElement('input');
+      qtyInp.type = 'number';
+      qtyInp.className = 'inv-qty-input';
+      qtyInp.value = item.qty != null ? item.qty : '';
+      qtyInp.addEventListener('input', () => {
+        const v = qtyInp.value.trim();
+        poItems[i].qty = v === '' ? null : Math.round(Number(v));
+        updatePoAmount(i);
+      });
+      qtyTd.appendChild(qtyInp);
+      tr.appendChild(qtyTd);
+
+      const rateTd = document.createElement('td');
+      const rateInp = document.createElement('input');
+      rateInp.type = 'text';
+      rateInp.className = 'inv-rate-input';
+      rateInp.inputMode = 'decimal';
+      rateInp.autocomplete = 'off';
+      rateInp.value = item.rate != null ? String(Math.round(item.rate * 100) / 100) : '';
+      rateInp.addEventListener('input', () => {
+        const parsed = parseRateToStore(rateInp.value);
+        poItems[i].rate = parsed;
+        updatePoAmount(i);
+      });
+      rateTd.appendChild(rateInp);
+      tr.appendChild(rateTd);
+
+      const amtTd = document.createElement('td');
+      const q = Math.round(Number(item.qty) || 0);
+      const r = Number(item.rate) || 0;
+      amtTd.className = 'amount-display';
+      amtTd.textContent = fmtNum(q * r);
+      amtTd.dataset.amtIdx = i;
+      tr.appendChild(amtTd);
+
+      const delTd = document.createElement('td');
+      if (poItems.length > 1) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete';
+        delBtn.textContent = '\u00D7';
+        delBtn.addEventListener('click', () => {
+          poItems.splice(i, 1);
+          renderPoItems();
+        });
+        delTd.appendChild(delBtn);
+      }
+      tr.appendChild(delTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updatePoAmount(i) {
+    const el = $('poItemsBody').querySelector('[data-amt-idx="' + i + '"]');
+    if (el) {
+      const q = Math.round(Number(poItems[i].qty) || 0);
+      const r = Number(poItems[i].rate) || 0;
+      el.textContent = fmtNum(q * r);
+    }
+  }
+
+  $('poAddItemBtn').addEventListener('click', () => {
+    poItems.push({ description: '', hsn: '', packages: 0, qty: null, rate: null });
+    renderPoItems();
+    const rows = $('poItemsBody').querySelectorAll('tr');
+    rows[rows.length - 1].querySelector('input').focus();
+  });
+
+  renderPoItems();
+
+  $('poSameAsVendor').addEventListener('change', () => {
+    $('poConsigneeFields').classList.toggle('hidden', $('poSameAsVendor').checked);
+  });
+
+  // ── PO Invoice: Vendor Autocomplete ──
+  createAutocomplete(
+    $('poVendorName'),
+    val => vendors
+      .filter(v => v.name.toLowerCase().includes(val))
+      .map(v => ({ label: escHtml(v.name) + '<small>' + escHtml(v.gstin) + '</small>', data: v })),
+    v => {
+      $('poVendorName').value = v.name;
+      $('poVendorGstin').value = v.gstin;
+      $('poVendorAddress').value = v.address;
+      $('poContactPerson').value = v.contact;
+      $('poContactPhone').value = v.phone;
+      $('poPoNumber').value = v.poNumber || '';
+      $('poPoDate').value = v.poDate || '';
+      $('poGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
+      $('poGstType').dispatchEvent(new Event('change'));
+      if (v.consignees && v.consignees.length > 0) {
+        $('poSameAsVendor').checked = false;
+        $('poConsigneeFields').classList.remove('hidden');
+        $('poConsigneeName').value = v.consignees[0].name;
+        $('poConsigneeAddress').value = v.consignees[0].address;
+      } else {
+        $('poSameAsVendor').checked = true;
+        $('poConsigneeFields').classList.add('hidden');
+        $('poConsigneeName').value = '';
+        $('poConsigneeAddress').value = '';
+      }
+    }
+  );
+
+  createAutocomplete(
+    $('poConsigneeName'),
+    val => {
+      const vendorName = $('poVendorName').value.trim().toLowerCase();
+      const vendor = vendors.find(v => v.name.toLowerCase() === vendorName);
+      const list = vendor && vendor.consignees ? vendor.consignees : [];
+      return list
+        .filter(con => con.name.toLowerCase().includes(val))
+        .map(con => ({ label: escHtml(con.name) + '<small>' + escHtml(con.address) + '</small>', data: con }));
+    },
+    con => {
+      $('poConsigneeName').value = con.name;
+      $('poConsigneeAddress').value = con.address;
+    }
+  );
+
+  // ── PO Invoice: Product Autocomplete on Items ──
+  function getPoAssociatedProductNames() {
+    const vendorName = $('poVendorName').value.trim().toLowerCase();
+    const vendor = vendors.find(v => v.name.toLowerCase() === vendorName);
+    return (vendor && vendor.associatedProducts) ? vendor.associatedProducts : [];
+  }
+
+  function matchPoProducts(val) {
+    const assocNames = getPoAssociatedProductNames();
+    const matched = products
+      .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val));
+    const assoc = matched.filter(p => assocNames.includes(p.name));
+    const rest = matched.filter(p => !assocNames.includes(p.name));
+    return [...assoc, ...rest]
+      .map(p => {
+        const isAssoc = assocNames.includes(p.name);
+        return { label: escHtml(p.name) + '<small>' + (isAssoc ? '\u2605 ' : '') + 'HSN: ' + escHtml(p.hsn) + '</small>', data: p };
+      });
+  }
+
+  function fillPoProduct(inp, p) {
+    const i = +inp.dataset.i;
+    poItems[i].description = p.name;
+    poItems[i].hsn = p.hsn;
+    poItems[i].rate = p.rate;
+    renderPoItems();
+  }
+
+  $('poItemsBody').addEventListener('focusin', e => {
+    const inp = e.target;
+    if ((inp.dataset.f === 'po-description' || inp.dataset.f === 'po-hsn') && !inp.dataset.acInit) {
+      inp.dataset.acInit = '1';
+      createAutocomplete(inp, matchPoProducts, p => fillPoProduct(inp, p));
+      inp.focus();
+    }
+  });
+
+  // ── PO Reminder presets ──
+  $('poInvReminderPresets').addEventListener('click', e => {
+    const btn = e.target.closest('.preset-pill');
+    if (!btn) return;
+    const days = +btn.dataset.days;
+    const base = $('poInvoiceDate').value ? new Date($('poInvoiceDate').value + 'T00:00:00') : new Date();
+    base.setDate(base.getDate() + days);
+    $('poInvoiceReminder').value = formatDateYMDLocal(base);
+  });
+
+  // ── PO Invoice Preview ──
+  $('poPreviewBtn').addEventListener('click', () => {
+    const invNo = $('poInvoiceNumber').value.trim();
+    const vendor = $('poVendorName').value.trim();
+    if (!invNo) { alert('PO Invoice No. is required'); $('poInvoiceNumber').focus(); return; }
+    if (!vendor) { alert('Vendor Company Name is required'); $('poVendorName').focus(); return; }
+
+    syncPoCopyChecks('poCopyType', 'poCopyTypePreview');
+    if (!saveCurrentPoInvoice()) return;
+    buildAllPoInvoices();
+    $('poFormPanel').classList.add('hidden');
+    $('poPreviewPanel').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  $('poEditBtn').addEventListener('click', () => {
+    $('poPreviewPanel').classList.add('hidden');
+    $('poFormPanel').classList.remove('hidden');
+  });
+
+  function syncPoCopyChecks(fromCls, toCls) {
+    const selected = Array.from(document.querySelectorAll('.' + fromCls + ':checked')).map(cb => cb.value);
+    document.querySelectorAll('.' + toCls).forEach(cb => {
+      cb.checked = selected.includes(cb.value);
+    });
+  }
+
+  document.querySelectorAll('.poCopyType').forEach(cb => {
+    cb.addEventListener('change', () => syncPoCopyChecks('poCopyType', 'poCopyTypePreview'));
+  });
+  document.querySelectorAll('.poCopyTypePreview').forEach(cb => {
+    cb.addEventListener('change', () => {
+      syncPoCopyChecks('poCopyTypePreview', 'poCopyType');
+      buildAllPoInvoices();
+    });
+  });
+
+  function buildAllPoInvoices() {
+    const types = Array.from(document.querySelectorAll('.poCopyType:checked')).map(cb => cb.value);
+    if (!types.length) types.push('');
+    const paper = $('poInvoicePaper');
+    paper.textContent = '';
+    types.forEach((t, idx) => {
+      if (idx > 0) {
+        const sep = document.createElement('div');
+        sep.className = 'copy-separator';
+        paper.appendChild(sep);
+      }
+      const wrapper = document.createElement('div');
+      wrapper.insertAdjacentHTML('afterbegin', buildPoInvoice(t));
+      while (wrapper.firstChild) paper.appendChild(wrapper.firstChild);
+    });
+  }
+
+  function buildPoInvoice(copyType) {
+    const gstRate = parseFloat($('poGstRate').value) || 0;
+    const gstType = $('poGstType').value;
+    const invoiceDate = $('poInvoiceDate').value;
+    const shortDate = invoiceDate ? formatShortDate(invoiceDate) : '';
+    const poDate = $('poPoDate').value ? formatShortDate($('poPoDate').value) : '';
+
+    const sameAsVendorShip = $('poSameAsVendor').checked;
+    const consigneeName = sameAsVendorShip ? $('poVendorName').value : $('poConsigneeName').value;
+    const consigneeAddr = sameAsVendorShip ? $('poVendorAddress').value : $('poConsigneeAddress').value;
+
+    let subtotal = 0;
+    const itemRows = poItems.map((item, i) => {
+      const q = Math.round(Number(item.qty) || 0);
+      const r = Number(item.rate) || 0;
+      const amt = q * r;
+      subtotal += amt;
+      return '<tr>'
+        + '<td class="c">' + (i + 1) + '</td>'
+        + '<td class="l">' + (esc(item.description).toUpperCase() || '\u2014') + '</td>'
+        + '<td class="c">' + esc(item.hsn) + '</td>'
+        + '<td class="c">' + formatBags(item.packages) + '</td>'
+        + '<td class="c">' + q + '</td>'
+        + '<td class="c">' + fmtNum(item.rate) + '</td>'
+        + '<td class="r">' + fmtNum(amt) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    let totalTax = 0;
+    let cgstAmt = 0, sgstAmt = 0, igstAmt = 0;
+    if (gstType === 'intra') {
+      cgstAmt = subtotal * (gstRate / 100);
+      sgstAmt = subtotal * (gstRate / 100);
+      totalTax = cgstAmt + sgstAmt;
+    } else {
+      igstAmt = subtotal * (gstRate / 100);
+      totalTax = igstAmt;
+    }
+    const grandTotal = Math.round(subtotal + totalTax);
+    const wordsStr = numberToWords(grandTotal);
+
+    const taxRows = gstType === 'intra'
+      ? '<tr><td class="r" colspan="2">CGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(cgstAmt) + '</td></tr>'
+        + '<tr><td class="r" colspan="2">SGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(sgstAmt) + '</td></tr>'
+      : '<tr><td class="r" colspan="2">IGST @ ' + (gstRate * 2) + '%</td><td class="r">' + fmtNum(igstAmt) + '</td></tr>';
+
+    return '<div class="inv">'
+      + '<div class="inv-hdr">'
+      + '<div class="inv-hdr-name">' + COMPANY.name + '</div>'
+      + '<div class="inv-hdr-addr">' + COMPANY.address.replace(/\n/g, '<br>') + '<br>Email: ' + COMPANY.email + ' | Phone: ' + COMPANY.phone + '</div>'
+      + '</div>'
+      + '<div class="inv-gstin-row"><span><b>GSTIN:</b> ' + COMPANY.gstin + '</span><span>' + (copyType || '') + '</span></div>'
+      + '<table class="inv-tbl"><tr>'
+      + '<td class="inv-buyer-cell" style="width:50%">'
+      + '<div class="inv-lbl">Vendor (Billed To)</div>'
+      + '<div class="inv-buyer-name">' + esc($('poVendorName').value) + '</div>'
+      + '<div class="inv-buyer-addr">' + esc($('poVendorAddress').value) + '</div>'
+      + (($('poVendorGstin').value) ? '<div style="margin-top:4px"><b>GSTIN:</b> ' + esc($('poVendorGstin').value) + '</div>' : '')
+      + '</td>'
+      + '<td style="width:50%;vertical-align:top;padding:0">'
+      + '<table class="inv-tbl" style="border:none"><tr><td colspan="2" class="inv-tax-title c bld" style="border-top:none">PURCHASE ORDER INVOICE</td></tr>'
+      + '<tr><td class="inv-flbl" style="width:40%">Invoice No.</td><td class="inv-meta-val">' + esc($('poInvoiceNumber').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">Date</td><td class="inv-meta-val">' + shortDate + '</td></tr>'
+      + '</table></td></tr></table>'
+      + '<table class="inv-tbl inv-con"><tr>'
+      + '<td class="inv-buyer-cell" style="width:40%">'
+      + '<div class="inv-lbl">Consignee (Shipped To)</div>'
+      + '<div class="inv-buyer-name">' + esc(consigneeName) + '</div>'
+      + '<div class="inv-buyer-addr">' + esc(consigneeAddr) + '</div>'
+      + '<div style="margin-top:4px"><b>Contact:</b> ' + esc($('poContactPerson').value) + ' | ' + esc($('poContactPhone').value) + '</div>'
+      + '</td>'
+      + '<td style="width:60%;padding:0;vertical-align:top">'
+      + '<table class="inv-tbl" style="border:none">'
+      + '<tr><td class="inv-flbl" style="width:35%">P.Order No.</td><td>' + esc($('poPoNumber').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">P.O. Date</td><td>' + poDate + '</td></tr>'
+      + '<tr><td class="inv-flbl">Mode of Transport</td><td>' + esc($('poTransportMode').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">Bank Name</td><td>' + esc($('poBankName').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">Branch</td><td>' + esc($('poBankBranch').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">A/C No.</td><td>' + esc($('poAccountNumber').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">IFSC Code</td><td>' + esc($('poIfscCode').value) + '</td></tr>'
+      + '</table></td></tr></table>'
+      + '<table class="inv-tbl inv-items">'
+      + '<thead><tr><th style="width:6%">S.No</th><th style="width:28%">Description of Goods</th><th style="width:12%">HSN Code</th><th style="width:10%">No. of Bags</th><th style="width:10%">Quantity</th><th style="width:12%">Rate</th><th style="width:14%">Amount (\u20B9)</th></tr></thead>'
+      + '<tbody>' + itemRows + '</tbody>'
+      + '</table>'
+      + '<table class="inv-totals-tbl">'
+      + '<tr><td class="r" colspan="2" style="width:78%"><b>Sub Total</b></td><td class="r" style="width:22%">' + fmtNum(subtotal) + '</td></tr>'
+      + taxRows
+      + '<tr><td class="r" colspan="2"><b>Grand Total</b></td><td class="r"><b>\u20B9' + fmtNum(grandTotal) + '</b></td></tr>'
+      + '<tr><td colspan="3" style="font-size:10px"><b>Amount in Words:</b> ' + wordsStr + ' Rupees Only</td></tr>'
+      + '</table>'
+      + '<table class="inv-tbl inv-bottom">'
+      + '<tr>'
+      + '<td class="inv-cert" style="width:50%" rowspan="2">We declare that this purchase order invoice shows the actual details of the goods described and that the particulars given above are true and correct.</td>'
+      + '<td class="inv-sig" style="width:50%">For ' + COMPANY.name + '<div class="inv-sig-space"></div>Authorised Signatory</td>'
+      + '</tr>'
+      + '<tr><td class="inv-recv">Received the above goods in good order and condition.</td></tr>'
+      + '</table>'
+      + '</div>';
+  }
+
+  // ── PO Invoice Navigation ──
+  $('poInvBackBtn').addEventListener('click', () => {
+    $('poPreviewPanel').classList.add('hidden');
+    $('poFormPanel').classList.remove('hidden');
+    if (cameFromVendorPayment) {
+      cameFromVendorPayment = false;
+      showView('vendorPayView');
+      renderVendorPaymentView();
+    } else if (cameFromPoInvoiceList) {
+      cameFromPoInvoiceList = false;
+      showView('poInvoiceListView');
+      renderPoInvoiceList();
+    } else {
+      goHome();
+    }
+  });
+
+  // ── PO Invoice PDF ──
+  $('poDownloadBtn').addEventListener('click', () => {
+    const element = $('poInvoicePaper');
+    element.style.overflow = 'visible';
+    window.scrollTo(0, 0);
+    const invNum = $('poInvoiceNumber').value || 'po-invoice';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        html2pdf().set({ ...PDF_OPT, filename: invNum + '.pdf' }).from(element).save().then(() => {
+          element.style.overflow = '';
+        });
+      });
+    });
+  });
+
+  $('poPrintBtn').addEventListener('click', () => window.print());
+
+  // ══════════════════════════════════════
+  // ── All PO Invoices List ──
+  // ══════════════════════════════════════
+
+  function renderPoInvoiceList() {
+    const tbody = $('poInvListBody');
+    const query = ($('poInvSearch').value || '').trim().toLowerCase();
+    const from = $('poInvDateFrom').value;
+    const to = $('poInvDateTo').value;
+
+    const filtered = poInvoices.filter(inv => {
+      if (query) {
+        const productInfo = (inv.items || []).map(it => (it.description || '') + ' ' + (it.hsn || '')).join(' ');
+        const haystack = [inv.invoiceNumber, inv.vendorName, productInfo].join(' ').toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (from && inv.invoiceDate < from) return false;
+      if (to && inv.invoiceDate > to) return false;
+      return true;
+    });
+
+    const sortAsc = ($('poInvSortOrder').value === 'asc');
+    filtered.sort((a, b) => {
+      const da = a.invoiceDate || a.createdAt || '';
+      const dab = b.invoiceDate || b.createdAt || '';
+      const dateCmp = da.localeCompare(dab);
+      if (dateCmp !== 0) return sortAsc ? dateCmp : -dateCmp;
+      return 0;
+    });
+
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    $('poInvListEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('poInvListTable').style.display = filtered.length ? 'table' : 'none';
+
+    filtered.forEach(inv => {
+      const tr = document.createElement('tr');
+      const total = computePoGrandTotal(inv);
+
+      const tdCheck = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'po-inv-check';
+      cb.dataset.invId = inv.id;
+      tdCheck.appendChild(cb);
+      tr.appendChild(tdCheck);
+
+      const tdNo = document.createElement('td');
+      tdNo.textContent = inv.invoiceNumber || '';
+      tr.appendChild(tdNo);
+
+      const tdDate = document.createElement('td');
+      tdDate.textContent = inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '';
+      tr.appendChild(tdDate);
+
+      const tdVendor = document.createElement('td');
+      tdVendor.textContent = inv.vendorName || '';
+      tr.appendChild(tdVendor);
+
+      const tdTotal = document.createElement('td');
+      tdTotal.className = 'r';
+      tdTotal.textContent = '\u20B9' + fmtNum(total);
+      tr.appendChild(tdTotal);
+
+      const tdAct = document.createElement('td');
+      tdAct.className = 'actions';
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'btn-view';
+      viewBtn.dataset.invId = inv.id;
+      viewBtn.textContent = 'View';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-edit';
+      editBtn.dataset.invId = inv.id;
+      editBtn.textContent = 'Edit';
+      const pdfBtn = document.createElement('button');
+      pdfBtn.className = 'btn-download';
+      pdfBtn.dataset.invId = inv.id;
+      pdfBtn.textContent = 'PDF';
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del';
+      delBtn.dataset.invId = inv.id;
+      delBtn.textContent = 'Delete';
+      tdAct.appendChild(viewBtn);
+      tdAct.appendChild(editBtn);
+      tdAct.appendChild(pdfBtn);
+      tdAct.appendChild(delBtn);
+      tr.appendChild(tdAct);
+
+      tbody.appendChild(tr);
+    });
+    if ($('poInvSelectAll')) $('poInvSelectAll').checked = false;
+
+    const sum = filtered.reduce((s, inv) => s + computePoGrandTotal(inv), 0);
+    $('poInvTotalSummaryValue').textContent = '\u20B9' + fmtNum(sum);
+    const fromStr = from ? formatShortDate(from) : '';
+    const toStr = to ? formatShortDate(to) : '';
+    if (from || to) {
+      $('poInvTotalSummaryPeriod').textContent = (fromStr || 'Start') + ' \u2013 ' + (toStr || 'Now');
+    } else {
+      $('poInvTotalSummaryPeriod').textContent = 'All dates';
+    }
+    $('poInvTotalSummaryCount').textContent = filtered.length + ' PO invoice' + (filtered.length !== 1 ? 's' : '');
+  }
+
+  $('poInvSearch').addEventListener('input', renderPoInvoiceList);
+  $('poInvDateFrom').addEventListener('change', renderPoInvoiceList);
+  $('poInvDateTo').addEventListener('change', renderPoInvoiceList);
+  $('poInvSortOrder').addEventListener('change', renderPoInvoiceList);
+
+  $('poInvListBackBtn').addEventListener('click', goHome);
+
+  $('poInvSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('.po-inv-check').forEach(cb => cb.checked = e.target.checked);
+  });
+
+  $('poInvListBody').addEventListener('click', e => {
+    const btn = e.target;
+    const invId = btn.dataset.invId;
+    if (!invId) return;
+    const inv = poInvoices.find(x => x.id === invId);
+    if (!inv) return;
+
+    if (btn.classList.contains('btn-view')) {
+      cameFromPoInvoiceList = true;
+      loadPoInvoiceIntoForm(inv);
+      showView('poInvoiceView');
+      syncPoCopyChecks('poCopyType', 'poCopyTypePreview');
+      buildAllPoInvoices();
+      $('poFormPanel').classList.add('hidden');
+      $('poPreviewPanel').classList.remove('hidden');
+    }
+    if (btn.classList.contains('btn-edit')) {
+      cameFromPoInvoiceList = true;
+      loadPoInvoiceIntoForm(inv);
+      showView('poInvoiceView');
+      $('poFormPanel').classList.remove('hidden');
+      $('poPreviewPanel').classList.add('hidden');
+    }
+    if (btn.classList.contains('btn-download')) {
+      downloadPoInvoicePDF(inv);
+    }
+    if (btn.classList.contains('btn-del')) {
+      if (confirm('Delete PO Invoice ' + (inv.invoiceNumber || '') + '?')) {
+        poInvoices = poInvoices.filter(x => x.id !== invId);
+        savePoInvoices();
+        renderPoInvoiceList();
+      }
+    }
+  });
+
+  async function downloadPoInvoicePDF(inv) {
+    const state = saveViewState();
+
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('poInvoiceView').classList.remove('hidden');
+    $('poFormPanel').classList.add('hidden');
+    $('poPreviewPanel').classList.remove('hidden');
+
+    loadPoInvoiceIntoForm(inv);
+    syncPoCopyChecks('poCopyType', 'poCopyTypePreview');
+    buildAllPoInvoices();
+
+    const paper = $('poInvoicePaper');
+    paper.style.overflow = 'visible';
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await html2pdf().set({ ...PDF_OPT, filename: (inv.invoiceNumber || 'po-invoice') + '.pdf' }).from(paper).save();
+    paper.style.overflow = '';
+    restoreViewState(state);
   }
 });

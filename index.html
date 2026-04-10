@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Karthick Industries</title>
-  <link rel="stylesheet" href="style.css?v=20" />
+  <link rel="stylesheet" href="style.css?v=22" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -68,9 +68,29 @@
           <p>View &amp; manage invoices</p>
         </div>
         <div class="home-card" data-view="paymentView">
-          <div class="home-card-icon">₹</div>
-          <h3>Payment Info</h3>
-          <p>Track outstanding &amp; payments</p>
+          <div class="home-card-icon">C₹</div>
+          <h3>Customer Payment</h3>
+          <p>Track customer outstanding &amp; payments</p>
+        </div>
+        <div class="home-card" data-view="vendorPayView">
+          <div class="home-card-icon">V₹</div>
+          <h3>Vendor Payment</h3>
+          <p>Track payable &amp; payments to vendors</p>
+        </div>
+        <div class="home-card" data-view="vendorView">
+          <div class="home-card-icon">V</div>
+          <h3>Vendor / Supplier</h3>
+          <p>Manage your vendors</p>
+        </div>
+        <div class="home-card" data-view="poInvoiceView">
+          <div class="home-card-icon">PO</div>
+          <h3>PO Invoice</h3>
+          <p>Generate purchase order invoices</p>
+        </div>
+        <div class="home-card" data-view="poInvoiceListView">
+          <div class="home-card-icon">AP</div>
+          <h3>All PO Invoices</h3>
+          <p>View &amp; manage PO invoices</p>
         </div>
       </div>
     </section>
@@ -188,7 +208,7 @@
     <div id="paymentView" class="view hidden">
       <div class="view-header">
         <button class="btn btn-secondary" id="payBackBtn">← Back</button>
-        <h2>Payment Info</h2>
+        <h2>Customer Payment Info</h2>
         <div></div>
       </div>
 
@@ -253,6 +273,79 @@
             <button class="btn btn-primary" id="reminderSaveBtn">Save Reminder</button>
             <button class="btn btn-secondary" id="reminderEmailBtn">Send Email</button>
             <button class="btn btn-secondary" id="reminderCancelBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== VENDOR PAYMENT VIEW ======== -->
+    <div id="vendorPayView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="vpayBackBtn">← Back</button>
+        <h2>Vendor Payment Info</h2>
+        <div></div>
+      </div>
+
+      <div class="outstanding-bar">
+        <span class="outstanding-label">Total Payable</span>
+        <span class="outstanding-amount" id="vpayTotalOutstanding">₹0.00</span>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="vpaySearch" class="filter-input" placeholder="Search by vendor name..." />
+      </div>
+
+      <div id="vpayCompanyList"></div>
+      <p id="vpayEmpty" class="empty-msg hidden">No vendors found.</p>
+
+      <!-- Add Payment Overlay -->
+      <div id="vpayFormOverlay" class="overlay hidden">
+        <div class="overlay-box pay-credit-box">
+          <h3 id="vpayFormHeading">Add Payment</h3>
+          <p class="overlay-subtitle" id="vpayFormCompanyLabel"></p>
+          <p class="overlay-subtitle" id="vpayFormOutstanding" style="font-weight:600;color:var(--danger)"></p>
+          <p class="overlay-subtitle pay-form-fifo-hint" id="vpayFormFifoHint">Payments apply to the oldest PO invoices first (by invoice date), until the amount is used up.</p>
+          <div class="field" id="vpayDateField"><label>Payment date &amp; time</label><input type="datetime-local" id="vpayDateInput" step="60" /></div>
+          <div class="field"><label>Payment Amount (₹)</label><input type="number" id="vpayAmtInput" min="0" step="0.01" /></div>
+          <div class="field"><label>Note (optional)</label><input type="text" id="vpayNoteInput" /></div>
+          <div class="overlay-actions pay-form-actions">
+            <button type="button" class="btn btn-sm btn-secondary pay-form-delete hidden" id="vpayFormDeleteBtn">Delete payment</button>
+            <div class="pay-form-actions-right">
+              <button type="button" class="btn btn-primary" id="vpayFormSaveBtn">Save Payment</button>
+              <button type="button" class="btn btn-secondary" id="vpayFormCancelBtn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment History Overlay -->
+      <div id="vpayHistoryOverlay" class="overlay hidden">
+        <div class="overlay-box pay-history-box">
+          <h3>Payment summary</h3>
+          <p class="overlay-subtitle" id="vpayHistoryLabel"></p>
+          <div id="vpayHistoryList" class="pay-history-scroll"></div>
+          <p class="overlay-subtitle" id="vpayHistorySummary" style="font-weight:600"></p>
+          <div class="overlay-actions">
+            <button class="btn btn-secondary" id="vpayHistoryCloseBtn">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Set Reminder Overlay -->
+      <div id="vpayReminderOverlay" class="overlay hidden">
+        <div class="overlay-box">
+          <h3>Set Reminder</h3>
+          <p class="overlay-subtitle" id="vpayReminderInvLabel"></p>
+          <div class="reminder-preset-row" id="vpayReminderPresets">
+            <button type="button" class="preset-pill" data-days="30">30 Days</button>
+            <button type="button" class="preset-pill" data-days="60">60 Days</button>
+            <button type="button" class="preset-pill" data-days="90">90 Days</button>
+          </div>
+          <div class="field"><label>Custom Date</label><input type="date" id="vpayReminderDateInput" /></div>
+          <div class="field"><label>Note (optional)</label><input type="text" id="vpayReminderNoteInput" /></div>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="vpayReminderSaveBtn">Save Reminder</button>
+            <button class="btn btn-secondary" id="vpayReminderCancelBtn">Cancel</button>
           </div>
         </div>
       </div>
@@ -560,6 +653,289 @@
       </section>
     </div>
 
+    <!-- ======== VENDOR / SUPPLIER VIEW ======== -->
+    <div id="vendorView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="vendBackBtn">← Back</button>
+        <h2>Vendor / Supplier List</h2>
+        <div class="view-header-actions">
+          <button class="btn btn-sm btn-secondary" id="downloadVendBtn">⬇ Download</button>
+          <button class="btn btn-primary" id="addVendBtn">+ Add Vendor</button>
+        </div>
+      </div>
+
+      <div id="vendFormWrap" class="hidden">
+        <fieldset>
+          <legend id="vendFormTitle">Add Vendor</legend>
+          <div class="row">
+            <div class="field"><label>Company Name</label><input type="text" id="vendName" /></div>
+            <div class="field"><label>GSTIN</label><input type="text" id="vendGstin" /></div>
+          </div>
+          <div class="field"><label>Address</label><textarea id="vendAddress" rows="2"></textarea></div>
+          <div class="row">
+            <div class="field"><label>Contact Person</label><input type="text" id="vendContact" /></div>
+            <div class="field"><label>Phone</label><input type="text" id="vendPhone" /></div>
+          </div>
+          <div class="row three">
+            <div class="field"><label>P.Order No.</label><input type="text" id="vendPoNumber" placeholder="Default for PO invoices" /></div>
+            <div class="field"><label>P.O. Date</label><input type="date" id="vendPoDate" /></div>
+            <div class="field">
+              <label>GST Type</label>
+              <select id="vendGstType">
+                <option value="intra">Intra-State (CGST + SGST)</option>
+                <option value="inter">Inter-State (IGST)</option>
+              </select>
+            </div>
+          </div>
+          <div class="consignee-section">
+            <div class="consignee-header">
+              <label class="consignee-label">Consignee / Shipped To</label>
+              <button type="button" class="btn btn-secondary btn-sm" id="addVendConsigneeBtn">+ Add</button>
+            </div>
+            <div id="vendConsigneeList"></div>
+            <div id="vendConsigneeFormRow" class="hidden">
+              <div class="field"><label>Consignee Name</label><input type="text" id="vendConName" /></div>
+              <div class="field"><label>Address</label><textarea id="vendConAddress" rows="2"></textarea></div>
+              <div style="display:flex;gap:8px;margin-bottom:.75rem">
+                <button type="button" class="btn btn-primary btn-sm" id="saveVendConsigneeBtn">Add Consignee</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="cancelVendConsigneeBtn">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="consignee-section">
+            <div class="consignee-header">
+              <label class="consignee-label">Associated Products</label>
+              <button type="button" class="btn btn-secondary btn-sm" id="addVendProdBtn">+ Add</button>
+            </div>
+            <div id="vendProdList"></div>
+            <div id="vendProdFormRow" class="hidden">
+              <div class="field"><label>Product</label><input type="text" id="vendProdInput" autocomplete="off" placeholder="Type to search products..." /></div>
+              <div style="display:flex;gap:8px;margin-bottom:.75rem">
+                <button type="button" class="btn btn-secondary btn-sm" id="cancelVendProdBtn">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btn-primary" id="saveVendBtn">Save</button>
+            <button class="btn btn-secondary" id="cancelVendBtn">Cancel</button>
+          </div>
+        </fieldset>
+      </div>
+
+      <div id="vendTableWrap">
+        <div class="filter-row">
+          <input type="text" id="vendSearch" class="filter-input" placeholder="Search by company, GSTIN, contact, or phone..." />
+        </div>
+        <div class="data-table-wrap">
+        <table class="data-table" id="vendTable">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="vendSelectAll" /></th>
+              <th>Company Name</th>
+              <th>GSTIN</th>
+              <th>GST Type</th>
+              <th>P.Order / Date</th>
+              <th>Contact Person</th>
+              <th>Phone</th>
+              <th>Consignees</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="vendBody"></tbody>
+        </table>
+        <p id="vendEmpty" class="empty-msg">No vendors added yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PO INVOICE LIST VIEW ======== -->
+    <div id="poInvoiceListView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="poInvListBackBtn">← Back</button>
+        <h2>All PO Invoices</h2>
+        <div></div>
+      </div>
+      <div class="filter-row">
+        <input type="text" id="poInvSearch" class="filter-input" placeholder="Search by PO invoice no, vendor, or product..." />
+        <input type="date" id="poInvDateFrom" class="filter-date" title="From date" />
+        <input type="date" id="poInvDateTo" class="filter-date" title="To date" />
+        <select id="poInvSortOrder" class="filter-select" title="Sort order">
+          <option value="desc">Date: Newest first</option>
+          <option value="asc">Date: Oldest first</option>
+        </select>
+      </div>
+      <div class="inv-total-panel" id="poInvTotalPanel">
+        <div class="inv-total-panel-title">Total PO invoice value</div>
+        <div class="inv-total-panel-stats">
+          <p class="inv-total-panel-period" id="poInvTotalSummaryPeriod">All dates</p>
+          <div class="inv-total-panel-value" id="poInvTotalSummaryValue">₹0.00</div>
+          <p class="inv-total-panel-count" id="poInvTotalSummaryCount">0 PO invoices</p>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table" id="poInvListTable">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="poInvSelectAll" /></th>
+              <th>PO Invoice No.</th>
+              <th>Date</th>
+              <th>Vendor</th>
+              <th>Total</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="poInvListBody"></tbody>
+        </table>
+        <p id="poInvListEmpty" class="empty-msg">No PO invoices saved yet.</p>
+      </div>
+    </div>
+
+    <!-- ======== PO INVOICE VIEW ======== -->
+    <div id="poInvoiceView" class="view hidden">
+      <div class="view-header" style="margin-bottom:1.25rem">
+        <button class="btn btn-secondary" id="poInvBackBtn">← Back</button>
+        <h2>PO Invoice Generator</h2>
+        <div></div>
+      </div>
+
+      <section class="form-panel" id="poFormPanel">
+        <fieldset>
+          <legend>PO Invoice Info</legend>
+          <div class="row three">
+            <div class="field">
+              <label for="poInvoiceNumber">PO Invoice No. <span class="req">*</span></label>
+              <input type="text" id="poInvoiceNumber" autocomplete="off" />
+            </div>
+            <div class="field"><label>Date</label><input type="date" id="poInvoiceDate" /></div>
+            <div class="field">
+              <label>Reminder Date</label>
+              <input type="date" id="poInvoiceReminder" />
+              <div class="reminder-preset-row" id="poInvReminderPresets">
+                <button type="button" class="preset-pill" data-days="30">30d</button>
+                <button type="button" class="preset-pill" data-days="60">60d</button>
+                <button type="button" class="preset-pill" data-days="90">90d</button>
+              </div>
+            </div>
+          </div>
+          <div class="copy-type-row">
+            <span class="copy-type-label">Copy Type</span>
+            <div class="copy-checks">
+              <label class="copy-check"><input type="checkbox" value="ORIGINAL FOR BUYER" class="poCopyType" checked /> Original</label>
+              <label class="copy-check"><input type="checkbox" value="DUPLICATE FOR TRANSPORTER" class="poCopyType" /> Duplicate</label>
+              <label class="copy-check"><input type="checkbox" value="TRIPLICATE FOR SUPPLIER" class="poCopyType" /> Triplicate</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Vendor Details (Billed To)</legend>
+          <div class="row">
+            <div class="field"><label>Company Name <span class="req">*</span></label><input type="text" id="poVendorName" /></div>
+            <div class="field"><label>GSTIN</label><input type="text" id="poVendorGstin" /></div>
+          </div>
+          <div class="field"><label>Address</label><textarea id="poVendorAddress" rows="2"></textarea></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Consignee / Shipped To</legend>
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:12px"><input type="checkbox" id="poSameAsVendor" checked /> Same as Vendor</label>
+          <div id="poConsigneeFields" class="hidden">
+            <div class="field"><label>Company Name</label><input type="text" id="poConsigneeName" /></div>
+            <div class="field"><label>Address</label><textarea id="poConsigneeAddress" rows="2"></textarea></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Name</label><input type="text" id="poContactPerson" /></div>
+            <div class="field"><label>Contact Number</label><input type="text" id="poContactPhone" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Order &amp; Bank Details</legend>
+          <div class="row">
+            <div class="field"><label>P.Order No.</label><input type="text" id="poPoNumber" /></div>
+            <div class="field"><label>P.O. Date</label><input type="date" id="poPoDate" /></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Bank Name</label><input type="text" id="poBankName" value="Bank of Baroda" /></div>
+            <div class="field"><label>Branch</label><input type="text" id="poBankBranch" value="Noothancheri Branch" /></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Account Number</label><input type="text" id="poAccountNumber" value="69550200000025" /></div>
+            <div class="field"><label>IFSC Code</label><input type="text" id="poIfscCode" value="BARBOVJNOOT" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Items</legend>
+          <div class="items-table-wrapper">
+            <table class="items-table" id="poItemsTable">
+              <thead>
+                <tr>
+                  <th class="col-desc">Commodity / Service</th>
+                  <th class="col-hsn">HSN Code</th>
+                  <th class="col-pkg">No. of Bags</th>
+                  <th class="col-qty">Qty</th>
+                  <th class="col-rate">Rate</th>
+                  <th class="col-amt">Amount</th>
+                  <th class="col-del"></th>
+                </tr>
+              </thead>
+              <tbody id="poItemsBody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-secondary" id="poAddItemBtn">+ Add Item</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Transport &amp; Tax</legend>
+          <div class="row three">
+            <div class="field">
+              <label>Mode of Transport</label>
+              <select id="poTransportMode">
+                <option value="By Road">By Road</option>
+                <option value="By Rail">By Rail</option>
+                <option value="By Air">By Air</option>
+                <option value="By Ship">By Ship</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>GST Rate (%)</label>
+              <input type="number" id="poGstRate" value="9" min="0" step="0.5" />
+            </div>
+            <div class="field">
+              <label>GST Type</label>
+              <select id="poGstType">
+                <option value="intra">Intra-State (CGST + SGST)</option>
+                <option value="inter">Inter-State (IGST)</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="poPreviewBtn">Preview PO Invoice</button>
+        </div>
+      </section>
+
+      <section class="preview-panel hidden" id="poPreviewPanel">
+        <div class="preview-actions">
+          <div class="preview-actions-row preview-actions-row--edit-copies">
+            <button type="button" class="btn btn-secondary" id="poEditBtn">← Edit</button>
+            <div class="copy-checks preview-copy-checks">
+              <label class="copy-check"><input type="checkbox" value="ORIGINAL FOR BUYER" class="poCopyTypePreview" checked /> Original</label>
+              <label class="copy-check"><input type="checkbox" value="DUPLICATE FOR TRANSPORTER" class="poCopyTypePreview" /> Duplicate</label>
+              <label class="copy-check"><input type="checkbox" value="TRIPLICATE FOR SUPPLIER" class="poCopyTypePreview" /> Triplicate</label>
+            </div>
+          </div>
+          <div class="preview-actions-row preview-actions-row--export">
+            <button type="button" class="btn btn-primary" id="poDownloadBtn">Download PDF</button>
+            <button type="button" class="btn btn-secondary" id="poPrintBtn">Print</button>
+          </div>
+        </div>
+        <div class="invoice-paper" id="poInvoicePaper"></div>
+      </section>
+    </div>
+
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -571,6 +947,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=96"></script>
+  <script src="script.js?v=98"></script>
 </body>
 </html>

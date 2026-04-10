@@ -49,6 +49,36 @@ const db = {
     this._doc('payments').set({ data: data });
   },
 
+  async loadVendors() {
+    const snap = await this._doc('vendors').get();
+    return snap.exists ? (snap.data().items || []) : [];
+  },
+
+  saveVendors(data) {
+    if (!this._uid) return;
+    this._doc('vendors').set({ items: data });
+  },
+
+  async loadVendorPayments() {
+    const snap = await this._doc('vendorPayments').get();
+    return snap.exists ? (snap.data().data || {}) : {};
+  },
+
+  saveVendorPayments(data) {
+    if (!this._uid) return;
+    this._doc('vendorPayments').set({ data: data });
+  },
+
+  async loadPoInvoices() {
+    const snap = await this._doc('poInvoices').get();
+    return snap.exists ? (snap.data().items || []) : [];
+  },
+
+  savePoInvoices(data) {
+    if (!this._uid) return;
+    this._doc('poInvoices').set({ items: data });
+  },
+
   async migrateFromLocalStorage() {
     const keys = ['ki_customers', 'ki_products', 'ki_invoices', 'ki_payments'];
     const hasData = keys.some(k => localStorage.getItem(k));
