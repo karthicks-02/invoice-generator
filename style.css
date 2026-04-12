@@ -1552,26 +1552,27 @@ input.inv-rate-input {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: .35rem;
-  padding: .5rem .6rem;
-  margin-bottom: .5rem;
+  gap: .6rem;
+  padding: .6rem .8rem;
+  margin-bottom: .6rem;
   background: #f8fafc;
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: .78rem;
+  font-size: .88rem;
 }
 .co-days-label {
   font-weight: 600;
   color: var(--text-muted);
-  font-size: .78rem;
-  margin-right: .15rem;
+  font-size: .88rem;
+  margin-right: .2rem;
 }
-.co-days-sep { color: var(--text-muted); font-size: .75rem; }
-.co-days-hint { color: var(--text-muted); font-size: .72rem; margin-right: .25rem; }
-.co-days-filter .days-input { width: 48px; font-size: .76rem; padding: .2rem .3rem; }
-.co-days-filter .btn-sm { font-size: .72rem; padding: .22rem .55rem; }
-.co-days-inv-toggle { font-size: .72rem; }
-.co-days-inv-toggle span { font-size: .72rem; }
+.co-days-sep { color: var(--text-muted); font-size: .85rem; }
+.co-days-hint { color: var(--text-muted); font-size: .85rem; margin-right: .3rem; }
+.co-days-filter .days-input { width: 56px; font-size: .88rem; padding: .32rem .4rem; }
+.co-days-filter .preset-pill { font-size: .85rem; padding: .35rem .7rem; }
+.co-days-filter .btn-sm { font-size: .85rem; padding: .35rem .7rem; }
+.co-days-inv-toggle { font-size: .85rem; }
+.co-days-inv-toggle span { font-size: .85rem; }
 
 @media (max-width: 700px) {
   .days-filter-bar { flex-direction: column; align-items: stretch; }
