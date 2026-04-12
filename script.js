@@ -4698,14 +4698,10 @@ document.addEventListener('DOMContentLoaded', () => {
       invoiceNumber: $('poInvoiceNumber').value.trim(),
       invoiceDate: $('poInvoiceDate').value,
       copyTypes: Array.from(document.querySelectorAll('.poCopyType:checked')).map(cb => cb.value),
+      billType: Array.from(document.querySelectorAll('.poBillType:checked')).map(cb => cb.value),
       vendorName: $('poVendorName').value.trim(),
       vendorGstin: $('poVendorGstin').value.trim(),
       vendorAddress: $('poVendorAddress').value.trim(),
-      sameAsVendor: $('poSameAsVendor').checked,
-      consigneeName: $('poConsigneeName').value.trim(),
-      consigneeAddress: $('poConsigneeAddress').value.trim(),
-      contactPerson: $('poContactPerson').value.trim(),
-      contactPhone: $('poContactPhone').value.trim(),
       poNumber: $('poPoNumber').value.trim(),
       poDate: $('poPoDate').value,
       paymentMode: document.querySelector('input[name="poPayMode"]:checked').value,
@@ -4754,12 +4750,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     $('poVendorGstin').value = loadedGst;
     $('poVendorAddress').value = inv.vendorAddress || '';
-    $('poSameAsVendor').checked = inv.sameAsVendor !== false;
-    $('poConsigneeFields').classList.toggle('hidden', inv.sameAsVendor !== false);
-    $('poConsigneeName').value = inv.consigneeName || '';
-    $('poConsigneeAddress').value = inv.consigneeAddress || '';
-    $('poContactPerson').value = inv.contactPerson || '';
-    $('poContactPhone').value = inv.contactPhone || '';
     $('poPoNumber').value = inv.poNumber || '';
     $('poPoDate').value = inv.poDate || '';
     const ppm = inv.paymentMode || 'bank';
@@ -4799,6 +4789,10 @@ document.addEventListener('DOMContentLoaded', () => {
         cb.checked = inv.copyTypes.includes(cb.value);
       });
     }
+    const bt = inv.billType || [];
+    document.querySelectorAll('.poBillType').forEach(cb => {
+      cb.checked = bt.includes(cb.value);
+    });
   }
 
   function resetPoInvoiceForm() {
@@ -4809,12 +4803,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poVendorName').value = '';
     $('poVendorGstin').value = '';
     $('poVendorAddress').value = '';
-    $('poSameAsVendor').checked = true;
-    $('poConsigneeFields').classList.add('hidden');
-    $('poConsigneeName').value = '';
-    $('poConsigneeAddress').value = '';
-    $('poContactPerson').value = '';
-    $('poContactPhone').value = '';
     $('poPoNumber').value = '';
     $('poPoDate').value = '';
     $('poPayBank').checked = true;
@@ -4836,6 +4824,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.poCopyType').forEach(cb => {
       cb.checked = cb.value === 'ORIGINAL FOR BUYER';
     });
+    document.querySelectorAll('.poBillType').forEach(cb => { cb.checked = false; });
     $('poFormPanel').classList.remove('hidden');
     $('poPreviewPanel').classList.add('hidden');
   }
@@ -4951,9 +4940,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderPoItems();
 
-  $('poSameAsVendor').addEventListener('change', () => {
-    $('poConsigneeFields').classList.toggle('hidden', $('poSameAsVendor').checked);
-  });
 
   // ── PO Invoice: Vendor Autocomplete ──
   createAutocomplete(
@@ -4965,8 +4951,6 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poVendorName').value = v.name;
       $('poVendorGstin').value = v.gstin;
       $('poVendorAddress').value = v.address;
-      $('poContactPerson').value = v.contact;
-      $('poContactPhone').value = v.phone;
       $('poPoNumber').value = v.poNumber || '';
       $('poPoDate').value = v.poDate || '';
       $('poGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
@@ -4980,33 +4964,6 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poAccountNumber').value = v.accountNumber || '';
       $('poIfscCode').value = v.ifscCode || '';
       $('poGpayNumber').value = v.gpayNumber || '';
-      if (v.consignees && v.consignees.length > 0) {
-        $('poSameAsVendor').checked = false;
-        $('poConsigneeFields').classList.remove('hidden');
-        $('poConsigneeName').value = v.consignees[0].name;
-        $('poConsigneeAddress').value = v.consignees[0].address;
-      } else {
-        $('poSameAsVendor').checked = true;
-        $('poConsigneeFields').classList.add('hidden');
-        $('poConsigneeName').value = '';
-        $('poConsigneeAddress').value = '';
-      }
-    }
-  );
-
-  createAutocomplete(
-    $('poConsigneeName'),
-    val => {
-      const vendorName = $('poVendorName').value.trim().toLowerCase();
-      const vendor = vendors.find(v => v.name.toLowerCase() === vendorName);
-      const list = vendor && vendor.consignees ? vendor.consignees : [];
-      return list
-        .filter(con => con.name.toLowerCase().includes(val))
-        .map(con => ({ label: escHtml(con.name) + '<small>' + escHtml(con.address) + '</small>', data: con }));
-    },
-    con => {
-      $('poConsigneeName').value = con.name;
-      $('poConsigneeAddress').value = con.address;
     }
   );
 
@@ -5246,12 +5203,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const query = ($('poInvSearch').value || '').trim().toLowerCase();
     const from = $('poInvDateFrom').value;
     const to = $('poInvDateTo').value;
+    const typeFilter = $('poInvTypeFilter') ? $('poInvTypeFilter').value : '';
 
     const filtered = poInvoices.filter(inv => {
       if (query) {
         const productInfo = (inv.items || []).map(it => (it.description || '') + ' ' + (it.hsn || '')).join(' ');
-        const haystack = [inv.invoiceNumber, inv.vendorName, productInfo].join(' ').toLowerCase();
+        const typeInfo = (Array.isArray(inv.billType) ? inv.billType : []).join(' ');
+        const haystack = [inv.invoiceNumber, inv.vendorName, productInfo, typeInfo].join(' ').toLowerCase();
         if (!haystack.includes(query)) return false;
+      }
+      if (typeFilter) {
+        const types = Array.isArray(inv.billType) ? inv.billType : [];
+        if (!types.includes(typeFilter)) return false;
       }
       if (from && inv.invoiceDate < from) return false;
       if (to && inv.invoiceDate > to) return false;
@@ -5295,6 +5258,11 @@ document.addEventListener('DOMContentLoaded', () => {
       tdVendor.textContent = inv.vendorName || '';
       tr.appendChild(tdVendor);
 
+      const tdType = document.createElement('td');
+      const bt = Array.isArray(inv.billType) ? inv.billType : [];
+      tdType.textContent = bt.length ? bt.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') : '—';
+      tr.appendChild(tdType);
+
       const tdTotal = document.createElement('td');
       tdTotal.className = 'r';
       tdTotal.textContent = '\u20B9' + fmtNum(total);
@@ -5335,6 +5303,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('poInvSearch').addEventListener('input', renderPoInvoiceList);
+  $('poInvTypeFilter').addEventListener('change', renderPoInvoiceList);
   $('poInvDateFrom').addEventListener('change', onPoInvListDateRangeChange);
   $('poInvDateTo').addEventListener('change', onPoInvListDateRangeChange);
   $('poInvSortOrder').addEventListener('change', renderPoInvoiceList);
@@ -5431,9 +5400,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function getFilteredPoInvoices() {
     const from = $('poInvDateFrom').value;
     const to = $('poInvDateTo').value;
-    const result = (!from || !to)
+    const typeFilter = $('poInvTypeFilter') ? $('poInvTypeFilter').value : '';
+    let result = (!from || !to)
       ? poInvoices.slice()
       : poInvoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    if (typeFilter) {
+      result = result.filter(inv => {
+        const types = Array.isArray(inv.billType) ? inv.billType : [];
+        return types.includes(typeFilter);
+      });
+    }
     const sortAsc = ($('poInvSortOrder').value === 'asc');
     return result.sort((a, b) => {
       const da = a.invoiceDate || a.createdAt || '';

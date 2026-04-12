@@ -838,6 +838,11 @@
       </div>
       <div class="filter-row">
         <input type="text" id="poInvSearch" class="filter-input" placeholder="Search by PO invoice no, vendor, or product..." />
+        <select id="poInvTypeFilter" class="filter-select" title="Filter by type">
+          <option value="">All Types</option>
+          <option value="labor">Labor</option>
+          <option value="material">Material</option>
+        </select>
         <input type="date" id="poInvDateFrom" class="filter-date" title="From date" />
         <input type="date" id="poInvDateTo" class="filter-date" title="To date" />
         <select id="poInvSortOrder" class="filter-select" title="Sort order">
@@ -881,6 +886,7 @@
               <th>PO Invoice No.</th>
               <th>Date</th>
               <th>Vendor</th>
+              <th>Type</th>
               <th>Total</th>
               <th>Actions</th>
             </tr>
@@ -926,6 +932,13 @@
               <label class="copy-check"><input type="checkbox" value="TRIPLICATE FOR SUPPLIER" class="poCopyType" /> Triplicate</label>
             </div>
           </div>
+          <div class="copy-type-row">
+            <span class="copy-type-label">Type <span class="req">*</span></span>
+            <div class="copy-checks">
+              <label class="copy-check"><input type="checkbox" value="labor" class="poBillType" /> Labor</label>
+              <label class="copy-check"><input type="checkbox" value="material" class="poBillType" /> Material</label>
+            </div>
+          </div>
         </fieldset>
 
         <fieldset>
@@ -935,19 +948,6 @@
             <div class="field"><label>GSTIN</label><input type="text" id="poVendorGstin" /></div>
           </div>
           <div class="field"><label>Address</label><textarea id="poVendorAddress" rows="2"></textarea></div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Consignee / Shipped To</legend>
-          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:12px"><input type="checkbox" id="poSameAsVendor" checked /> Same as Vendor</label>
-          <div id="poConsigneeFields" class="hidden">
-            <div class="field"><label>Company Name</label><input type="text" id="poConsigneeName" /></div>
-            <div class="field"><label>Address</label><textarea id="poConsigneeAddress" rows="2"></textarea></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Name</label><input type="text" id="poContactPerson" /></div>
-            <div class="field"><label>Contact Number</label><input type="text" id="poContactPhone" /></div>
-          </div>
         </fieldset>
 
         <fieldset>
@@ -1064,6 +1064,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=111"></script>
+  <script src="script.js?v=113"></script>
 </body>
 </html>
