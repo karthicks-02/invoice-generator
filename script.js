@@ -4314,10 +4314,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!types.includes(typeFilter)) return false;
       }
       if (!query) return true;
+      const vTypes = (Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : [])).join(' ').toLowerCase();
       return (v.name || '').toLowerCase().includes(query)
         || (v.gstin || '').toLowerCase().includes(query)
         || (v.contact || '').toLowerCase().includes(query)
-        || (v.phone || '').toLowerCase().includes(query);
+        || (v.phone || '').toLowerCase().includes(query)
+        || vTypes.includes(query);
     });
     $('vendEmpty').style.display = filtered.length ? 'none' : 'block';
     $('vendEmpty').textContent = vendors.length ? 'No matching vendors.' : 'No vendors added yet.';
