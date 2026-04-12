@@ -667,15 +667,15 @@
       <div id="vendFormWrap" class="hidden">
         <fieldset>
           <legend id="vendFormTitle">Add Vendor</legend>
-          <div class="row three">
-            <div class="field"><label>Company Name</label><input type="text" id="vendName" /></div>
-            <div class="field"><label>GSTIN</label><input type="text" id="vendGstin" /></div>
-            <div class="field">
-              <label>Type</label>
-              <select id="vendType">
-                <option value="labor">Labor</option>
-                <option value="material">Material</option>
-              </select>
+          <div class="row">
+            <div class="field"><label>Company Name <span class="req">*</span></label><input type="text" id="vendName" /></div>
+            <div class="field"><label>GSTIN <span class="req">*</span></label><input type="text" id="vendGstin" /></div>
+          </div>
+          <div class="copy-type-row">
+            <span class="copy-type-label">Type <span class="req">*</span></span>
+            <div class="copy-checks">
+              <label class="copy-check"><input type="checkbox" value="labor" class="vendTypeCheck" /> Labor</label>
+              <label class="copy-check"><input type="checkbox" value="material" class="vendTypeCheck" /> Material</label>
             </div>
           </div>
           <div class="field"><label>Address</label><textarea id="vendAddress" rows="2"></textarea></div>
@@ -936,6 +936,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=99"></script>
+  <script src="script.js?v=100"></script>
 </body>
 </html>

@@ -4004,7 +4004,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tdCheck.appendChild(cb);
       tr.appendChild(tdCheck);
 
-      const typeLabel = v.vendorType === 'material' ? 'Material' : 'Labor';
+      const types = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+      const typeLabel = types.map(t => t === 'material' ? 'Material' : 'Labor').join(', ') || '—';
       const fields = [
         v.name,
         v.gstin,
@@ -4134,7 +4135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendAddress').value = '';
     $('vendContact').value = '';
     $('vendPhone').value = '';
-    $('vendType').value = 'labor';
+    document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = false);
     $('vendGstType').value = 'intra';
     tempVendConsignees = [];
     tempVendProducts = [];
@@ -4146,18 +4147,21 @@ document.addEventListener('DOMContentLoaded', () => {
   $('cancelVendBtn').addEventListener('click', hideVendForm);
 
   $('saveVendBtn').addEventListener('click', () => {
+    const vendorTypes = Array.from(document.querySelectorAll('.vendTypeCheck:checked')).map(cb => cb.value);
     const obj = {
       name: $('vendName').value.trim(),
       gstin: $('vendGstin').value.trim(),
       address: $('vendAddress').value.trim(),
       contact: $('vendContact').value.trim(),
       phone: $('vendPhone').value.trim(),
-      vendorType: $('vendType').value,
+      vendorType: vendorTypes,
       gstType: $('vendGstType').value,
       consignees: tempVendConsignees.map(x => ({ ...x })),
       associatedProducts: [...tempVendProducts]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
+    if (!obj.gstin) { alert('GSTIN is required'); return; }
+    if (!vendorTypes.length) { alert('Please select at least one Type (Labor / Material)'); return; }
     if (editVendIdx >= 0) {
       vendors[editVendIdx] = obj;
     } else {
@@ -4179,7 +4183,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('vendAddress').value = v.address;
       $('vendContact').value = v.contact;
       $('vendPhone').value = v.phone;
-      $('vendType').value = v.vendorType || 'labor';
+      const types = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+      document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = types.includes(cb.value));
       $('vendGstType').value = v.gstType || 'intra';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
@@ -4205,7 +4210,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = ['#', 'Company Name', 'GSTIN', 'Type', 'GST Type', 'Contact', 'Phone'];
     const rows = [header];
     selected.forEach(({ v }, idx) => {
-      const typeLabel = v.vendorType === 'material' ? 'Material' : 'Labor';
+      const types = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+      const typeLabel = types.map(t => t === 'material' ? 'Material' : 'Labor').join(', ') || '—';
       rows.push([idx + 1, v.name, v.gstin, typeLabel, customerGstTypeLabel(v.gstType), v.contact, v.phone]);
     });
     downloadCSV(rows, checked.length ? 'vendors-selected.csv' : 'vendors.csv');
@@ -4222,7 +4228,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('vendAddress').value = v.address;
       $('vendContact').value = v.contact;
       $('vendPhone').value = v.phone;
-      $('vendType').value = v.vendorType || 'labor';
+      const vt = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+      document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = vt.includes(cb.value));
       $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
@@ -4242,7 +4249,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('vendAddress').value = v.address;
       $('vendContact').value = v.contact;
       $('vendPhone').value = v.phone;
-      $('vendType').value = v.vendorType || 'labor';
+      const vt = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+      document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = vt.includes(cb.value));
       $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
