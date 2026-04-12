@@ -1698,15 +1698,35 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>`
         : `<p class="pay-fifo-hint">No credits yet. Open invoices show full amounts until you add credits (applied to oldest invoice dates first).</p>`;
 
-      const invoiceRows = openFifo.map(r => `<tr>
+      const invoiceRows = openFifo.map(r => {
+        const days = daysSince(r.inv.invoiceDate || r.inv.createdAt);
+        return `<tr data-days="${days}">
           <td>${escHtml(r.inv.invoiceNumber)}</td>
           <td class="pay-col-date">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
           <td class="r">₹${fmtNum(r.gross)}</td>
           <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
           <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
-          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td class="c">${days}d</td>
           <td><button class="btn-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
+      const eName = escHtml(co.name);
+      const coFilterBar = openFifo.length
+        ? `<div class="co-days-filter" data-company="${eName}">
+            <span class="co-days-label">Filter:</span>
+            <button type="button" class="preset-pill co-days-btn active" data-from="0" data-to="">All</button>
+            <button type="button" class="preset-pill co-days-btn" data-from="30" data-to="">30d+</button>
+            <button type="button" class="preset-pill co-days-btn" data-from="45" data-to="">45d+</button>
+            <button type="button" class="preset-pill co-days-btn" data-from="60" data-to="">60d+</button>
+            <input type="number" class="days-input co-days-from" min="0" value="" placeholder="0" title="From days" />
+            <span class="co-days-sep">to</span>
+            <input type="number" class="days-input co-days-to" min="0" value="" placeholder="∞" title="To days" />
+            <span class="co-days-hint">days</span>
+            <button type="button" class="btn btn-sm btn-primary co-days-view" data-company="${eName}">View</button>
+            <button type="button" class="btn btn-sm btn-secondary co-days-pdf" data-company="${eName}">PDF</button>
+            <label class="days-filter-toggle co-days-inv-toggle"><input type="checkbox" class="co-days-include-inv" /><span>+Invoices</span></label>
+          </div>`
+        : '';
       const invoiceTable = openFifo.length
         ? `<div class="pay-table-scroll">
             <table class="data-table pay-table-tight" style="margin:0">
@@ -1749,10 +1769,261 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="pay-fifo-hint pay-fifo-hint-strong">Credits are applied in order of invoice date (oldest first) until the recorded credits are used up.</p>
           ${creditLogBlock}
           <h4 class="pay-subhead pay-subhead-spaced">Invoices still due</h4>
+          ${coFilterBar}
           ${invoiceTable}
         </div>`;
       container.appendChild(section);
     });
+
+    attachCompanyDaysFilterListeners();
+  }
+
+  function attachCompanyDaysFilterListeners() {
+    document.querySelectorAll('.co-days-filter').forEach(bar => {
+      const company = bar.dataset.company;
+      const section = bar.closest('.pay-company-section');
+      if (!section) return;
+      const tbody = section.querySelector('.pay-table-tight tbody');
+      const fromInput = bar.querySelector('.co-days-from');
+      const toInput = bar.querySelector('.co-days-to');
+
+      function applyCoFilter() {
+        if (!tbody) return;
+        const f = parseInt(fromInput.value, 10);
+        const t = parseInt(toInput.value, 10);
+        const from = Number.isNaN(f) ? 0 : Math.max(0, f);
+        const to = (toInput.value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
+        tbody.querySelectorAll('tr[data-days]').forEach(tr => {
+          const d = parseInt(tr.dataset.days, 10);
+          tr.style.display = (d >= from && (to === Infinity || d <= to)) ? '' : 'none';
+        });
+      }
+
+      bar.querySelectorAll('.co-days-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          bar.querySelectorAll('.co-days-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          fromInput.value = btn.dataset.from === '0' ? '' : btn.dataset.from;
+          toInput.value = btn.dataset.to || '';
+          applyCoFilter();
+        });
+      });
+
+      fromInput.addEventListener('input', () => {
+        bar.querySelectorAll('.co-days-btn').forEach(b => b.classList.remove('active'));
+        applyCoFilter();
+      });
+      toInput.addEventListener('input', () => {
+        bar.querySelectorAll('.co-days-btn').forEach(b => b.classList.remove('active'));
+        applyCoFilter();
+      });
+
+      bar.querySelector('.co-days-view').addEventListener('click', () => {
+        const f = parseInt(fromInput.value, 10);
+        const t = parseInt(toInput.value, 10);
+        const from = Number.isNaN(f) ? 0 : Math.max(0, f);
+        const to = (toInput.value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
+        showCompanyDaysFilterOverlay(company, from, to);
+      });
+
+      bar.querySelector('.co-days-pdf').addEventListener('click', () => {
+        const f = parseInt(fromInput.value, 10);
+        const t = parseInt(toInput.value, 10);
+        const from = Number.isNaN(f) ? 0 : Math.max(0, f);
+        const to = (toInput.value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
+        const withInv = bar.querySelector('.co-days-include-inv').checked;
+        downloadCompanyDaysFilterPdf(company, from, to, withInv).catch(() => alert('Could not generate PDF. Try again.'));
+      });
+    });
+  }
+
+  function getCompanyFilteredDueInvoices(companyName, fromDays, toDays) {
+    const fifoRows = fifoAllocationsForCompany(companyName);
+    const results = [];
+    fifoRows.forEach(r => {
+      if (r.balance <= 0.005) return;
+      const days = daysSince(r.inv.invoiceDate || r.inv.createdAt);
+      if (days >= fromDays && (toDays === Infinity || days <= toDays)) {
+        results.push({ inv: r.inv, balance: r.balance, days, company: companyName });
+      }
+    });
+    results.sort((a, b) => b.days - a.days);
+    return results;
+  }
+
+  function showCompanyDaysFilterOverlay(companyName, fromDays, toDays) {
+    const rows = getCompanyFilteredDueInvoices(companyName, fromDays, toDays);
+    const rangeText = (fromDays === 0 && toDays === Infinity) ? 'All'
+      : toDays === Infinity ? fromDays + ' days and older'
+      : fromDays + ' to ' + toDays + ' days';
+    $('daysFilterTitle').textContent = companyName + ' \u2014 ' + rangeText;
+    const totalBal = rows.reduce((s, r) => s + r.balance, 0);
+    $('daysFilterSummary').textContent = rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total Balance Due: \u20b9' + fmtNum(totalBal);
+    const tbody = $('daysFilterBody');
+    tbody.textContent = '';
+    if (rows.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.style.cssText = 'text-align:center;padding:1rem;color:var(--text-muted)';
+      td.textContent = 'No invoices in this range.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    } else {
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
+        const td2 = document.createElement('td'); td2.textContent = r.company; tr.appendChild(td2);
+        const td3 = document.createElement('td'); td3.className = 'pay-col-date'; td3.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td3);
+        const td4 = document.createElement('td'); td4.className = 'r'; td4.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td4);
+        const td5 = document.createElement('td'); td5.className = 'c'; td5.textContent = r.days + 'd'; tr.appendChild(td5);
+        tbody.appendChild(tr);
+      });
+    }
+    $('daysFilterTotals').textContent = '';
+    const strong1 = document.createElement('strong'); strong1.textContent = 'Total: \u20b9' + fmtNum(totalBal);
+    const strong2 = document.createElement('strong'); strong2.textContent = rows.length.toString();
+    $('daysFilterTotals').append(strong1, ' across ', strong2, ' invoice' + (rows.length !== 1 ? 's' : ''));
+    $('daysFilterOverlay').classList.remove('hidden');
+  }
+
+  function buildCompanyDaysFilterPdfHtml(companyName, fromDays, toDays) {
+    const rows = getCompanyFilteredDueInvoices(companyName, fromDays, toDays);
+    const rangeText = (fromDays === 0 && toDays === Infinity) ? 'All'
+      : toDays === Infinity ? fromDays + ' days and older'
+      : fromDays + ' to ' + toDays + ' days';
+    const totalBal = rows.reduce((s, r) => s + r.balance, 0);
+    const now = formatDateTime(new Date().toISOString());
+    const container = document.createElement('div');
+    container.style.cssText = 'box-sizing:border-box;width:100%;padding:16px 12px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;';
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'border-bottom:2px solid #1e3a5f;padding-bottom:10px;margin-bottom:14px';
+    const hTitle = document.createElement('div');
+    hTitle.style.cssText = 'font-size:16px;font-weight:700;color:#1e3a5f';
+    hTitle.textContent = COMPANY.name;
+    const hAddr = document.createElement('div');
+    hAddr.style.cssText = 'font-size:8px;color:#64748b;margin-top:2px';
+    hAddr.textContent = COMPANY.address.replace(/\n/g, ', ');
+    hdr.append(hTitle, hAddr);
+    container.appendChild(hdr);
+    const meta = document.createElement('div');
+    meta.style.cssText = 'margin-bottom:12px';
+    const mTitle = document.createElement('div');
+    mTitle.style.cssText = 'font-size:13px;font-weight:700;margin-bottom:4px';
+    mTitle.textContent = companyName + ' \u2014 Invoices Due (' + rangeText + ')';
+    const mSub = document.createElement('div');
+    mSub.style.cssText = 'font-size:9px;color:#64748b';
+    mSub.textContent = 'Generated: ' + now + ' \u00b7 ' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total: \u20b9' + fmtNum(totalBal);
+    meta.append(mTitle, mSub);
+    container.appendChild(meta);
+    const tdStyle = 'padding:5px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;';
+    const thStyle = 'padding:5px 6px;font-weight:700;text-align:left;border-bottom:2px solid #94a3b8;background:#f1f5f9;';
+    const tbl = document.createElement('table');
+    tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:9px;line-height:1.3;border:1px solid #94a3b8;';
+    const thead = document.createElement('thead');
+    const headTr = document.createElement('tr');
+    ['Invoice No.', 'Invoice Date', 'Balance Due', 'Days'].forEach((t, i) => {
+      const th = document.createElement('th');
+      th.style.cssText = thStyle + (i === 2 ? 'text-align:right;' : '') + (i === 3 ? 'text-align:center;' : '');
+      th.textContent = t;
+      headTr.appendChild(th);
+    });
+    thead.appendChild(headTr);
+    tbl.appendChild(thead);
+    const tbodyEl = document.createElement('tbody');
+    if (rows.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4; td.style.cssText = 'padding:12px;text-align:center;color:#64748b'; td.textContent = 'No invoices in this range.';
+      tr.appendChild(td); tbodyEl.appendChild(tr);
+    } else {
+      rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        if (i % 2 === 1) tr.style.background = '#f8fafc';
+        const c1 = document.createElement('td'); c1.style.cssText = tdStyle; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
+        const c2 = document.createElement('td'); c2.style.cssText = tdStyle; c2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c2);
+        const c3 = document.createElement('td'); c3.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;'; c3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c3);
+        const c4 = document.createElement('td'); c4.style.cssText = tdStyle + 'text-align:center;'; c4.textContent = r.days + 'd'; tr.appendChild(c4);
+        tbodyEl.appendChild(tr);
+      });
+    }
+    tbl.appendChild(tbodyEl);
+    const tfoot = document.createElement('tfoot');
+    const footTr = document.createElement('tr');
+    footTr.style.cssText = 'background:#f1f5f9;font-weight:700;border-top:2px solid #94a3b8';
+    const ft1 = document.createElement('td'); ft1.colSpan = 2; ft1.style.cssText = tdStyle; ft1.textContent = 'Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')'; footTr.appendChild(ft1);
+    const ft2 = document.createElement('td'); ft2.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;font-weight:700;'; ft2.textContent = '\u20b9' + fmtNum(totalBal); footTr.appendChild(ft2);
+    const ft3 = document.createElement('td'); ft3.style.cssText = tdStyle; footTr.appendChild(ft3);
+    tfoot.appendChild(footTr);
+    tbl.appendChild(tfoot);
+    container.appendChild(tbl);
+    return container;
+  }
+
+  async function downloadCompanyDaysFilterPdf(companyName, fromDays, toDays, withInvoices) {
+    const rows = getCompanyFilteredDueInvoices(companyName, fromDays, toDays);
+    if (withInvoices && rows.length === 0) { alert('No invoices to include in this range.'); return; }
+    const state = saveViewState();
+    const paper = $('invoicePaper');
+    const safe = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
+    const rangeLabel = (fromDays === 0 && toDays === Infinity) ? 'all' : toDays === Infinity ? fromDays + 'd-plus' : fromDays + 'd-to-' + toDays + 'd';
+    const fname = 'due-' + safe + '-' + rangeLabel + '.pdf';
+    const summaryOpt = { ...PDF_OPT, margin: [0.35, 0.42, 0.35, 0.42], html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 } };
+    if (!withInvoices) {
+      paper.textContent = '';
+      paper.appendChild(buildCompanyDaysFilterPdfHtml(companyName, fromDays, toDays));
+      paper.classList.add('payment-summary-pdf');
+      const shield = showPaperForCapture();
+      window.scrollTo(0, 0);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 80));
+      try { await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).save(); }
+      finally { shield.remove(); restoreViewState(state); paper.classList.remove('payment-summary-pdf'); const tmp = document.getElementById('html2pdf__container'); if (tmp) tmp.remove(); }
+      return;
+    }
+    const overlay = document.createElement('div');
+    overlay.id = 'pdfBulkOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+    msg.textContent = 'Generating summary page...';
+    const bar = document.createElement('div');
+    bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width .3s;';
+    bar.appendChild(fill); overlay.append(msg, bar); document.body.appendChild(overlay);
+    paper.textContent = '';
+    paper.appendChild(buildCompanyDaysFilterPdfHtml(companyName, fromDays, toDays));
+    paper.classList.add('payment-summary-pdf');
+    const shield = showPaperForCapture();
+    window.scrollTo(0, 0);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
+    let pdf = await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).toPdf().get('pdf');
+    shield.remove(); paper.classList.remove('payment-summary-pdf');
+    let tmpC = document.getElementById('html2pdf__container'); if (tmpC) tmpC.remove();
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('invoiceView').classList.remove('hidden');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+    paper.style.overflow = 'visible';
+    for (let i = 0; i < rows.length; i++) {
+      msg.textContent = 'Generating invoice ' + (i + 1) + ' of ' + rows.length + '...';
+      fill.style.width = Math.round(((i + 1) / rows.length) * 100) + '%';
+      const matchedInv = invoices.find(x => x.id === rows[i].inv.id);
+      if (!matchedInv) continue;
+      prepareInvoiceForCapture(matchedInv);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pageW = pdf.internal.pageSize.getWidth();
+      const margin = 0.3; const usableW = pageW - margin * 2;
+      const imgH = (canvas.height * usableW) / canvas.width;
+      pdf.addPage(); pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+      tmpC = document.getElementById('html2pdf__container'); if (tmpC) tmpC.remove();
+    }
+    pdf.save(fname); overlay.remove(); restoreViewState(state);
   }
 
   $('paySearch').addEventListener('input', renderPaymentView);

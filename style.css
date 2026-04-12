@@ -1507,10 +1507,37 @@ input.inv-rate-input {
   text-align: right;
 }
 
+/* Per-company days filter */
+.co-days-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem;
+  padding: .5rem .6rem;
+  margin-bottom: .5rem;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .78rem;
+}
+.co-days-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: .78rem;
+  margin-right: .15rem;
+}
+.co-days-sep { color: var(--text-muted); font-size: .75rem; }
+.co-days-hint { color: var(--text-muted); font-size: .72rem; margin-right: .25rem; }
+.co-days-filter .days-input { width: 48px; font-size: .76rem; padding: .2rem .3rem; }
+.co-days-filter .btn-sm { font-size: .72rem; padding: .22rem .55rem; }
+.co-days-inv-toggle { font-size: .72rem; }
+.co-days-inv-toggle span { font-size: .72rem; }
+
 @media (max-width: 700px) {
   .days-filter-bar { flex-direction: column; align-items: stretch; }
   .days-filter-actions { margin-left: 0; justify-content: flex-end; }
   .days-filter-result-box.overlay-box { min-width: auto; }
+  .co-days-filter { gap: .25rem; }
 }
 
 /* ===== Utility ===== */
