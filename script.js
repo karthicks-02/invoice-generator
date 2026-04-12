@@ -2124,6 +2124,293 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(err => { alert('Failed to send email: ' + (err.text || err.message || err)); });
   });
 
+  // ── Days Aging Filter ──
+  let daysFilterFromVal = 30;
+  let daysFilterToVal = Infinity;
+
+  function getFilteredDueInvoices(fromDays, toDays) {
+    const companyNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))];
+    const results = [];
+    companyNames.forEach(name => {
+      const fifoRows = fifoAllocationsForCompany(name);
+      fifoRows.forEach(r => {
+        if (r.balance <= 0.005) return;
+        const days = daysSince(r.inv.invoiceDate || r.inv.createdAt);
+        if (days >= fromDays && (toDays === Infinity || days <= toDays)) {
+          results.push({ inv: r.inv, balance: r.balance, days, company: name });
+        }
+      });
+    });
+    results.sort((a, b) => b.days - a.days);
+    return results;
+  }
+
+  function syncDaysFilterInputs() {
+    $('daysFilterFrom').value = daysFilterFromVal;
+    $('daysFilterTo').value = daysFilterToVal === Infinity ? '' : daysFilterToVal;
+  }
+
+  document.querySelectorAll('.days-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.days-preset').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      daysFilterFromVal = parseInt(btn.dataset.from, 10) || 0;
+      daysFilterToVal = btn.dataset.to ? parseInt(btn.dataset.to, 10) : Infinity;
+      syncDaysFilterInputs();
+    });
+  });
+
+  $('daysFilterFrom').addEventListener('input', () => {
+    const v = parseInt($('daysFilterFrom').value, 10);
+    daysFilterFromVal = Number.isNaN(v) ? 0 : Math.max(0, v);
+    document.querySelectorAll('.days-preset').forEach(b => b.classList.remove('active'));
+  });
+
+  $('daysFilterTo').addEventListener('input', () => {
+    const v = parseInt($('daysFilterTo').value, 10);
+    daysFilterToVal = ($('daysFilterTo').value === '' || Number.isNaN(v)) ? Infinity : Math.max(0, v);
+    document.querySelectorAll('.days-preset').forEach(b => b.classList.remove('active'));
+  });
+
+  function renderDaysFilterResult() {
+    const rows = getFilteredDueInvoices(daysFilterFromVal, daysFilterToVal);
+    const rangeText = daysFilterToVal === Infinity
+      ? daysFilterFromVal + ' days and older'
+      : daysFilterFromVal + ' to ' + daysFilterToVal + ' days';
+    $('daysFilterTitle').textContent = 'Invoices Due \u2014 ' + rangeText;
+    const totalBal = rows.reduce((s, r) => s + r.balance, 0);
+    $('daysFilterSummary').textContent = rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total Balance Due: \u20b9' + fmtNum(totalBal);
+    const tbody = $('daysFilterBody');
+    tbody.textContent = '';
+    if (rows.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.style.cssText = 'text-align:center;padding:1rem;color:var(--text-muted)';
+      td.textContent = 'No invoices in this range.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    } else {
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
+        const td2 = document.createElement('td'); td2.textContent = r.company; tr.appendChild(td2);
+        const td3 = document.createElement('td'); td3.className = 'pay-col-date'; td3.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td3);
+        const td4 = document.createElement('td'); td4.className = 'r'; td4.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td4);
+        const td5 = document.createElement('td'); td5.className = 'c'; td5.textContent = r.days + 'd'; tr.appendChild(td5);
+        tbody.appendChild(tr);
+      });
+    }
+    $('daysFilterTotals').textContent = '';
+    const strong1 = document.createElement('strong'); strong1.textContent = 'Total: \u20b9' + fmtNum(totalBal);
+    const strong2 = document.createElement('strong'); strong2.textContent = rows.length.toString();
+    $('daysFilterTotals').append(strong1, ' across ', strong2, ' invoice' + (rows.length !== 1 ? 's' : ''));
+  }
+
+  $('daysFilterViewBtn').addEventListener('click', () => {
+    renderDaysFilterResult();
+    $('daysFilterOverlay').classList.remove('hidden');
+  });
+
+  $('daysFilterCloseBtn').addEventListener('click', () => {
+    $('daysFilterOverlay').classList.add('hidden');
+  });
+
+  function buildDaysFilterPdfHtml(fromDays, toDays) {
+    const rows = getFilteredDueInvoices(fromDays, toDays);
+    const rangeText = toDays === Infinity
+      ? fromDays + ' days and older'
+      : fromDays + ' to ' + toDays + ' days';
+    const totalBal = rows.reduce((s, r) => s + r.balance, 0);
+    const now = formatDateTime(new Date().toISOString());
+    const container = document.createElement('div');
+    container.style.cssText = 'box-sizing:border-box;width:100%;padding:16px 12px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;';
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'border-bottom:2px solid #1e3a5f;padding-bottom:10px;margin-bottom:14px';
+    const hTitle = document.createElement('div');
+    hTitle.style.cssText = 'font-size:16px;font-weight:700;color:#1e3a5f';
+    hTitle.textContent = COMPANY.name;
+    const hAddr = document.createElement('div');
+    hAddr.style.cssText = 'font-size:8px;color:#64748b;margin-top:2px';
+    hAddr.textContent = COMPANY.address.replace(/\n/g, ', ');
+    hdr.append(hTitle, hAddr);
+    container.appendChild(hdr);
+    const meta = document.createElement('div');
+    meta.style.cssText = 'margin-bottom:12px';
+    const mTitle = document.createElement('div');
+    mTitle.style.cssText = 'font-size:13px;font-weight:700;margin-bottom:4px';
+    mTitle.textContent = 'Invoices Due \u2014 ' + rangeText;
+    const mSub = document.createElement('div');
+    mSub.style.cssText = 'font-size:9px;color:#64748b';
+    mSub.textContent = 'Generated: ' + now + ' \u00b7 ' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total: \u20b9' + fmtNum(totalBal);
+    meta.append(mTitle, mSub);
+    container.appendChild(meta);
+    const tbl = document.createElement('table');
+    tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:9px;line-height:1.3;border:1px solid #94a3b8;';
+    const thStyle = 'padding:5px 6px;font-weight:700;text-align:left;border-bottom:2px solid #94a3b8;background:#f1f5f9;';
+    const tdStyle = 'padding:5px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;';
+    const thead = document.createElement('thead');
+    const headTr = document.createElement('tr');
+    ['Invoice No.', 'Customer', 'Invoice Date', 'Balance Due', 'Days'].forEach((t, i) => {
+      const thEl = document.createElement('th');
+      thEl.style.cssText = thStyle + (i === 3 ? 'text-align:right;' : '') + (i === 4 ? 'text-align:center;' : '');
+      thEl.textContent = t;
+      headTr.appendChild(thEl);
+    });
+    thead.appendChild(headTr);
+    tbl.appendChild(thead);
+    const tbodyEl = document.createElement('tbody');
+    if (rows.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5; td.style.cssText = 'padding:12px;text-align:center;color:#64748b'; td.textContent = 'No invoices in this range.';
+      tr.appendChild(td); tbodyEl.appendChild(tr);
+    } else {
+      rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        if (i % 2 === 1) tr.style.background = '#f8fafc';
+        const c1 = document.createElement('td'); c1.style.cssText = tdStyle; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
+        const c2 = document.createElement('td'); c2.style.cssText = tdStyle; c2.textContent = r.company; tr.appendChild(c2);
+        const c3 = document.createElement('td'); c3.style.cssText = tdStyle; c3.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c3);
+        const c4 = document.createElement('td'); c4.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;'; c4.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c4);
+        const c5 = document.createElement('td'); c5.style.cssText = tdStyle + 'text-align:center;'; c5.textContent = r.days + 'd'; tr.appendChild(c5);
+        tbodyEl.appendChild(tr);
+      });
+    }
+    tbl.appendChild(tbodyEl);
+    const tfoot = document.createElement('tfoot');
+    const footTr = document.createElement('tr');
+    footTr.style.cssText = 'background:#f1f5f9;font-weight:700;border-top:2px solid #94a3b8';
+    const ft1 = document.createElement('td'); ft1.colSpan = 3; ft1.style.cssText = tdStyle; ft1.textContent = 'Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')'; footTr.appendChild(ft1);
+    const ft2 = document.createElement('td'); ft2.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;font-weight:700;'; ft2.textContent = '\u20b9' + fmtNum(totalBal); footTr.appendChild(ft2);
+    const ft3 = document.createElement('td'); ft3.style.cssText = tdStyle; footTr.appendChild(ft3);
+    tfoot.appendChild(footTr);
+    tbl.appendChild(tfoot);
+    container.appendChild(tbl);
+    return container;
+  }
+
+  $('daysFilterWithInvoices').addEventListener('change', () => {
+    $('daysFilterWithInvoicesOverlay').checked = $('daysFilterWithInvoices').checked;
+  });
+  $('daysFilterWithInvoicesOverlay').addEventListener('change', () => {
+    $('daysFilterWithInvoices').checked = $('daysFilterWithInvoicesOverlay').checked;
+  });
+
+  function isIncludeFullInvoices() {
+    return $('daysFilterWithInvoices').checked || $('daysFilterWithInvoicesOverlay').checked;
+  }
+
+  async function downloadDaysFilterPdf() {
+    const fromD = daysFilterFromVal;
+    const toD = daysFilterToVal;
+    const withInvoices = isIncludeFullInvoices();
+    const rows = getFilteredDueInvoices(fromD, toD);
+
+    if (withInvoices && rows.length === 0) {
+      alert('No invoices to include in this range.');
+      return;
+    }
+
+    const state = saveViewState();
+    const paper = $('invoicePaper');
+    const rangeLabel = toD === Infinity ? fromD + 'd-plus' : fromD + 'd-to-' + toD + 'd';
+    const fname = 'invoices-due-' + rangeLabel + '.pdf';
+    const summaryOpt = {
+      ...PDF_OPT,
+      margin: [0.35, 0.42, 0.35, 0.42],
+      html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 }
+    };
+
+    if (!withInvoices) {
+      paper.textContent = '';
+      paper.appendChild(buildDaysFilterPdfHtml(fromD, toD));
+      paper.classList.add('payment-summary-pdf');
+      const shield = showPaperForCapture();
+      window.scrollTo(0, 0);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 80));
+      try {
+        await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).save();
+      } finally {
+        shield.remove();
+        restoreViewState(state);
+        paper.classList.remove('payment-summary-pdf');
+        const tmp = document.getElementById('html2pdf__container');
+        if (tmp) tmp.remove();
+      }
+      return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pdfBulkOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+    msg.textContent = 'Generating summary page...';
+    const bar = document.createElement('div');
+    bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width .3s;';
+    bar.appendChild(fill);
+    overlay.append(msg, bar);
+    document.body.appendChild(overlay);
+
+    paper.textContent = '';
+    paper.appendChild(buildDaysFilterPdfHtml(fromD, toD));
+    paper.classList.add('payment-summary-pdf');
+    const shield = showPaperForCapture();
+    window.scrollTo(0, 0);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
+
+    let pdf = await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).toPdf().get('pdf');
+    shield.remove();
+    paper.classList.remove('payment-summary-pdf');
+    let tmpC = document.getElementById('html2pdf__container');
+    if (tmpC) tmpC.remove();
+
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('invoiceView').classList.remove('hidden');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+    paper.style.overflow = 'visible';
+
+    const total = rows.length;
+    for (let i = 0; i < total; i++) {
+      msg.textContent = 'Generating invoice ' + (i + 1) + ' of ' + total + '...';
+      fill.style.width = Math.round(((i + 1) / total) * 100) + '%';
+      const inv = rows[i].inv;
+      const matchedInv = invoices.find(x => x.id === inv.id);
+      if (!matchedInv) continue;
+      prepareInvoiceForCapture(matchedInv);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pageW = pdf.internal.pageSize.getWidth();
+      const margin = 0.3;
+      const usableW = pageW - margin * 2;
+      const imgH = (canvas.height * usableW) / canvas.width;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+      tmpC = document.getElementById('html2pdf__container');
+      if (tmpC) tmpC.remove();
+    }
+
+    pdf.save(fname);
+    overlay.remove();
+    restoreViewState(state);
+  }
+
+  $('daysFilterPdfBtn').addEventListener('click', () => {
+    downloadDaysFilterPdf().catch(() => alert('Could not generate PDF. Try again.'));
+  });
+
+  $('daysFilterResultPdfBtn').addEventListener('click', () => {
+    downloadDaysFilterPdf().catch(() => alert('Could not generate PDF. Try again.'));
+  });
+
   // ── Browser Notifications for Due Reminders ──
   // Company reminders (Payments → Remind) and per-invoice Reminder Date both trigger when date ≤ today
   // and there is still an outstanding balance (FIFO for invoice-level).

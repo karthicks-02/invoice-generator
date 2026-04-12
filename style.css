@@ -1406,6 +1406,113 @@ input.inv-rate-input {
 }
 .btn-logout:hover { background: rgba(255,255,255,.25); }
 
+/* ===== Days Aging Filter ===== */
+.days-filter-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+}
+.days-filter-label {
+  font-weight: 600;
+  font-size: .85rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+.days-filter-presets {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+.days-preset.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.days-filter-custom {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .82rem;
+  color: var(--text-muted);
+}
+.days-input {
+  width: 60px;
+  padding: .3rem .4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .82rem;
+  font-family: inherit;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text);
+}
+.days-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,58,92,.12); }
+.days-filter-hint { font-size: .78rem; color: var(--text-muted); }
+.days-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+.days-filter-toggle input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.days-filter-toggle span { font-weight: 500; }
+.days-filter-actions {
+  display: flex;
+  gap: .4rem;
+  margin-left: auto;
+}
+
+/* Days Filter Result Overlay */
+.days-filter-result-box.overlay-box {
+  width: min(900px, calc(100vw - 2rem));
+  max-width: min(900px, 96vw);
+  min-width: min(600px, 100vw - 2rem);
+}
+.days-filter-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .75rem;
+}
+.days-filter-result-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+.days-filter-summary {
+  font-size: .85rem;
+  color: var(--text-muted);
+  margin-bottom: .75rem;
+}
+.days-filter-totals {
+  margin-top: .75rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--border);
+  font-size: .88rem;
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .days-filter-bar { flex-direction: column; align-items: stretch; }
+  .days-filter-actions { margin-left: 0; justify-content: flex-end; }
+  .days-filter-result-box.overlay-box { min-width: auto; }
+}
+
 /* ===== Utility ===== */
 .hidden { display: none !important; }
 .center { text-align: center; }

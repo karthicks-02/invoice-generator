@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Karthick Industries</title>
-  <link rel="stylesheet" href="style.css?v=22" />
+  <link rel="stylesheet" href="style.css?v=23" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -226,6 +226,33 @@
         <input type="text" id="paySearch" class="filter-input" placeholder="Search by customer name..." />
       </div>
 
+      <!-- Days Aging Filter -->
+      <div class="days-filter-bar">
+        <div class="days-filter-label">Filter by aging</div>
+        <div class="days-filter-presets">
+          <button type="button" class="preset-pill days-preset active" data-from="30" data-to="">30d+</button>
+          <button type="button" class="preset-pill days-preset" data-from="45" data-to="">45d+</button>
+          <button type="button" class="preset-pill days-preset" data-from="60" data-to="">60d+</button>
+          <button type="button" class="preset-pill days-preset" data-from="90" data-to="">90d+</button>
+          <button type="button" class="preset-pill days-preset" data-from="0" data-to="">All</button>
+        </div>
+        <div class="days-filter-custom">
+          <label>From</label>
+          <input type="number" id="daysFilterFrom" class="days-input" min="0" value="30" placeholder="0" />
+          <label>to</label>
+          <input type="number" id="daysFilterTo" class="days-input" min="0" value="" placeholder="∞" />
+          <span class="days-filter-hint">days</span>
+        </div>
+        <label class="days-filter-toggle">
+          <input type="checkbox" id="daysFilterWithInvoices" />
+          <span>Include full invoices</span>
+        </label>
+        <div class="days-filter-actions">
+          <button type="button" class="btn btn-sm btn-primary" id="daysFilterViewBtn">View Filtered</button>
+          <button type="button" class="btn btn-sm btn-secondary" id="daysFilterPdfBtn">Download PDF</button>
+        </div>
+      </div>
+
       <div id="payCompanyList"></div>
       <p id="payEmpty" class="empty-msg hidden">No companies found.</p>
 
@@ -268,6 +295,39 @@
           <div class="overlay-actions">
             <button class="btn btn-secondary" id="payHistoryCloseBtn">Close</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Days Filter Result Overlay -->
+      <div id="daysFilterOverlay" class="overlay hidden">
+        <div class="overlay-box days-filter-result-box">
+          <div class="days-filter-result-header">
+            <h3 id="daysFilterTitle">Invoices Due</h3>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <label class="days-filter-toggle" style="margin-right:.25rem">
+                <input type="checkbox" id="daysFilterWithInvoicesOverlay" />
+                <span>Include full invoices</span>
+              </label>
+              <button type="button" class="btn btn-sm btn-primary" id="daysFilterResultPdfBtn">Download PDF</button>
+              <button type="button" class="btn btn-sm btn-secondary" id="daysFilterCloseBtn">&times;</button>
+            </div>
+          </div>
+          <p class="days-filter-summary" id="daysFilterSummary"></p>
+          <div class="pay-table-scroll">
+            <table class="data-table pay-table-tight" id="daysFilterTable">
+              <thead>
+                <tr>
+                  <th>Invoice No.</th>
+                  <th>Customer</th>
+                  <th class="pay-col-date">Invoice Date</th>
+                  <th class="r">Balance Due</th>
+                  <th class="c">Days</th>
+                </tr>
+              </thead>
+              <tbody id="daysFilterBody"></tbody>
+            </table>
+          </div>
+          <div class="days-filter-totals" id="daysFilterTotals"></div>
         </div>
       </div>
 
@@ -1064,6 +1124,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=113"></script>
+  <script src="script.js?v=115"></script>
 </body>
 </html>
