@@ -4300,14 +4300,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function resetVendProdForm() {
+    $('vendProdNameInput').value = '';
+    $('vendProdHsnInput').value = '';
+    $('vendProdRateInput').value = '';
+    $('vendProdFormRow').classList.add('hidden');
+  }
+
   $('addVendProdBtn').addEventListener('click', () => {
-    $('vendProdInput').value = '';
+    resetVendProdForm();
     $('vendProdFormRow').classList.remove('hidden');
-    $('vendProdInput').focus();
+    $('vendProdNameInput').focus();
   });
 
-  $('cancelVendProdBtn').addEventListener('click', () => {
-    $('vendProdFormRow').classList.add('hidden');
+  $('cancelVendProdBtn').addEventListener('click', resetVendProdForm);
+
+  $('saveVendProdBtn').addEventListener('click', () => {
+    const name = $('vendProdNameInput').value.trim();
+    const hsn = $('vendProdHsnInput').value.trim();
+    const parsedRate = parseRateToStore($('vendProdRateInput').value);
+    const rate = parsedRate == null ? 0 : parsedRate;
+    if (!name) { alert('Product Name is required'); return; }
+
+    const existIdx = purchaseProducts.findIndex(p => p.name.trim().toLowerCase() === name.toLowerCase());
+    if (existIdx >= 0) {
+      purchaseProducts[existIdx].hsn = hsn || purchaseProducts[existIdx].hsn;
+      purchaseProducts[existIdx].rate = rate || purchaseProducts[existIdx].rate;
+    } else {
+      purchaseProducts.push({ name, hsn, rate });
+    }
+    savePurchaseProducts();
+    renderPurchaseProducts();
+
+    const canonical = existIdx >= 0 ? purchaseProducts[existIdx].name : name;
+    if (!tempVendProducts.includes(canonical)) {
+      tempVendProducts.push(canonical);
+      renderVendProdList();
+    }
+    resetVendProdForm();
   });
 
   $('vendProdList').addEventListener('click', e => {
@@ -4318,18 +4348,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   createAutocomplete(
-    $('vendProdInput'),
+    $('vendProdNameInput'),
     val => purchaseProducts
       .filter(p => !tempVendProducts.includes(p.name) &&
         (p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val)))
       .map(p => ({ label: escHtml(p.name) + '<small>HSN: ' + escHtml(p.hsn) + ' | \u20B9' + Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '</small>', data: p })),
     p => {
-      if (!tempVendProducts.includes(p.name)) {
-        tempVendProducts.push(p.name);
-        renderVendProdList();
-      }
-      $('vendProdInput').value = '';
-      $('vendProdFormRow').classList.add('hidden');
+      $('vendProdNameInput').value = p.name;
+      $('vendProdHsnInput').value = p.hsn;
+      const pr = Number(p.rate);
+      $('vendProdRateInput').value = Number.isFinite(pr) ? String(Math.round(pr * 100) / 100) : '';
     }
   );
 

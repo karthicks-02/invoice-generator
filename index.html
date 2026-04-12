@@ -704,8 +704,13 @@
             </div>
             <div id="vendProdList"></div>
             <div id="vendProdFormRow" class="hidden">
-              <div class="field"><label>Product</label><input type="text" id="vendProdInput" autocomplete="off" placeholder="Type to search products..." /></div>
+              <div class="row three">
+                <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="vendProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
+                <div class="field"><label>HSN Code</label><input type="text" id="vendProdHsnInput" /></div>
+                <div class="field"><label>Rate</label><input type="text" id="vendProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
+              </div>
               <div style="display:flex;gap:8px;margin-bottom:.75rem">
+                <button type="button" class="btn btn-primary btn-sm" id="saveVendProdBtn">Add Product</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="cancelVendProdBtn">Cancel</button>
               </div>
             </div>
@@ -989,6 +994,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=101"></script>
+  <script src="script.js?v=102"></script>
 </body>
 </html>
