@@ -1425,25 +1425,29 @@ document.addEventListener('DOMContentLoaded', () => {
     return payments[name];
   }
 
-  function addCompanyCredit(name, amount, note, dateIso) {
+  function addCompanyCredit(name, amount, note, dateIso, tdsAmounts) {
     const rec = getCompanyPayment(name);
-    rec.credits.push({
+    const entry = {
       id: genCreditId(),
       amount: Number(amount),
       date: dateIso || new Date().toISOString(),
       note: note || ''
-    });
+    };
+    if (tdsAmounts && tdsAmounts.length) entry.tdsAmounts = tdsAmounts;
+    rec.credits.push(entry);
     rec.totalCredited = rec.credits.reduce((s, c) => s + (Number(c.amount) || 0), 0);
     savePayments();
   }
 
-  function updateCompanyCredit(name, creditId, amount, note, dateIso) {
+  function updateCompanyCredit(name, creditId, amount, note, dateIso, tdsAmounts) {
     const rec = getCompanyPayment(name);
     const c = rec.credits.find(x => x.id === creditId);
     if (!c) return false;
     c.amount = Number(amount);
     c.note = note || '';
     c.date = dateIso;
+    if (tdsAmounts && tdsAmounts.length) c.tdsAmounts = tdsAmounts;
+    else delete c.tdsAmounts;
     rec.totalCredited = rec.credits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
     savePayments();
     return true;
@@ -1549,6 +1553,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalAmt = getCompanyInvoiceTotal(companyName);
     const rec = payments[companyName];
     const credited = rec ? rec.totalCredited : 0;
+    const totalTds = rec && rec.credits ? rec.credits.reduce((s, c) => s + (Array.isArray(c.tdsAmounts) ? c.tdsAmounts.reduce((a, v) => a + v, 0) : 0), 0) : 0;
     const outstanding = Math.max(totalAmt - credited, 0);
     const creditEntries = rec && rec.credits ? [...rec.credits].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
     const fifoRows = fifoAllocationsForCompany(companyName);
@@ -1558,6 +1563,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invCount: invs.length,
       totalAmt,
       credited,
+      totalTds,
       outstanding,
       payCount: creditEntries.length,
       pendCount: openFifo.length,
@@ -1580,13 +1586,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const totalAmt = invs.reduce((s, inv) => s + computeGrandTotal(inv), 0);
       const rec = payments[name];
       const credited = rec ? rec.totalCredited : 0;
+      const totalTds = rec && rec.credits ? rec.credits.reduce((s, c) => s + (Array.isArray(c.tdsAmounts) ? c.tdsAmounts.reduce((a, v) => a + v, 0) : 0), 0) : 0;
       const outstanding = Math.max(totalAmt - credited, 0);
       const reminder = rec ? rec.reminder : null;
       const oldestDate = invs.reduce((oldest, inv) => {
         const d = inv.invoiceDate || inv.createdAt || '';
         return (!oldest || d < oldest) ? d : oldest;
       }, '');
-      return { name, invs, totalAmt, credited, outstanding, reminder, oldestDate, count: invs.length };
+      return { name, invs, totalAmt, credited, totalTds, outstanding, reminder, oldestDate, count: invs.length };
     }).filter(c => !query || c.name.toLowerCase().includes(query));
 
     companies.sort((a, b) => (b.outstanding > 0 ? 1 : 0) - (a.outstanding > 0 ? 1 : 0) || a.name.localeCompare(b.name));
@@ -1627,9 +1634,13 @@ document.addEventListener('DOMContentLoaded', () => {
         runningCred += Number(c.amount) || 0;
         const outstandingAfter = Math.max(0, co.totalAmt - runningCred);
         const cid = escHtml(c.id || '');
+        const cTds = Array.isArray(c.tdsAmounts) ? c.tdsAmounts.reduce((s, v) => s + v, 0) : 0;
+        const baseAmt = c.amount - cTds;
         return `<tr>
           <td class="c pay-col-idx">${i + 1}</td>
           <td class="pay-col-when">${formatDateTime(c.date)}</td>
+          <td class="r">₹${fmtNum(baseAmt)}</td>
+          <td class="r">${cTds > 0 ? '₹' + fmtNum(cTds) : '—'}</td>
           <td class="r">₹${fmtNum(c.amount)}</td>
           <td class="pay-col-note">${escHtml(c.note || '—')}</td>
           <td class="r pay-col-outstanding">₹${fmtNum(outstandingAfter)}</td>
@@ -1642,7 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="pay-fifo-hint">Each payment shows date &amp; time. <strong>Outstanding</strong> is billed total minus credits recorded up to that row (chronological). Use Edit to correct an amount. Use <strong>Summary PDF</strong> in the row above for a full printable report.</p>
             <div class="pay-table-scroll">
               <table class="data-table pay-table-tight">
-                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Amount</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
+                <thead><tr><th class="c">#</th><th>Date &amp; time</th><th class="r">Credit</th><th class="r">TDS</th><th class="r">Total</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
                 <tbody>${creditLogRows}</tbody>
               </table>
             </div>
@@ -1692,6 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pay-company-nums">
             <span class="pay-num-group">Total <strong>₹${fmtNum(co.totalAmt)}</strong></span>
             <span class="pay-num-group">Credited <strong>₹${fmtNum(co.credited)}</strong></span>
+            ${co.totalTds > 0 ? `<span class="pay-num-group">TDS <strong>₹${fmtNum(co.totalTds)}</strong></span>` : ''}
             <span class="pay-num-group pay-outstanding">${isPaid ? '<span style="color:#059669">Fully Paid</span>' : `Outstanding <strong>₹${fmtNum(co.outstanding)}</strong>`}</span>
           </div>
         </div>
@@ -1721,6 +1733,54 @@ document.addEventListener('DOMContentLoaded', () => {
     $('payFormOutstanding').classList.toggle('hidden', edit);
   }
 
+  function addTdsEntry(value) {
+    const container = $('tdsEntries');
+    const row = document.createElement('div');
+    row.className = 'tds-entry';
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.min = '0'; inp.step = '0.01';
+    inp.placeholder = 'TDS amount'; inp.value = value || '';
+    inp.addEventListener('input', updateTdsTotals);
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'tds-remove-btn'; btn.textContent = '×';
+    btn.addEventListener('click', () => { row.remove(); updateTdsTotals(); });
+    row.appendChild(inp);
+    row.appendChild(btn);
+    container.appendChild(row);
+    updateTdsTotals();
+    inp.focus();
+  }
+
+  function getTdsValues() {
+    return Array.from($('tdsEntries').querySelectorAll('input')).map(i => parseFloat(i.value) || 0);
+  }
+
+  function getTdsTotal() {
+    return getTdsValues().reduce((s, v) => s + v, 0);
+  }
+
+  function updateTdsTotals() {
+    const tdsTotal = getTdsTotal();
+    const creditAmt = parseFloat($('payAmtInput').value) || 0;
+    const hasTds = $('tdsEntries').children.length > 0;
+    $('tdsTotalRow').style.display = hasTds ? 'flex' : 'none';
+    $('tdsTotalDisplay').textContent = '₹' + fmtNum(tdsTotal);
+    $('tdsEffectiveDisplay').textContent = '₹' + fmtNum(creditAmt + tdsTotal);
+  }
+
+  function clearTdsEntries() {
+    $('tdsEntries').innerHTML = '';
+    $('tdsTotalRow').style.display = 'none';
+  }
+
+  function loadTdsEntries(arr) {
+    clearTdsEntries();
+    if (Array.isArray(arr)) arr.forEach(v => addTdsEntry(v));
+  }
+
+  $('addTdsBtn').addEventListener('click', () => addTdsEntry());
+  $('payAmtInput').addEventListener('input', updateTdsTotals);
+
   function buildPaymentSummaryDialogHtmlFromSnapshot(s) {
     const ne = escHtml(s.companyName);
     let runningCred = 0;
@@ -1728,9 +1788,13 @@ document.addEventListener('DOMContentLoaded', () => {
       runningCred += Number(c.amount) || 0;
       const outstandingAfter = Math.max(0, s.totalAmt - runningCred);
       const cid = escHtml(c.id || '');
+      const cTds = Array.isArray(c.tdsAmounts) ? c.tdsAmounts.reduce((a, v) => a + v, 0) : 0;
+      const baseAmt = c.amount - cTds;
       return `<tr>
         <td class="c">${i + 1}</td>
         <td class="pay-sum-nowrap">${formatDateTime(c.date)}</td>
+        <td class="r pay-sum-num">₹${fmtNum(baseAmt)}</td>
+        <td class="r pay-sum-num">${cTds > 0 ? '₹' + fmtNum(cTds) : '—'}</td>
         <td class="r pay-sum-num">₹${fmtNum(c.amount)}</td>
         <td>${escHtml(c.note || '—')}</td>
         <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(outstandingAfter)}</td>
@@ -1763,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const paymentsTbody = s.payCount
       ? payRows
-      : `<tr><td colspan="6" class="pay-sum-empty">No credits recorded yet.</td></tr>`;
+      : `<tr><td colspan="8" class="pay-sum-empty">No credits recorded yet.</td></tr>`;
 
     return `<div class="pay-sum-dialog">
         <div class="pay-sum-toolbar">
@@ -1784,6 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr><td>Total billed</td><td class="r pay-sum-num">₹${fmtNum(s.totalAmt)}</td></tr>
             <tr class="pay-sum-zebra"><td>Payments recorded (no.)</td><td class="r pay-sum-strong">${s.payCount}</td></tr>
             <tr><td>Total credited</td><td class="r pay-sum-num">₹${fmtNum(s.credited)}</td></tr>
+            ${s.totalTds > 0 ? `<tr class="pay-sum-zebra"><td>Total TDS</td><td class="r pay-sum-num">₹${fmtNum(s.totalTds)}</td></tr>` : ''}
             <tr class="pay-sum-out-row"><td><strong>Outstanding</strong></td><td class="r pay-sum-strong">₹${fmtNum(s.outstanding)}</td></tr>
             <tr><td>Invoices with balance due (no.)</td><td class="r pay-sum-strong">${s.pendCount}</td></tr>
           </tbody>
@@ -1793,8 +1858,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <h4 class="pay-sum-h4">Payments (chronological)</h4>
         <div class="pay-table-scroll pay-sum-scroll">
           <table class="pay-sum-table pay-sum-payments">
-            <colgroup><col class="pay-sum-c5"><col class="pay-sum-c20"><col class="pay-sum-c17"><col class="pay-sum-c30"><col class="pay-sum-c18"><col class="pay-sum-c10"></colgroup>
-            <thead><tr><th class="c">#</th><th>When</th><th class="r">Amount</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
+            <colgroup><col style="width:4%"><col style="width:16%"><col style="width:13%"><col style="width:10%"><col style="width:13%"><col style="width:18%"><col style="width:14%"><col style="width:8%"></colgroup>
+            <thead><tr><th class="c">#</th><th>When</th><th class="r">Credit</th><th class="r">TDS</th><th class="r">Total</th><th>Note</th><th class="r">Outstanding</th><th></th></tr></thead>
             <tbody>${paymentsTbody}</tbody>
           </table>
         </div>
@@ -1857,6 +1922,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('payFormOutstanding').textContent = `Outstanding: ₹${fmtNum(outstanding)}`;
       $('payAmtInput').value = '';
       $('payNoteInput').value = '';
+      clearTdsEntries();
       $('payDateInput').value = isoToDatetimeLocal(new Date().toISOString());
       $('payFormOverlay').classList.remove('hidden');
       $('payAmtInput').focus();
@@ -1911,7 +1977,9 @@ document.addEventListener('DOMContentLoaded', () => {
     payEditCreditId = creditId;
     setPayFormMode(true);
     $('payFormCompanyLabel').textContent = company;
-    $('payAmtInput').value = String(c.amount);
+    const baseAmt = c.tdsAmounts && c.tdsAmounts.length ? c.amount - c.tdsAmounts.reduce((s, v) => s + v, 0) : c.amount;
+    $('payAmtInput').value = String(baseAmt);
+    loadTdsEntries(c.tdsAmounts || []);
     $('payNoteInput').value = c.note || '';
     $('payDateInput').value = isoToDatetimeLocal(c.date);
     $('payFormOverlay').classList.remove('hidden');
@@ -1941,15 +2009,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('payFormSaveBtn').addEventListener('click', () => {
-    const amount = parseFloat($('payAmtInput').value);
-    if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+    const baseAmount = parseFloat($('payAmtInput').value);
+    if (!baseAmount || baseAmount <= 0) { alert('Enter a valid amount'); return; }
     const d = $('payDateInput').value;
     if (!d) { alert(payEditCreditId ? 'Select credit date and time' : 'Select created date and time'); return; }
+    const tdsValues = getTdsValues().filter(v => v > 0);
+    const tdsTotal = tdsValues.reduce((s, v) => s + v, 0);
+    const effectiveAmount = baseAmount + tdsTotal;
     const dateIso = datetimeLocalToIso(d);
     if (payEditCreditId) {
-      updateCompanyCredit(payFormCompany, payEditCreditId, amount, $('payNoteInput').value.trim(), dateIso);
+      updateCompanyCredit(payFormCompany, payEditCreditId, effectiveAmount, $('payNoteInput').value.trim(), dateIso, tdsValues);
     } else {
-      addCompanyCredit(payFormCompany, amount, $('payNoteInput').value.trim(), dateIso);
+      addCompanyCredit(payFormCompany, effectiveAmount, $('payNoteInput').value.trim(), dateIso, tdsValues);
     }
     const savedCompany = payFormCompany;
     closePayCreditForm();

@@ -1088,6 +1088,12 @@ input.inv-rate-input {
   min-width: min(420px, 94vw);
   max-width: 480px;
 }
+.tds-section { margin: .5rem 0; }
+.tds-label { font-size: .85rem; font-weight: 600; display: block; margin-bottom: 4px; }
+.tds-entry { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.tds-entry input { flex: 1; padding: .4rem .5rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: .9rem; }
+.tds-entry .tds-remove-btn { background: none; border: none; color: var(--danger); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+.tds-total-row { display: flex; justify-content: space-between; margin-top: 6px; font-size: .85rem; color: var(--text-muted); }
 
 .pay-form-actions {
   display: flex;
