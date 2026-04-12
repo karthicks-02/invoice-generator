@@ -754,6 +754,11 @@
       <div id="vendTableWrap">
         <div class="filter-row">
           <input type="text" id="vendSearch" class="filter-input" placeholder="Search by company, GSTIN, contact, or phone..." />
+          <select id="vendTypeFilter" class="filter-select" title="Filter by type">
+            <option value="">All Types</option>
+            <option value="labor">Labor</option>
+            <option value="material">Material</option>
+          </select>
         </div>
         <div class="data-table-wrap">
         <table class="data-table" id="vendTable">
@@ -829,7 +834,7 @@
       <div class="view-header">
         <button class="btn btn-secondary" id="poInvListBackBtn">← Back</button>
         <h2>All PO Invoices</h2>
-        <div></div>
+        <button class="btn btn-sm btn-secondary" id="poOpenGraphBtn">Show Graph</button>
       </div>
       <div class="filter-row">
         <input type="text" id="poInvSearch" class="filter-input" placeholder="Search by PO invoice no, vendor, or product..." />
@@ -842,10 +847,30 @@
       </div>
       <div class="inv-total-panel" id="poInvTotalPanel">
         <div class="inv-total-panel-title">Total PO invoice value</div>
+        <div class="inv-total-period-tabs download-presets" role="tablist" aria-label="Filter total by period">
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetToday">Today</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetYesterday">Yesterday</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetThisWeek">This week</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetLastWeek">Last week</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetThisMonth">This month</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetLastMonth">Last month</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetThisYear">This year</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetLastYear">Last year</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetCustom">Custom</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="poPresetClear" style="display:none">Clear dates</button>
+        </div>
         <div class="inv-total-panel-stats">
           <p class="inv-total-panel-period" id="poInvTotalSummaryPeriod">All dates</p>
           <div class="inv-total-panel-value" id="poInvTotalSummaryValue">₹0.00</div>
           <p class="inv-total-panel-count" id="poInvTotalSummaryCount">0 PO invoices</p>
+          <p class="inv-total-panel-hint">Uses the same filters as the table below (search + date range). Adjust From/To dates for a custom range.</p>
+        </div>
+      </div>
+      <div class="download-toolbar">
+        <div class="download-toolbar-hint">Download PDFs for the current date range or selected rows.</div>
+        <div class="download-actions">
+          <button class="btn btn-primary btn-sm" id="poDownloadFilteredBtn" style="display:none">⬇ Download Filtered</button>
+          <button class="btn btn-primary btn-sm" id="poBulkDownloadBtn">⬇ Download Selected</button>
         </div>
       </div>
       <div class="data-table-wrap">
@@ -1039,6 +1064,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=108"></script>
+  <script src="script.js?v=110"></script>
 </body>
 </html>

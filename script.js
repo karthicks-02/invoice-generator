@@ -1060,6 +1060,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let activePreset = null;
+  let poCustomRangeOpen = false;
 
   function clearPresetActive() {
     document.querySelectorAll('#invoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
@@ -1154,8 +1155,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateCustomCount() {
-    const list = getCustomFilteredInvoices();
-    $('customRangeCount').textContent = list.length ? `${list.length} invoice${list.length > 1 ? 's' : ''} found` : '';
+    if (poCustomRangeOpen) {
+      const from = $('customFrom').value;
+      const to = $('customTo').value;
+      const list = (from && to) ? poInvoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to) : [];
+      $('customRangeCount').textContent = list.length ? `${list.length} PO invoice${list.length > 1 ? 's' : ''} found` : '';
+    } else {
+      const list = getCustomFilteredInvoices();
+      $('customRangeCount').textContent = list.length ? `${list.length} invoice${list.length > 1 ? 's' : ''} found` : '';
+    }
   }
 
   $('customFrom').addEventListener('change', updateCustomCount);
@@ -1170,21 +1178,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const to = $('customTo').value;
     if (!from || !to) { alert('Please select both From and To dates'); return; }
     $('customRangeOverlay').classList.add('hidden');
-    clearPresetActive();
-    activePreset = 'invPresetCustom';
-    $('invPresetCustom').classList.add('active');
-    $('invDateFrom').value = from;
-    $('invDateTo').value = to;
-    renderInvoiceList();
-    $('invPresetClear').style.display = 'inline-flex';
-    $('downloadFilteredBtn').style.display = 'inline-flex';
+    if (typeof poCustomRangeOpen !== 'undefined' && poCustomRangeOpen) {
+      poCustomRangeOpen = false;
+      clearPoPresetActive();
+      poActivePreset = 'poPresetCustom';
+      $('poPresetCustom').classList.add('active');
+      $('poInvDateFrom').value = from;
+      $('poInvDateTo').value = to;
+      renderPoInvoiceList();
+      $('poPresetClear').style.display = 'inline-flex';
+      $('poDownloadFilteredBtn').style.display = 'inline-flex';
+    } else {
+      clearPresetActive();
+      activePreset = 'invPresetCustom';
+      $('invPresetCustom').classList.add('active');
+      $('invDateFrom').value = from;
+      $('invDateTo').value = to;
+      renderInvoiceList();
+      $('invPresetClear').style.display = 'inline-flex';
+      $('downloadFilteredBtn').style.display = 'inline-flex';
+    }
   });
 
   $('customDownloadBtn').addEventListener('click', () => {
-    const selected = getCustomFilteredInvoices();
-    if (!selected.length) { alert('No invoices found in this date range'); return; }
-    $('customRangeOverlay').classList.add('hidden');
-    downloadBulkPDF(selected, `invoices-${$('customFrom').value}-to-${$('customTo').value}.pdf`);
+    if (typeof poCustomRangeOpen !== 'undefined' && poCustomRangeOpen) {
+      const from = $('customFrom').value;
+      const to = $('customTo').value;
+      if (!from || !to) return;
+      const selected = poInvoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+      if (!selected.length) { alert('No PO invoices found in this date range'); return; }
+      $('customRangeOverlay').classList.add('hidden');
+      poCustomRangeOpen = false;
+      downloadBulkPoPDF(selected, `po-invoices-${from}-to-${to}.pdf`);
+    } else {
+      const selected = getCustomFilteredInvoices();
+      if (!selected.length) { alert('No invoices found in this date range'); return; }
+      $('customRangeOverlay').classList.add('hidden');
+      downloadBulkPDF(selected, `invoices-${$('customFrom').value}-to-${$('customTo').value}.pdf`);
+    }
   });
 
   // ── Bulk PDF download ──
@@ -1237,17 +1268,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = $('revenueChart').getContext('2d');
     if (revenueChart) revenueChart.destroy();
 
+    const isPo = typeof poGraphMode !== 'undefined' && poGraphMode;
+    const srcList = isPo ? poInvoices : invoices;
+    const calcTotal = isPo ? computePoGrandTotal : computeGrandTotal;
+    const chartLabel = isPo ? 'PO Invoice Total (₹)' : 'Revenue (₹)';
+
     let labels = [], data = [];
 
     if (graphMode === 'monthly') {
       const year = parseInt($('chartYear').value);
       labels = [...MONTHS_SHORT];
       data = new Array(12).fill(0);
-      invoices.forEach(inv => {
+      srcList.forEach(inv => {
         const ds = inv.invoiceDate || inv.createdAt;
         if (!ds) return;
         const d = new Date(ds);
-        if (d.getFullYear() === year) data[d.getMonth()] += computeGrandTotal(inv);
+        if (d.getFullYear() === year) data[d.getMonth()] += calcTotal(inv);
       });
 
     } else if (graphMode === 'weekly') {
@@ -1265,9 +1301,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const weStr = formatDateYMDLocal(wEnd);
         labels.push('W' + weekNum);
         let total = 0;
-        invoices.forEach(inv => {
+        srcList.forEach(inv => {
           const ds = inv.invoiceDate;
-          if (ds && ds >= wsStr && ds <= weStr) total += computeGrandTotal(inv);
+          if (ds && ds >= wsStr && ds <= weStr) total += calcTotal(inv);
         });
         data.push(total);
         weekStart.setDate(weekStart.getDate() + 7);
@@ -1275,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
     } else if (graphMode === 'yearly') {
-      const yearSet = [...new Set(invoices.map(inv => {
+      const yearSet = [...new Set(srcList.map(inv => {
         const d = inv.invoiceDate || inv.createdAt;
         return d ? new Date(d).getFullYear() : null;
       }).filter(Boolean))].sort();
@@ -1283,9 +1319,9 @@ document.addEventListener('DOMContentLoaded', () => {
       labels = yearSet.map(String);
       data = yearSet.map(y => {
         let total = 0;
-        invoices.forEach(inv => {
+        srcList.forEach(inv => {
           const ds = inv.invoiceDate || inv.createdAt;
-          if (ds && new Date(ds).getFullYear() === y) total += computeGrandTotal(inv);
+          if (ds && new Date(ds).getFullYear() === y) total += calcTotal(inv);
         });
         return total;
       });
@@ -1297,10 +1333,10 @@ document.addEventListener('DOMContentLoaded', () => {
         revenueChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true } });
         return;
       }
-      const filtered = invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+      const filtered = srcList.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
       const dayMap = {};
       filtered.forEach(inv => {
-        dayMap[inv.invoiceDate] = (dayMap[inv.invoiceDate] || 0) + computeGrandTotal(inv);
+        dayMap[inv.invoiceDate] = (dayMap[inv.invoiceDate] || 0) + calcTotal(inv);
       });
       const days = Object.keys(dayMap).sort();
       labels = days.map(d => formatShortDate(d));
@@ -1312,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
       data: {
         labels,
         datasets: [{
-          label: 'Revenue (₹)',
+          label: chartLabel,
           data,
           borderColor: '#1a3a5c',
           backgroundColor: 'rgba(26, 58, 92, 0.1)',
@@ -1354,6 +1390,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('openGraphBtn').addEventListener('click', () => {
+    if (typeof poGraphMode !== 'undefined') poGraphMode = false;
     populateChartYear();
     populateChartMonth();
     updateGraphFilters();
@@ -1363,6 +1400,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('graphCloseBtn').addEventListener('click', () => {
     $('graphOverlay').classList.add('hidden');
+    if (typeof poGraphMode !== 'undefined') poGraphMode = false;
   });
 
   document.querySelectorAll('.graph-tab').forEach(tab => {
@@ -4269,7 +4307,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = $('vendBody');
     while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
     const query = ($('vendSearch').value || '').toLowerCase().trim();
+    const typeFilter = $('vendTypeFilter') ? $('vendTypeFilter').value : '';
     const filtered = vendors.map((v, i) => ({ v, i })).filter(({ v }) => {
+      if (typeFilter) {
+        const types = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+        if (!types.includes(typeFilter)) return false;
+      }
       if (!query) return true;
       return (v.name || '').toLowerCase().includes(query)
         || (v.gstin || '').toLowerCase().includes(query)
@@ -4325,6 +4368,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('vendSearch').addEventListener('input', () => renderVendors());
+  $('vendTypeFilter').addEventListener('change', () => renderVendors());
 
   $('vendSelectAll').addEventListener('change', e => {
     document.querySelectorAll('.vend-check').forEach(cb => cb.checked = e.target.checked);
@@ -5284,19 +5328,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sum = filtered.reduce((s, inv) => s + computePoGrandTotal(inv), 0);
     $('poInvTotalSummaryValue').textContent = '\u20B9' + fmtNum(sum);
-    const fromStr = from ? formatShortDate(from) : '';
-    const toStr = to ? formatShortDate(to) : '';
-    if (from || to) {
-      $('poInvTotalSummaryPeriod').textContent = (fromStr || 'Start') + ' \u2013 ' + (toStr || 'Now');
-    } else {
-      $('poInvTotalSummaryPeriod').textContent = 'All dates';
-    }
+    $('poInvTotalSummaryPeriod').textContent = getPoInvoiceListSummaryPeriodLabel();
     $('poInvTotalSummaryCount').textContent = filtered.length + ' PO invoice' + (filtered.length !== 1 ? 's' : '');
   }
 
   $('poInvSearch').addEventListener('input', renderPoInvoiceList);
-  $('poInvDateFrom').addEventListener('change', renderPoInvoiceList);
-  $('poInvDateTo').addEventListener('change', renderPoInvoiceList);
+  $('poInvDateFrom').addEventListener('change', onPoInvListDateRangeChange);
+  $('poInvDateTo').addEventListener('change', onPoInvListDateRangeChange);
   $('poInvSortOrder').addEventListener('change', renderPoInvoiceList);
 
   $('poInvListBackBtn').addEventListener('click', goHome);
@@ -5304,6 +5342,155 @@ document.addEventListener('DOMContentLoaded', () => {
   $('poInvSelectAll').addEventListener('change', e => {
     document.querySelectorAll('.po-inv-check').forEach(cb => cb.checked = e.target.checked);
   });
+
+  // ── PO Invoice List: presets, period labels, downloads ──
+  let poActivePreset = null;
+
+  function getPoInvoiceListSummaryPeriodLabel() {
+    const presetLabels = {
+      poPresetToday: 'Today', poPresetYesterday: 'Yesterday',
+      poPresetThisWeek: 'This week', poPresetLastWeek: 'Last week',
+      poPresetThisMonth: 'This month', poPresetLastMonth: 'Last month',
+      poPresetThisYear: 'This year', poPresetLastYear: 'Last year',
+      poPresetCustom: 'Custom date range'
+    };
+    if (poActivePreset && presetLabels[poActivePreset]) return presetLabels[poActivePreset];
+    const from = $('poInvDateFrom').value;
+    const to = $('poInvDateTo').value;
+    if (from && to) return `${formatShortDate(from)} – ${formatShortDate(to)}`;
+    if (from) return `From ${formatShortDate(from)}`;
+    if (to) return `Until ${formatShortDate(to)}`;
+    return 'All dates';
+  }
+
+  function clearPoPresetHighlightOnly() {
+    document.querySelectorAll('#poInvoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
+    poActivePreset = null;
+    const from = $('poInvDateFrom').value;
+    const to = $('poInvDateTo').value;
+    if ($('poPresetClear')) $('poPresetClear').style.display = (from || to) ? 'inline-flex' : 'none';
+    if ($('poDownloadFilteredBtn')) $('poDownloadFilteredBtn').style.display = (from && to) ? 'inline-flex' : 'none';
+  }
+
+  function clearPoPresetActive() {
+    document.querySelectorAll('#poInvoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
+    poActivePreset = null;
+    $('poPresetClear').style.display = 'none';
+    $('poDownloadFilteredBtn').style.display = 'none';
+  }
+
+  function onPoInvListDateRangeChange() {
+    clearPoPresetHighlightOnly();
+    renderPoInvoiceList();
+  }
+
+  function applyPoPresetFilter(range, btnId) {
+    if (poActivePreset === btnId) {
+      clearPoPresetActive();
+      $('poInvDateFrom').value = '';
+      $('poInvDateTo').value = '';
+      renderPoInvoiceList();
+      return;
+    }
+    clearPoPresetActive();
+    poActivePreset = btnId;
+    $(btnId).classList.add('active');
+    $('poInvDateFrom').value = range.from;
+    $('poInvDateTo').value = range.to;
+    renderPoInvoiceList();
+    $('poPresetClear').style.display = 'inline-flex';
+    $('poDownloadFilteredBtn').style.display = 'inline-flex';
+  }
+
+  $('poPresetToday').addEventListener('click', () => applyPoPresetFilter(getDayRange(0), 'poPresetToday'));
+  $('poPresetYesterday').addEventListener('click', () => applyPoPresetFilter(getDayRange(-1), 'poPresetYesterday'));
+  $('poPresetThisWeek').addEventListener('click', () => applyPoPresetFilter(getWeekRange(0), 'poPresetThisWeek'));
+  $('poPresetLastWeek').addEventListener('click', () => applyPoPresetFilter(getWeekRange(-1), 'poPresetLastWeek'));
+  $('poPresetThisMonth').addEventListener('click', () => applyPoPresetFilter(getMonthRange(0), 'poPresetThisMonth'));
+  $('poPresetLastMonth').addEventListener('click', () => applyPoPresetFilter(getMonthRange(-1), 'poPresetLastMonth'));
+  $('poPresetThisYear').addEventListener('click', () => applyPoPresetFilter(getYearRange(0), 'poPresetThisYear'));
+  $('poPresetLastYear').addEventListener('click', () => applyPoPresetFilter(getYearRange(-1), 'poPresetLastYear'));
+
+  $('poPresetClear').addEventListener('click', () => {
+    clearPoPresetActive();
+    $('poInvDateFrom').value = '';
+    $('poInvDateTo').value = '';
+    renderPoInvoiceList();
+  });
+
+  $('poPresetCustom').addEventListener('click', () => {
+    $('customFrom').value = $('poInvDateFrom').value || '';
+    $('customTo').value = $('poInvDateTo').value || '';
+    updateCustomCount();
+    $('customRangeOverlay').classList.remove('hidden');
+    poCustomRangeOpen = true;
+  });
+
+  function getFilteredPoInvoices() {
+    const from = $('poInvDateFrom').value;
+    const to = $('poInvDateTo').value;
+    const result = (!from || !to)
+      ? poInvoices.slice()
+      : poInvoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    const sortAsc = ($('poInvSortOrder').value === 'asc');
+    return result.sort((a, b) => {
+      const da = a.invoiceDate || a.createdAt || '';
+      const db = b.invoiceDate || b.createdAt || '';
+      return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
+    });
+  }
+
+  $('poDownloadFilteredBtn').addEventListener('click', () => {
+    const filtered = getFilteredPoInvoices();
+    if (!filtered.length) { alert('No PO invoices in the current filter'); return; }
+    const from = $('poInvDateFrom').value;
+    const to = $('poInvDateTo').value;
+    downloadBulkPoPDF(filtered, `po-invoices-${from}-to-${to}.pdf`);
+  });
+
+  $('poBulkDownloadBtn').addEventListener('click', () => {
+    const checked = Array.from(document.querySelectorAll('.po-inv-check:checked')).map(cb => cb.dataset.invId);
+    if (!checked.length) { alert('Select at least one PO invoice'); return; }
+    const selected = poInvoices.filter(inv => checked.includes(inv.id));
+    downloadBulkPoPDF(selected, 'po-invoices-selected.pdf');
+  });
+
+  async function downloadBulkPoPDF(list, filename) {
+    if (!list.length) return;
+    const state = saveViewState();
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('poInvoiceView').classList.remove('hidden');
+    $('poFormPanel').classList.add('hidden');
+    $('poPreviewPanel').classList.remove('hidden');
+    const paper = $('poInvoicePaper');
+    const worker = html2pdf().set({ ...PDF_OPT, filename });
+    for (let i = 0; i < list.length; i++) {
+      loadPoInvoiceIntoForm(list[i]);
+      syncPoCopyChecks('poCopyType', 'poCopyTypePreview');
+      buildAllPoInvoices();
+      paper.style.overflow = 'visible';
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (i === 0) worker.from(paper);
+      else worker.from(paper).toContainer().toCanvas().toPdf();
+      if (i < list.length - 1) worker.get('pdf').then(pdf => pdf.addPage());
+    }
+    await worker.save();
+    paper.style.overflow = '';
+    restoreViewState(state);
+  }
+
+  // ── PO Invoice Graph (reuse existing graph overlay) ──
+  let poGraphMode = false;
+  $('poOpenGraphBtn').addEventListener('click', () => {
+    poGraphMode = true;
+    populateChartYear();
+    populateChartMonth();
+    updateGraphFilters();
+    $('graphOverlay').classList.remove('hidden');
+    renderGraph();
+  });
+
 
   $('poInvListBody').addEventListener('click', e => {
     const btn = e.target;
