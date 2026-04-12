@@ -807,8 +807,8 @@ input.inv-rate-input {
   margin-bottom: .85rem;
 }
 .preset-pill {
-  padding: .35rem .75rem;
-  font-size: .78rem;
+  padding: .4rem .8rem;
+  font-size: .88rem;
   font-family: inherit;
   font-weight: 600;
   border: 1px solid var(--border);
@@ -1420,13 +1420,13 @@ input.inv-rate-input {
 }
 .days-filter-label {
   font-weight: 600;
-  font-size: .85rem;
+  font-size: .95rem;
   color: var(--text);
   white-space: nowrap;
 }
 .days-filter-presets {
   display: flex;
-  gap: .35rem;
+  gap: .5rem;
   flex-wrap: wrap;
 }
 .days-preset.active,
@@ -1438,16 +1438,16 @@ input.inv-rate-input {
 .days-filter-custom {
   display: flex;
   align-items: center;
-  gap: .4rem;
-  font-size: .82rem;
+  gap: .55rem;
+  font-size: .95rem;
   color: var(--text-muted);
 }
 .days-input {
-  width: 60px;
-  padding: .3rem .4rem;
+  width: 64px;
+  padding: .38rem .45rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: .82rem;
+  font-size: .95rem;
   font-family: inherit;
   text-align: center;
   background: var(--surface);
@@ -1455,12 +1455,12 @@ input.inv-rate-input {
 }
 .days-input::placeholder { font-size: 1.6rem; line-height: 1; }
 .days-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,58,92,.12); }
-.days-filter-hint { font-size: .78rem; color: var(--text-muted); }
+.days-filter-hint { font-size: .9rem; color: var(--text-muted); }
 .days-filter-toggle {
   display: inline-flex;
   align-items: center;
-  gap: .35rem;
-  font-size: .8rem;
+  gap: .4rem;
+  font-size: .9rem;
   color: var(--text-muted);
   cursor: pointer;
   white-space: nowrap;
@@ -1468,14 +1468,14 @@ input.inv-rate-input {
 }
 .days-filter-toggle input[type="checkbox"] {
   accent-color: var(--primary);
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 .days-filter-toggle span { font-weight: 500; }
 .days-filter-actions {
   display: flex;
-  gap: .4rem;
+  gap: .5rem;
   margin-left: auto;
 }
 
