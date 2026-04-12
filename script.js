@@ -2454,32 +2454,72 @@ document.addEventListener('DOMContentLoaded', () => {
       : daysFilterFromVal + ' to ' + daysFilterToVal + ' days';
     $('daysFilterTitle').textContent = 'Invoices Due \u2014 ' + rangeText;
     const totalBal = rows.reduce((s, r) => s + r.balance, 0);
-    $('daysFilterSummary').textContent = rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total Balance Due: \u20b9' + fmtNum(totalBal);
-    const tbody = $('daysFilterBody');
-    tbody.textContent = '';
+    const grouped = {};
+    rows.forEach(r => {
+      if (!grouped[r.company]) grouped[r.company] = [];
+      grouped[r.company].push(r);
+    });
+    const companies = Object.keys(grouped).sort();
+    $('daysFilterSummary').textContent = rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' across ' + companies.length + ' customer' + (companies.length !== 1 ? 's' : '') + ' \u00b7 Total: \u20b9' + fmtNum(totalBal);
+    const content = $('daysFilterContent');
+    content.textContent = '';
     if (rows.length === 0) {
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 5;
-      td.style.cssText = 'text-align:center;padding:1rem;color:var(--text-muted)';
-      td.textContent = 'No invoices in this range.';
-      tr.appendChild(td);
-      tbody.appendChild(tr);
+      const p = document.createElement('p');
+      p.style.cssText = 'text-align:center;padding:1.5rem;color:var(--text-muted)';
+      p.textContent = 'No invoices in this range.';
+      content.appendChild(p);
     } else {
-      rows.forEach(r => {
-        const tr = document.createElement('tr');
-        const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
-        const td2 = document.createElement('td'); td2.textContent = r.company; tr.appendChild(td2);
-        const td3 = document.createElement('td'); td3.className = 'pay-col-date'; td3.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td3);
-        const td4 = document.createElement('td'); td4.className = 'r'; td4.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td4);
-        const td5 = document.createElement('td'); td5.className = 'c'; td5.textContent = r.days + 'd'; tr.appendChild(td5);
-        tbody.appendChild(tr);
+      companies.forEach(coName => {
+        const coRows = grouped[coName];
+        const coTotal = coRows.reduce((s, r) => s + r.balance, 0);
+        const block = document.createElement('div');
+        block.className = 'df-company-block';
+        const header = document.createElement('div');
+        header.className = 'df-company-header';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'df-company-name';
+        nameEl.textContent = coName;
+        const meta = document.createElement('span');
+        meta.className = 'df-company-meta';
+        meta.textContent = coRows.length + ' invoice' + (coRows.length !== 1 ? 's' : '') + ' \u00b7 \u20b9' + fmtNum(coTotal);
+        header.append(nameEl, meta);
+        block.appendChild(header);
+        const tbl = document.createElement('table');
+        tbl.className = 'data-table pay-table-tight df-company-table';
+        const thead = document.createElement('thead');
+        const headTr = document.createElement('tr');
+        ['Invoice No.', 'Invoice Date', 'Balance Due', 'Days'].forEach((t, i) => {
+          const th = document.createElement('th');
+          if (i === 2) th.className = 'r';
+          if (i === 3) th.className = 'c';
+          if (i === 1) th.className = 'pay-col-date';
+          th.textContent = t;
+          headTr.appendChild(th);
+        });
+        thead.appendChild(headTr);
+        tbl.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        coRows.forEach(r => {
+          const tr = document.createElement('tr');
+          const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
+          const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
+          const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
+          const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= 30 ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
+          tbody.appendChild(tr);
+        });
+        tbl.appendChild(tbody);
+        const wrap = document.createElement('div');
+        wrap.className = 'pay-table-scroll';
+        wrap.appendChild(tbl);
+        block.appendChild(wrap);
+        content.appendChild(block);
       });
     }
     $('daysFilterTotals').textContent = '';
     const strong1 = document.createElement('strong'); strong1.textContent = 'Total: \u20b9' + fmtNum(totalBal);
-    const strong2 = document.createElement('strong'); strong2.textContent = rows.length.toString();
-    $('daysFilterTotals').append(strong1, ' across ', strong2, ' invoice' + (rows.length !== 1 ? 's' : ''));
+    const strong2 = document.createElement('strong'); strong2.textContent = companies.length.toString();
+    const strong3 = document.createElement('strong'); strong3.textContent = rows.length.toString();
+    $('daysFilterTotals').append(strong1, ' \u00b7 ', strong3, ' invoice' + (rows.length !== 1 ? 's' : '') + ' across ', strong2, ' customer' + (companies.length !== 1 ? 's' : ''));
   }
 
   $('daysFilterViewBtn').addEventListener('click', () => {
@@ -2500,6 +2540,12 @@ document.addEventListener('DOMContentLoaded', () => {
       : fromDays + ' to ' + toDays + ' days';
     const totalBal = rows.reduce((s, r) => s + r.balance, 0);
     const now = formatDateTime(new Date().toISOString());
+    const grouped = {};
+    rows.forEach(r => { if (!grouped[r.company]) grouped[r.company] = []; grouped[r.company].push(r); });
+    const companies = Object.keys(grouped).sort();
+    const tdS = 'padding:4px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;';
+    const thS = 'padding:4px 6px;font-weight:700;text-align:left;border-bottom:2px solid #94a3b8;background:#f1f5f9;';
+
     const container = document.createElement('div');
     container.style.cssText = 'box-sizing:border-box;width:100%;padding:16px 12px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;';
     const hdr = document.createElement('div');
@@ -2513,57 +2559,58 @@ document.addEventListener('DOMContentLoaded', () => {
     hdr.append(hTitle, hAddr);
     container.appendChild(hdr);
     const meta = document.createElement('div');
-    meta.style.cssText = 'margin-bottom:12px';
+    meta.style.cssText = 'margin-bottom:14px';
     const mTitle = document.createElement('div');
     mTitle.style.cssText = 'font-size:13px;font-weight:700;margin-bottom:4px';
     mTitle.textContent = 'Invoices Due \u2014 ' + rangeText;
     const mSub = document.createElement('div');
     mSub.style.cssText = 'font-size:9px;color:#64748b';
-    mSub.textContent = 'Generated: ' + now + ' \u00b7 ' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total: \u20b9' + fmtNum(totalBal);
+    mSub.textContent = 'Generated: ' + now + ' \u00b7 ' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' across ' + companies.length + ' customer' + (companies.length !== 1 ? 's' : '') + ' \u00b7 Total: \u20b9' + fmtNum(totalBal);
     meta.append(mTitle, mSub);
     container.appendChild(meta);
-    const tbl = document.createElement('table');
-    tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:9px;line-height:1.3;border:1px solid #94a3b8;';
-    const thStyle = 'padding:5px 6px;font-weight:700;text-align:left;border-bottom:2px solid #94a3b8;background:#f1f5f9;';
-    const tdStyle = 'padding:5px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;';
-    const thead = document.createElement('thead');
-    const headTr = document.createElement('tr');
-    ['Invoice No.', 'Customer', 'Invoice Date', 'Balance Due', 'Days'].forEach((t, i) => {
-      const thEl = document.createElement('th');
-      thEl.style.cssText = thStyle + (i === 3 ? 'text-align:right;' : '') + (i === 4 ? 'text-align:center;' : '');
-      thEl.textContent = t;
-      headTr.appendChild(thEl);
-    });
-    thead.appendChild(headTr);
-    tbl.appendChild(thead);
-    const tbodyEl = document.createElement('tbody');
-    if (rows.length === 0) {
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 5; td.style.cssText = 'padding:12px;text-align:center;color:#64748b'; td.textContent = 'No invoices in this range.';
-      tr.appendChild(td); tbodyEl.appendChild(tr);
-    } else {
-      rows.forEach((r, i) => {
+
+    companies.forEach(coName => {
+      const coRows = grouped[coName];
+      const coTotal = coRows.reduce((s, r) => s + r.balance, 0);
+      const coHdr = document.createElement('div');
+      coHdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 6px;background:#e2e8f0;border:1px solid #94a3b8;border-bottom:none;margin-top:10px;font-size:9px;';
+      const coN = document.createElement('span');
+      coN.style.cssText = 'font-weight:700;font-size:10px;';
+      coN.textContent = coName;
+      const coM = document.createElement('span');
+      coM.style.cssText = 'font-weight:600;color:#1e3a5f;';
+      coM.textContent = coRows.length + ' invoice' + (coRows.length !== 1 ? 's' : '') + ' \u00b7 \u20b9' + fmtNum(coTotal);
+      coHdr.append(coN, coM);
+      container.appendChild(coHdr);
+      const tbl = document.createElement('table');
+      tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:9px;line-height:1.3;border:1px solid #94a3b8;';
+      const thead = document.createElement('thead');
+      const headTr = document.createElement('tr');
+      ['Invoice No.', 'Invoice Date', 'Balance Due', 'Days'].forEach((t, i) => {
+        const th = document.createElement('th');
+        th.style.cssText = thS + (i === 2 ? 'text-align:right;' : '') + (i === 3 ? 'text-align:center;' : '');
+        th.textContent = t;
+        headTr.appendChild(th);
+      });
+      thead.appendChild(headTr); tbl.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      coRows.forEach((r, i) => {
         const tr = document.createElement('tr');
         if (i % 2 === 1) tr.style.background = '#f8fafc';
-        const c1 = document.createElement('td'); c1.style.cssText = tdStyle; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
-        const c2 = document.createElement('td'); c2.style.cssText = tdStyle; c2.textContent = r.company; tr.appendChild(c2);
-        const c3 = document.createElement('td'); c3.style.cssText = tdStyle; c3.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c3);
-        const c4 = document.createElement('td'); c4.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;'; c4.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c4);
-        const c5 = document.createElement('td'); c5.style.cssText = tdStyle + 'text-align:center;'; c5.textContent = r.days + 'd'; tr.appendChild(c5);
-        tbodyEl.appendChild(tr);
+        const c1 = document.createElement('td'); c1.style.cssText = tdS; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
+        const c2 = document.createElement('td'); c2.style.cssText = tdS; c2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c2);
+        const c3 = document.createElement('td'); c3.style.cssText = tdS + 'text-align:right;font-variant-numeric:tabular-nums;'; c3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c3);
+        const c4 = document.createElement('td'); c4.style.cssText = tdS + 'text-align:center;' + (r.days >= 30 ? 'color:#dc2626;font-weight:700;' : ''); c4.textContent = r.days + 'd'; tr.appendChild(c4);
+        tbody.appendChild(tr);
       });
-    }
-    tbl.appendChild(tbodyEl);
-    const tfoot = document.createElement('tfoot');
-    const footTr = document.createElement('tr');
-    footTr.style.cssText = 'background:#f1f5f9;font-weight:700;border-top:2px solid #94a3b8';
-    const ft1 = document.createElement('td'); ft1.colSpan = 3; ft1.style.cssText = tdStyle; ft1.textContent = 'Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')'; footTr.appendChild(ft1);
-    const ft2 = document.createElement('td'); ft2.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;font-weight:700;'; ft2.textContent = '\u20b9' + fmtNum(totalBal); footTr.appendChild(ft2);
-    const ft3 = document.createElement('td'); ft3.style.cssText = tdStyle; footTr.appendChild(ft3);
-    tfoot.appendChild(footTr);
-    tbl.appendChild(tfoot);
-    container.appendChild(tbl);
+      tbl.appendChild(tbody);
+      container.appendChild(tbl);
+    });
+
+    const grandTotal = document.createElement('div');
+    grandTotal.style.cssText = 'margin-top:12px;padding:6px;text-align:right;font-size:10px;font-weight:700;border-top:2px solid #1e3a5f;';
+    grandTotal.textContent = 'Grand Total: \u20b9' + fmtNum(totalBal) + ' \u00b7 ' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' across ' + companies.length + ' customer' + (companies.length !== 1 ? 's' : '');
+    container.appendChild(grandTotal);
     return container;
   }
 

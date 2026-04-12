@@ -1499,6 +1499,10 @@ input.inv-rate-input {
   color: var(--text-muted);
   margin-bottom: .75rem;
 }
+.days-filter-content {
+  max-height: 65vh;
+  overflow-y: auto;
+}
 .days-filter-totals {
   margin-top: .75rem;
   padding-top: .75rem;
@@ -1506,6 +1510,34 @@ input.inv-rate-input {
   font-size: .88rem;
   text-align: right;
 }
+
+/* Grouped customer blocks in filter overlay */
+.df-company-block {
+  margin-bottom: .75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.df-company-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .5rem .75rem;
+  background: #f1f5f9;
+  border-bottom: 1px solid var(--border);
+}
+.df-company-name {
+  font-weight: 700;
+  font-size: .88rem;
+  color: var(--text);
+}
+.df-company-meta {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.df-company-table { margin: 0; }
+.df-company-block .pay-table-scroll { margin: 0; }
 
 /* Days overdue highlight */
 .days-overdue {
