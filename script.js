@@ -4996,10 +4996,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortDate = invoiceDate ? formatShortDate(invoiceDate) : '';
     const poDate = $('poPoDate').value ? formatShortDate($('poPoDate').value) : '';
 
-    const sameAsVendorShip = $('poSameAsVendor').checked;
-    const consigneeName = sameAsVendorShip ? $('poVendorName').value : $('poConsigneeName').value;
-    const consigneeAddr = sameAsVendorShip ? $('poVendorAddress').value : $('poConsigneeAddress').value;
-
     let subtotal = 0;
     const itemRows = poItems.map((item, i) => {
       const q = Math.round(Number(item.qty) || 0);
@@ -5035,43 +5031,36 @@ document.addEventListener('DOMContentLoaded', () => {
         + '<tr><td class="r" colspan="2">SGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(sgstAmt) + '</td></tr>'
       : '<tr><td class="r" colspan="2">IGST @ ' + (gstRate * 2) + '%</td><td class="r">' + fmtNum(igstAmt) + '</td></tr>';
 
+    const payModeVal = document.querySelector('input[name="poPayMode"]:checked').value;
+    const paymentRows = payModeVal === 'gpay'
+      ? '<tr><td class="inv-flbl">GPay Number</td><td>' + esc($('poGpayNumber').value) + '</td></tr>'
+      : '<tr><td class="inv-flbl">Bank Name</td><td>' + esc($('poBankName').value) + '</td></tr>'
+        + '<tr><td class="inv-flbl">Branch</td><td>' + esc($('poBankBranch').value) + '</td></tr>'
+        + '<tr><td class="inv-flbl">A/C No.</td><td>' + esc($('poAccountNumber').value) + '</td></tr>'
+        + '<tr><td class="inv-flbl">IFSC Code</td><td>' + esc($('poIfscCode').value) + '</td></tr>';
+
     return '<div class="inv">'
       + '<div class="inv-hdr">'
-      + '<div class="inv-hdr-name">' + COMPANY.name + '</div>'
-      + '<div class="inv-hdr-addr">' + COMPANY.address.replace(/\n/g, '<br>') + '<br>Email: ' + COMPANY.email + ' | Phone: ' + COMPANY.phone + '</div>'
+      + '<div class="inv-hdr-name">' + esc($('poVendorName').value) + '</div>'
+      + '<div class="inv-hdr-addr">' + esc($('poVendorAddress').value) + '</div>'
       + '</div>'
-      + '<div class="inv-gstin-row"><span><b>GSTIN:</b> ' + COMPANY.gstin + '</span><span>' + (copyType || '') + '</span></div>'
+      + '<div class="inv-gstin-row"><span>' + (($('poVendorGstin').value) ? '<b>GSTIN:</b> ' + esc($('poVendorGstin').value) : '') + '</span><span>' + (copyType || '') + '</span></div>'
       + '<table class="inv-tbl"><tr>'
       + '<td class="inv-buyer-cell" style="width:50%">'
-      + '<div class="inv-lbl">Vendor (Billed To)</div>'
-      + '<div class="inv-buyer-name">' + esc($('poVendorName').value) + '</div>'
-      + '<div class="inv-buyer-addr">' + esc($('poVendorAddress').value) + '</div>'
-      + (($('poVendorGstin').value) ? '<div style="margin-top:4px"><b>GSTIN:</b> ' + esc($('poVendorGstin').value) + '</div>' : '')
+      + '<div class="inv-lbl">Buyer</div>'
+      + '<div class="inv-buyer-name">' + COMPANY.name + '</div>'
+      + '<div class="inv-buyer-addr">' + COMPANY.address.replace(/\n/g, ', ') + '</div>'
+      + '<div style="margin-top:4px"><b>GSTIN:</b> ' + COMPANY.gstin + '</div>'
+      + '<div><b>Contact:</b> ' + esc($('poContactPerson').value) + ' | ' + esc($('poContactPhone').value) + '</div>'
       + '</td>'
       + '<td style="width:50%;vertical-align:top;padding:0">'
       + '<table class="inv-tbl" style="border:none"><tr><td colspan="2" class="inv-tax-title c bld" style="border-top:none">PURCHASE ORDER INVOICE</td></tr>'
       + '<tr><td class="inv-flbl" style="width:40%">Invoice No.</td><td class="inv-meta-val">' + esc($('poInvoiceNumber').value) + '</td></tr>'
       + '<tr><td class="inv-flbl">Date</td><td class="inv-meta-val">' + shortDate + '</td></tr>'
-      + '</table></td></tr></table>'
-      + '<table class="inv-tbl inv-con"><tr>'
-      + '<td class="inv-buyer-cell" style="width:40%">'
-      + '<div class="inv-lbl">Consignee (Shipped To)</div>'
-      + '<div class="inv-buyer-name">' + esc(consigneeName) + '</div>'
-      + '<div class="inv-buyer-addr">' + esc(consigneeAddr) + '</div>'
-      + '<div style="margin-top:4px"><b>Contact:</b> ' + esc($('poContactPerson').value) + ' | ' + esc($('poContactPhone').value) + '</div>'
-      + '</td>'
-      + '<td style="width:60%;padding:0;vertical-align:top">'
-      + '<table class="inv-tbl" style="border:none">'
-      + '<tr><td class="inv-flbl" style="width:35%">P.Order No.</td><td>' + esc($('poPoNumber').value) + '</td></tr>'
+      + '<tr><td class="inv-flbl">P.Order No.</td><td>' + esc($('poPoNumber').value) + '</td></tr>'
       + '<tr><td class="inv-flbl">P.O. Date</td><td>' + poDate + '</td></tr>'
       + '<tr><td class="inv-flbl">Mode of Transport</td><td>' + esc($('poTransportMode').value) + '</td></tr>'
-      + (document.querySelector('input[name="poPayMode"]:checked').value === 'gpay'
-        ? '<tr><td class="inv-flbl">GPay Number</td><td>' + esc($('poGpayNumber').value) + '</td></tr>'
-        : '<tr><td class="inv-flbl">Bank Name</td><td>' + esc($('poBankName').value) + '</td></tr>'
-          + '<tr><td class="inv-flbl">Branch</td><td>' + esc($('poBankBranch').value) + '</td></tr>'
-          + '<tr><td class="inv-flbl">A/C No.</td><td>' + esc($('poAccountNumber').value) + '</td></tr>'
-          + '<tr><td class="inv-flbl">IFSC Code</td><td>' + esc($('poIfscCode').value) + '</td></tr>'
-      )
+      + paymentRows
       + '</table></td></tr></table>'
       + '<table class="inv-tbl inv-items">'
       + '<thead><tr><th style="width:6%">S.No</th><th style="width:28%">Description of Goods</th><th style="width:12%">HSN Code</th><th style="width:10%">No. of Bags</th><th style="width:10%">Quantity</th><th style="width:12%">Rate</th><th style="width:14%">Amount (\u20B9)</th></tr></thead>'
@@ -5082,13 +5071,6 @@ document.addEventListener('DOMContentLoaded', () => {
       + taxRows
       + '<tr><td class="r" colspan="2"><b>Grand Total</b></td><td class="r"><b>\u20B9' + fmtNum(grandTotal) + '</b></td></tr>'
       + '<tr><td colspan="3" style="font-size:10px"><b>Amount in Words:</b> ' + wordsStr + ' Rupees Only</td></tr>'
-      + '</table>'
-      + '<table class="inv-tbl inv-bottom">'
-      + '<tr>'
-      + '<td class="inv-cert" style="width:50%" rowspan="2">We declare that this purchase order invoice shows the actual details of the goods described and that the particulars given above are true and correct.</td>'
-      + '<td class="inv-sig" style="width:50%">For ' + COMPANY.name + '<div class="inv-sig-space"></div>Authorised Signatory</td>'
-      + '</tr>'
-      + '<tr><td class="inv-recv">Received the above goods in good order and condition.</td></tr>'
       + '</table>'
       + '</div>';
   }
