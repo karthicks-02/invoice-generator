@@ -3995,11 +3995,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendEmpty').textContent = vendors.length ? 'No matching vendors.' : 'No vendors added yet.';
     $('vendTable').style.display = filtered.length ? 'table' : 'none';
     filtered.forEach(({ v, i }) => {
-      const conCount = v.consignees ? v.consignees.length : 0;
-      const poParts = [];
-      if (v.poNumber) poParts.push(escHtml(v.poNumber));
-      if (v.poDate) poParts.push(formatShortDate(v.poDate));
-      const poSummary = poParts.length ? poParts.join(' · ') : '—';
       const tr = document.createElement('tr');
       const tdCheck = document.createElement('td');
       const cb = document.createElement('input');
@@ -4009,21 +4004,18 @@ document.addEventListener('DOMContentLoaded', () => {
       tdCheck.appendChild(cb);
       tr.appendChild(tdCheck);
 
+      const typeLabel = v.vendorType === 'material' ? 'Material' : 'Labor';
       const fields = [
-        escHtml(v.name),
-        escHtml(v.gstin),
-        escHtml(customerGstTypeLabel(v.gstType)),
-        poSummary,
-        escHtml(v.contact),
-        escHtml(v.phone),
-        String(conCount)
+        v.name,
+        v.gstin,
+        typeLabel,
+        customerGstTypeLabel(v.gstType),
+        v.contact,
+        v.phone
       ];
-      fields.forEach((text, fi) => {
+      fields.forEach(text => {
         const td = document.createElement('td');
-        if (fi === 3) td.className = 'cust-po-cell';
-        td.textContent = '';
-        if (fi === 3) { td.textContent = ''; td.insertAdjacentHTML('afterbegin', text); }
-        else td.textContent = text;
+        td.textContent = text;
         tr.appendChild(td);
       });
 
@@ -4062,89 +4054,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let tempVendConsignees = [];
-  let editVendConIdx = -1;
   let tempVendProducts = [];
-
-  function renderVendConsigneeList() {
-    const wrap = $('vendConsigneeList');
-    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
-    tempVendConsignees.forEach((con, i) => {
-      const div = document.createElement('div');
-      div.className = 'consignee-item';
-      const info = document.createElement('div');
-      info.className = 'consignee-item-info';
-      const nameEl = document.createElement('div');
-      nameEl.className = 'consignee-item-name';
-      nameEl.textContent = con.name;
-      const addrEl = document.createElement('div');
-      addrEl.className = 'consignee-item-addr';
-      addrEl.textContent = con.address;
-      info.appendChild(nameEl);
-      info.appendChild(addrEl);
-      div.appendChild(info);
-      const acts = document.createElement('div');
-      acts.className = 'consignee-item-actions';
-      const eBtn = document.createElement('button');
-      eBtn.className = 'btn-edit';
-      eBtn.dataset.ci = i;
-      eBtn.textContent = 'Edit';
-      const dBtn = document.createElement('button');
-      dBtn.className = 'btn-del';
-      dBtn.dataset.ci = i;
-      dBtn.textContent = '×';
-      acts.appendChild(eBtn);
-      acts.appendChild(dBtn);
-      div.appendChild(acts);
-      wrap.appendChild(div);
-    });
-  }
-
-  function resetVendConsigneeForm() {
-    editVendConIdx = -1;
-    $('vendConName').value = '';
-    $('vendConAddress').value = '';
-    $('vendConsigneeFormRow').classList.add('hidden');
-  }
-
-  $('addVendConsigneeBtn').addEventListener('click', () => {
-    editVendConIdx = -1;
-    $('vendConName').value = '';
-    $('vendConAddress').value = '';
-    $('vendConsigneeFormRow').classList.remove('hidden');
-    $('vendConName').focus();
-  });
-
-  $('cancelVendConsigneeBtn').addEventListener('click', () => resetVendConsigneeForm());
-
-  $('saveVendConsigneeBtn').addEventListener('click', () => {
-    const name = $('vendConName').value.trim();
-    const address = $('vendConAddress').value.trim();
-    if (!name) { alert('Consignee name required'); return; }
-    if (editVendConIdx >= 0) {
-      tempVendConsignees[editVendConIdx] = { name, address };
-    } else {
-      tempVendConsignees.push({ name, address });
-    }
-    renderVendConsigneeList();
-    resetVendConsigneeForm();
-  });
-
-  $('vendConsigneeList').addEventListener('click', e => {
-    const ci = e.target.dataset.ci;
-    if (ci == null) return;
-    if (e.target.classList.contains('btn-del')) {
-      tempVendConsignees.splice(+ci, 1);
-      renderVendConsigneeList();
-    }
-    if (e.target.classList.contains('btn-edit')) {
-      editVendConIdx = +ci;
-      const con = tempVendConsignees[+ci];
-      $('vendConName').value = con.name;
-      $('vendConAddress').value = con.address;
-      $('vendConsigneeFormRow').classList.remove('hidden');
-      $('vendConName').focus();
-    }
-  });
 
   function renderVendProdList() {
     const wrap = $('vendProdList');
@@ -4224,14 +4134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendAddress').value = '';
     $('vendContact').value = '';
     $('vendPhone').value = '';
-    $('vendPoNumber').value = '';
-    $('vendPoDate').value = '';
+    $('vendType').value = 'labor';
     $('vendGstType').value = 'intra';
     tempVendConsignees = [];
     tempVendProducts = [];
-    renderVendConsigneeList();
     renderVendProdList();
-    resetVendConsigneeForm();
     $('vendProdFormRow').classList.add('hidden');
     showVendForm();
   });
@@ -4245,8 +4152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       address: $('vendAddress').value.trim(),
       contact: $('vendContact').value.trim(),
       phone: $('vendPhone').value.trim(),
-      poNumber: $('vendPoNumber').value.trim(),
-      poDate: $('vendPoDate').value,
+      vendorType: $('vendType').value,
       gstType: $('vendGstType').value,
       consignees: tempVendConsignees.map(x => ({ ...x })),
       associatedProducts: [...tempVendProducts]
@@ -4273,14 +4179,11 @@ document.addEventListener('DOMContentLoaded', () => {
       $('vendAddress').value = v.address;
       $('vendContact').value = v.contact;
       $('vendPhone').value = v.phone;
-      $('vendPoNumber').value = v.poNumber || '';
-      $('vendPoDate').value = v.poDate || '';
+      $('vendType').value = v.vendorType || 'labor';
       $('vendGstType').value = v.gstType || 'intra';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
-      renderVendConsigneeList();
       renderVendProdList();
-      resetVendConsigneeForm();
       $('vendProdFormRow').classList.add('hidden');
       showVendForm();
     }
@@ -4299,10 +4202,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const selected = checked.length
       ? Array.from(checked).map(cb => ({ v: vendors[+cb.dataset.i], i: +cb.dataset.i }))
       : vendors.map((v, i) => ({ v, i }));
-    const header = ['#', 'Company Name', 'GSTIN', 'GST Type', 'Contact', 'Phone'];
+    const header = ['#', 'Company Name', 'GSTIN', 'Type', 'GST Type', 'Contact', 'Phone'];
     const rows = [header];
     selected.forEach(({ v }, idx) => {
-      rows.push([idx + 1, v.name, v.gstin, customerGstTypeLabel(v.gstType), v.contact, v.phone]);
+      const typeLabel = v.vendorType === 'material' ? 'Material' : 'Labor';
+      rows.push([idx + 1, v.name, v.gstin, typeLabel, customerGstTypeLabel(v.gstType), v.contact, v.phone]);
     });
     downloadCSV(rows, checked.length ? 'vendors-selected.csv' : 'vendors.csv');
   });
@@ -4318,12 +4222,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('vendAddress').value = v.address;
       $('vendContact').value = v.contact;
       $('vendPhone').value = v.phone;
-      $('vendPoNumber').value = v.poNumber || '';
-      $('vendPoDate').value = v.poDate || '';
+      $('vendType').value = v.vendorType || 'labor';
       $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
-      renderVendConsigneeList();
       renderVendProdList();
     },
     { showOnEmpty: false }
@@ -4340,12 +4242,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('vendAddress').value = v.address;
       $('vendContact').value = v.contact;
       $('vendPhone').value = v.phone;
-      $('vendPoNumber').value = v.poNumber || '';
-      $('vendPoDate').value = v.poDate || '';
+      $('vendType').value = v.vendorType || 'labor';
       $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
-      renderVendConsigneeList();
       renderVendProdList();
     },
     { showOnEmpty: false }

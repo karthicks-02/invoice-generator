@@ -667,18 +667,23 @@
       <div id="vendFormWrap" class="hidden">
         <fieldset>
           <legend id="vendFormTitle">Add Vendor</legend>
-          <div class="row">
+          <div class="row three">
             <div class="field"><label>Company Name</label><input type="text" id="vendName" /></div>
             <div class="field"><label>GSTIN</label><input type="text" id="vendGstin" /></div>
+            <div class="field">
+              <label>Type</label>
+              <select id="vendType">
+                <option value="labor">Labor</option>
+                <option value="material">Material</option>
+              </select>
+            </div>
           </div>
           <div class="field"><label>Address</label><textarea id="vendAddress" rows="2"></textarea></div>
           <div class="row">
             <div class="field"><label>Contact Person</label><input type="text" id="vendContact" /></div>
             <div class="field"><label>Phone</label><input type="text" id="vendPhone" /></div>
           </div>
-          <div class="row three">
-            <div class="field"><label>P.Order No.</label><input type="text" id="vendPoNumber" placeholder="Default for PO invoices" /></div>
-            <div class="field"><label>P.O. Date</label><input type="date" id="vendPoDate" /></div>
+          <div class="row">
             <div class="field">
               <label>GST Type</label>
               <select id="vendGstType">
@@ -689,22 +694,7 @@
           </div>
           <div class="consignee-section">
             <div class="consignee-header">
-              <label class="consignee-label">Consignee / Shipped To</label>
-              <button type="button" class="btn btn-secondary btn-sm" id="addVendConsigneeBtn">+ Add</button>
-            </div>
-            <div id="vendConsigneeList"></div>
-            <div id="vendConsigneeFormRow" class="hidden">
-              <div class="field"><label>Consignee Name</label><input type="text" id="vendConName" /></div>
-              <div class="field"><label>Address</label><textarea id="vendConAddress" rows="2"></textarea></div>
-              <div style="display:flex;gap:8px;margin-bottom:.75rem">
-                <button type="button" class="btn btn-primary btn-sm" id="saveVendConsigneeBtn">Add Consignee</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="cancelVendConsigneeBtn">Cancel</button>
-              </div>
-            </div>
-          </div>
-          <div class="consignee-section">
-            <div class="consignee-header">
-              <label class="consignee-label">Associated Products</label>
+              <label class="consignee-label">Associated Purchase Product</label>
               <button type="button" class="btn btn-secondary btn-sm" id="addVendProdBtn">+ Add</button>
             </div>
             <div id="vendProdList"></div>
@@ -733,11 +723,10 @@
               <th style="width:36px"><input type="checkbox" id="vendSelectAll" /></th>
               <th>Company Name</th>
               <th>GSTIN</th>
+              <th>Type</th>
               <th>GST Type</th>
-              <th>P.Order / Date</th>
               <th>Contact Person</th>
               <th>Phone</th>
-              <th>Consignees</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -947,6 +936,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=98"></script>
+  <script src="script.js?v=99"></script>
 </body>
 </html>
