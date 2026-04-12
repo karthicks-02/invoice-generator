@@ -69,6 +69,16 @@ const db = {
     this._doc('vendorPayments').set({ data: data });
   },
 
+  async loadPurchaseProducts() {
+    const snap = await this._doc('purchaseProducts').get();
+    return snap.exists ? (snap.data().items || []) : [];
+  },
+
+  savePurchaseProducts(data) {
+    if (!this._uid) return;
+    this._doc('purchaseProducts').set({ items: data });
+  },
+
   async loadPoInvoices() {
     const snap = await this._doc('poInvoices').get();
     return snap.exists ? (snap.data().items || []) : [];

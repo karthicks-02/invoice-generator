@@ -82,6 +82,11 @@
           <h3>Vendor / Supplier</h3>
           <p>Manage your vendors</p>
         </div>
+        <div class="home-card" data-view="purchaseProdView">
+          <div class="home-card-icon">PP</div>
+          <h3>Purchase Product</h3>
+          <p>Manage purchase products</p>
+        </div>
         <div class="home-card" data-view="poInvoiceView">
           <div class="home-card-icon">PO</div>
           <h3>PO Invoice</h3>
@@ -737,6 +742,54 @@
       </div>
     </div>
 
+    <!-- ======== PURCHASE PRODUCT VIEW ======== -->
+    <div id="purchaseProdView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="pprodBackBtn">← Back</button>
+        <h2>Purchase Product List</h2>
+        <div class="view-header-actions">
+          <button class="btn btn-sm btn-secondary" id="downloadPprodBtn">⬇ Download</button>
+          <button class="btn btn-primary" id="addPprodBtn">+ Add Product</button>
+        </div>
+      </div>
+
+      <div id="pprodFormWrap" class="hidden">
+        <fieldset>
+          <legend id="pprodFormTitle">Add Purchase Product</legend>
+          <div class="row three">
+            <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="pprodName" autocomplete="off" /><div id="pprodSuggestions" class="suggestions-dropdown hidden"></div></div>
+            <div class="field"><label>HSN Code</label><input type="text" id="pprodHsn" /></div>
+            <div class="field"><label>Rate</label><input type="text" id="pprodRate" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
+          </div>
+          <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btn-primary" id="savePprodBtn">Save</button>
+            <button class="btn btn-secondary" id="cancelPprodBtn">Cancel</button>
+          </div>
+        </fieldset>
+      </div>
+
+      <div id="pprodTableWrap">
+        <div class="filter-row">
+          <input type="text" id="pprodSearch" class="filter-input" placeholder="Search by product name, HSN code, or rate..." />
+        </div>
+        <div class="data-table-wrap">
+          <table class="data-table" id="pprodTable">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="pprodSelectAll" /></th>
+                <th>Product Name</th>
+                <th>HSN Code</th>
+                <th>Rate</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pprodBody"></tbody>
+          </table>
+          <p id="pprodEmpty" class="empty-msg">No purchase products added yet.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- ======== PO INVOICE LIST VIEW ======== -->
     <div id="poInvoiceListView" class="view hidden">
       <div class="view-header">
@@ -936,6 +989,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=100"></script>
+  <script src="script.js?v=101"></script>
 </body>
 </html>

@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invoices = await db.loadInvoices();
       payments = await db.loadPayments();
       vendors = await db.loadVendors();
+      purchaseProducts = await db.loadPurchaseProducts();
       poInvoices = await db.loadPoInvoices();
       vendorPayments = await db.loadVendorPayments();
       migratePaymentCreditIds();
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       renderCustomers();
       renderProducts();
+      renderPurchaseProducts();
       renderVendors();
       checkReminders();
       checkVendorReminders();
@@ -77,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('loadingPanel').classList.add('hidden');
       hideCustForm();
       hideProdForm();
+      hidePprodForm();
       hideVendForm();
       $('previewPanel').classList.add('hidden');
       $('poPreviewPanel').classList.add('hidden');
@@ -84,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       customers = [];
       products = [];
+      purchaseProducts = [];
       invoices = [];
       payments = {};
       vendors = [];
@@ -3971,6 +3975,216 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ══════════════════════════════════════
+  // ── Purchase Product List CRUD ──
+  // ══════════════════════════════════════
+  let purchaseProducts = [];
+  let editPprodIdx = -1;
+
+  function savePurchaseProducts() {
+    db.savePurchaseProducts(purchaseProducts);
+  }
+
+  function renderPurchaseProducts() {
+    const tbody = $('pprodBody');
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    const query = ($('pprodSearch').value || '').toLowerCase().trim();
+    const filtered = purchaseProducts.map((p, i) => ({ p, i })).filter(({ p }) => {
+      if (!query) return true;
+      return (p.name || '').toLowerCase().includes(query)
+        || (p.hsn || '').toLowerCase().includes(query)
+        || String(p.rate).includes(query);
+    });
+    $('pprodEmpty').style.display = filtered.length ? 'none' : 'block';
+    $('pprodEmpty').textContent = purchaseProducts.length ? 'No matching purchase products.' : 'No purchase products added yet.';
+    $('pprodTable').style.display = filtered.length ? 'table' : 'none';
+    filtered.forEach(({ p, i }) => {
+      const tr = document.createElement('tr');
+      const tdCheck = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'pprod-check';
+      cb.dataset.i = i;
+      tdCheck.appendChild(cb);
+      tr.appendChild(tdCheck);
+
+      const tdName = document.createElement('td');
+      tdName.textContent = p.name;
+      tr.appendChild(tdName);
+
+      const tdHsn = document.createElement('td');
+      tdHsn.textContent = p.hsn;
+      tr.appendChild(tdHsn);
+
+      const tdRate = document.createElement('td');
+      tdRate.textContent = Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      tr.appendChild(tdRate);
+
+      const tdAct = document.createElement('td');
+      tdAct.className = 'actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-edit';
+      editBtn.dataset.i = i;
+      editBtn.textContent = 'Edit';
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del';
+      delBtn.dataset.i = i;
+      delBtn.textContent = 'Delete';
+      tdAct.appendChild(editBtn);
+      tdAct.appendChild(delBtn);
+      tr.appendChild(tdAct);
+
+      tbody.appendChild(tr);
+    });
+    if ($('pprodSelectAll')) $('pprodSelectAll').checked = false;
+  }
+
+  $('pprodSearch').addEventListener('input', () => renderPurchaseProducts());
+
+  $('pprodSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('.pprod-check').forEach(cb => cb.checked = e.target.checked);
+  });
+
+  function showPprodForm() {
+    $('pprodFormWrap').classList.remove('hidden');
+    $('pprodTableWrap').classList.add('hidden');
+  }
+  function hidePprodForm() {
+    $('pprodFormWrap').classList.add('hidden');
+    $('pprodTableWrap').classList.remove('hidden');
+  }
+
+  function openPprodEdit(i) {
+    editPprodIdx = i;
+    const p = purchaseProducts[i];
+    $('pprodFormTitle').textContent = 'Edit Purchase Product';
+    $('pprodName').value = p.name;
+    $('pprodHsn').value = p.hsn;
+    const pr = Number(p.rate);
+    $('pprodRate').value = Number.isFinite(pr) ? String(Math.round(pr * 100) / 100) : '';
+    showPprodForm();
+  }
+
+  function updatePprodSuggestions() {
+    const box = $('pprodSuggestions');
+    if (editPprodIdx >= 0) { box.classList.add('hidden'); return; }
+    const q = $('pprodName').value.trim().toLowerCase();
+    if (!q) { box.classList.add('hidden'); return; }
+    const matches = purchaseProducts
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.name.toLowerCase().includes(q))
+      .slice(0, 8);
+    if (!matches.length) { box.classList.add('hidden'); return; }
+    while (box.firstChild) box.removeChild(box.firstChild);
+    matches.forEach(({ p, i }) => {
+      const div = document.createElement('div');
+      div.className = 'suggestion-item';
+      div.dataset.i = i;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'suggestion-item-name';
+      nameSpan.textContent = p.name;
+      const detailSpan = document.createElement('span');
+      detailSpan.className = 'suggestion-item-detail';
+      detailSpan.textContent = 'HSN: ' + (p.hsn || '—') + '  |  \u20B9' + Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      div.appendChild(nameSpan);
+      div.appendChild(detailSpan);
+      box.appendChild(div);
+    });
+    box.classList.remove('hidden');
+  }
+
+  $('pprodName').addEventListener('input', updatePprodSuggestions);
+  $('pprodName').addEventListener('focus', updatePprodSuggestions);
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#pprodSuggestions') && e.target !== $('pprodName')) {
+      $('pprodSuggestions').classList.add('hidden');
+    }
+  });
+  $('pprodSuggestions').addEventListener('click', (e) => {
+    const item = e.target.closest('.suggestion-item');
+    if (!item) return;
+    openPprodEdit(+item.dataset.i);
+    $('pprodSuggestions').classList.add('hidden');
+  });
+
+  $('downloadPprodBtn').addEventListener('click', () => {
+    if (!purchaseProducts.length) { alert('No purchase products to download'); return; }
+    const checked = document.querySelectorAll('.pprod-check:checked');
+    const selected = checked.length
+      ? Array.from(checked).map(cb => ({ p: purchaseProducts[+cb.dataset.i], i: +cb.dataset.i }))
+      : purchaseProducts.map((p, i) => ({ p, i }));
+    const header = ['#', 'Product Name', 'HSN Code', 'Rate'];
+    const rows = [header];
+    selected.forEach(({ p, i }) => {
+      rows.push([i + 1, p.name, p.hsn, Number(p.rate).toFixed(2)]);
+    });
+    downloadCSV(rows, checked.length ? 'purchase-products-selected.csv' : 'purchase-products.csv');
+  });
+
+  $('addPprodBtn').addEventListener('click', () => {
+    editPprodIdx = -1;
+    $('pprodFormTitle').textContent = 'Add Purchase Product';
+    $('pprodName').value = '';
+    $('pprodHsn').value = '';
+    $('pprodRate').value = '';
+    $('pprodSuggestions').classList.add('hidden');
+    showPprodForm();
+  });
+
+  $('cancelPprodBtn').addEventListener('click', () => {
+    $('pprodSuggestions').classList.add('hidden');
+    hidePprodForm();
+  });
+
+  $('savePprodBtn').addEventListener('click', () => {
+    const parsedRate = parseRateToStore($('pprodRate').value);
+    const obj = {
+      name: $('pprodName').value.trim(),
+      hsn: $('pprodHsn').value.trim(),
+      rate: parsedRate == null ? 0 : parsedRate
+    };
+    if (!obj.name) { alert('Product Name is required'); return; }
+    if (editPprodIdx < 0) {
+      const dupIdx = purchaseProducts.findIndex(p => p.name.trim().toLowerCase() === obj.name.toLowerCase());
+      if (dupIdx >= 0) {
+        if (confirm('A purchase product named "' + purchaseProducts[dupIdx].name + '" already exists. Edit it instead?')) {
+          openPprodEdit(dupIdx);
+          return;
+        }
+      }
+    }
+    if (editPprodIdx >= 0) {
+      purchaseProducts[editPprodIdx] = obj;
+    } else {
+      purchaseProducts.push(obj);
+    }
+    savePurchaseProducts();
+    renderPurchaseProducts();
+    hidePprodForm();
+  });
+
+  $('pprodBody').addEventListener('click', e => {
+    const i = +e.target.dataset.i;
+    if (e.target.classList.contains('btn-edit')) {
+      openPprodEdit(i);
+    }
+    if (e.target.classList.contains('btn-del')) {
+      if (confirm('Delete this purchase product?')) {
+        purchaseProducts.splice(i, 1);
+        savePurchaseProducts();
+        renderPurchaseProducts();
+      }
+    }
+  });
+
+  $('pprodBackBtn').addEventListener('click', () => {
+    if (!$('pprodFormWrap').classList.contains('hidden')) {
+      hidePprodForm();
+    } else {
+      goHome();
+    }
+  });
+
+  // ══════════════════════════════════════
   // ── Vendor / Supplier List CRUD ──
   // ══════════════════════════════════════
   let vendors = [];
@@ -4061,7 +4275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrap = $('vendProdList');
     while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
     tempVendProducts.forEach((pName, i) => {
-      const prod = products.find(p => p.name === pName);
+      const prod = purchaseProducts.find(p => p.name === pName);
       const div = document.createElement('div');
       div.className = 'consignee-item';
       const info = document.createElement('div');
@@ -4105,7 +4319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   createAutocomplete(
     $('vendProdInput'),
-    val => products
+    val => purchaseProducts
       .filter(p => !tempVendProducts.includes(p.name) &&
         (p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val)))
       .map(p => ({ label: escHtml(p.name) + '<small>HSN: ' + escHtml(p.hsn) + ' | \u20B9' + Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '</small>', data: p })),
@@ -4598,7 +4812,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function matchPoProducts(val) {
     const assocNames = getPoAssociatedProductNames();
-    const matched = products
+    const matched = purchaseProducts
       .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val));
     const assoc = matched.filter(p => assocNames.includes(p.name));
     const rest = matched.filter(p => !assocNames.includes(p.name));
