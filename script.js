@@ -1706,7 +1706,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r">₹${fmtNum(r.gross)}</td>
           <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
           <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
-          <td class="c">${days}d</td>
+          <td class="c${days >= 30 ? ' days-overdue' : ''}">${days}d</td>
           <td><button class="btn-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
         </tr>`;
       }).join('');

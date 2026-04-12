@@ -1507,6 +1507,12 @@ input.inv-rate-input {
   text-align: right;
 }
 
+/* Days overdue highlight */
+.days-overdue {
+  color: #dc2626;
+  font-weight: 700;
+}
+
 /* Per-company days filter */
 .co-days-filter {
   display: flex;
