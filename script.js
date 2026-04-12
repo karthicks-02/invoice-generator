@@ -4361,6 +4361,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   );
 
+  document.querySelectorAll('input[name="vendPayMode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      $('vendBankFields').classList.toggle('hidden', r.value !== 'bank');
+      $('vendGpayFields').classList.toggle('hidden', r.value !== 'gpay');
+    });
+  });
+
   $('vendBackBtn').addEventListener('click', () => {
     if (!$('vendFormWrap').classList.contains('hidden')) {
       hideVendForm();
@@ -4379,6 +4386,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendPhone').value = '';
     document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = false);
     $('vendGstType').value = 'intra';
+    $('vendPayBank').checked = true;
+    $('vendBankFields').classList.remove('hidden');
+    $('vendGpayFields').classList.add('hidden');
+    $('vendBankName').value = '';
+    $('vendBankBranch').value = '';
+    $('vendAccNumber').value = '';
+    $('vendIfsc').value = '';
+    $('vendGpayNumber').value = '';
     tempVendConsignees = [];
     tempVendProducts = [];
     renderVendProdList();
@@ -4390,6 +4405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('saveVendBtn').addEventListener('click', () => {
     const vendorTypes = Array.from(document.querySelectorAll('.vendTypeCheck:checked')).map(cb => cb.value);
+    const payMode = document.querySelector('input[name="vendPayMode"]:checked').value;
     const obj = {
       name: $('vendName').value.trim(),
       gstin: $('vendGstin').value.trim(),
@@ -4398,6 +4414,12 @@ document.addEventListener('DOMContentLoaded', () => {
       phone: $('vendPhone').value.trim(),
       vendorType: vendorTypes,
       gstType: $('vendGstType').value,
+      paymentMode: payMode,
+      bankName: $('vendBankName').value.trim(),
+      bankBranch: $('vendBankBranch').value.trim(),
+      accountNumber: $('vendAccNumber').value.trim(),
+      ifscCode: $('vendIfsc').value.trim(),
+      gpayNumber: $('vendGpayNumber').value.trim(),
       consignees: tempVendConsignees.map(x => ({ ...x })),
       associatedProducts: [...tempVendProducts]
     };
@@ -4428,6 +4450,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const types = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
       document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = types.includes(cb.value));
       $('vendGstType').value = v.gstType || 'intra';
+      const pm = v.paymentMode || 'bank';
+      if (pm === 'gpay') { $('vendPayGpay').checked = true; } else { $('vendPayBank').checked = true; }
+      $('vendBankFields').classList.toggle('hidden', pm !== 'bank');
+      $('vendGpayFields').classList.toggle('hidden', pm !== 'gpay');
+      $('vendBankName').value = v.bankName || '';
+      $('vendBankBranch').value = v.bankBranch || '';
+      $('vendAccNumber').value = v.accountNumber || '';
+      $('vendIfsc').value = v.ifscCode || '';
+      $('vendGpayNumber').value = v.gpayNumber || '';
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
       renderVendProdList();
@@ -4459,24 +4490,35 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadCSV(rows, checked.length ? 'vendors-selected.csv' : 'vendors.csv');
   });
 
+  function fillVendFormFromVendor(v) {
+    $('vendName').value = v.name;
+    $('vendGstin').value = v.gstin;
+    $('vendAddress').value = v.address;
+    $('vendContact').value = v.contact;
+    $('vendPhone').value = v.phone;
+    const vt = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+    document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = vt.includes(cb.value));
+    $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
+    const pm = v.paymentMode || 'bank';
+    if (pm === 'gpay') { $('vendPayGpay').checked = true; } else { $('vendPayBank').checked = true; }
+    $('vendBankFields').classList.toggle('hidden', pm !== 'bank');
+    $('vendGpayFields').classList.toggle('hidden', pm !== 'gpay');
+    $('vendBankName').value = v.bankName || '';
+    $('vendBankBranch').value = v.bankBranch || '';
+    $('vendAccNumber').value = v.accountNumber || '';
+    $('vendIfsc').value = v.ifscCode || '';
+    $('vendGpayNumber').value = v.gpayNumber || '';
+    tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
+    tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
+    renderVendProdList();
+  }
+
   createAutocomplete(
     $('vendName'),
     val => vendors
       .filter((v, i) => i !== editVendIdx && v.name.toLowerCase().includes(val))
       .map(v => ({ label: escHtml(v.name) + '<small>' + escHtml(v.gstin) + '</small>', data: v })),
-    v => {
-      $('vendName').value = v.name;
-      $('vendGstin').value = v.gstin;
-      $('vendAddress').value = v.address;
-      $('vendContact').value = v.contact;
-      $('vendPhone').value = v.phone;
-      const vt = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
-      document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = vt.includes(cb.value));
-      $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
-      tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
-      tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
-      renderVendProdList();
-    },
+    fillVendFormFromVendor,
     { showOnEmpty: false }
   );
 
@@ -4485,25 +4527,20 @@ document.addEventListener('DOMContentLoaded', () => {
     val => vendors
       .filter((v, i) => i !== editVendIdx && v.gstin.toLowerCase().includes(val))
       .map(v => ({ label: escHtml(v.gstin) + '<small>' + escHtml(v.name) + '</small>', data: v })),
-    v => {
-      $('vendName').value = v.name;
-      $('vendGstin').value = v.gstin;
-      $('vendAddress').value = v.address;
-      $('vendContact').value = v.contact;
-      $('vendPhone').value = v.phone;
-      const vt = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
-      document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = vt.includes(cb.value));
-      $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
-      tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
-      tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
-      renderVendProdList();
-    },
+    fillVendFormFromVendor,
     { showOnEmpty: false }
   );
 
   // ══════════════════════════════════════
   // ── PO Invoice Storage & Logic ──
   // ══════════════════════════════════════
+  document.querySelectorAll('input[name="poPayMode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      $('poBankFields').classList.toggle('hidden', r.value !== 'bank');
+      $('poGpayFields').classList.toggle('hidden', r.value !== 'gpay');
+    });
+  });
+
   let poInvoices = [];
   let editingPoInvoiceId = null;
   let poItems = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
@@ -4554,10 +4591,12 @@ document.addEventListener('DOMContentLoaded', () => {
       contactPhone: $('poContactPhone').value.trim(),
       poNumber: $('poPoNumber').value.trim(),
       poDate: $('poPoDate').value,
+      paymentMode: document.querySelector('input[name="poPayMode"]:checked').value,
       bankName: $('poBankName').value.trim(),
       bankBranch: $('poBankBranch').value.trim(),
       accountNumber: $('poAccountNumber').value.trim(),
       ifscCode: $('poIfscCode').value.trim(),
+      gpayNumber: $('poGpayNumber').value.trim(),
       items: poItems.map(it => ({ ...it })),
       transportMode: $('poTransportMode').value.trim(),
       gstRate: parseFloat($('poGstRate').value) || 0,
@@ -4601,10 +4640,15 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poContactPhone').value = inv.contactPhone || '';
     $('poPoNumber').value = inv.poNumber || '';
     $('poPoDate').value = inv.poDate || '';
+    const ppm = inv.paymentMode || 'bank';
+    if (ppm === 'gpay') { $('poPayGpay').checked = true; } else { $('poPayBank').checked = true; }
+    $('poBankFields').classList.toggle('hidden', ppm !== 'bank');
+    $('poGpayFields').classList.toggle('hidden', ppm !== 'gpay');
     $('poBankName').value = inv.bankName || '';
     $('poBankBranch').value = inv.bankBranch || '';
     $('poAccountNumber').value = inv.accountNumber || '';
     $('poIfscCode').value = inv.ifscCode || '';
+    $('poGpayNumber').value = inv.gpayNumber || '';
     $('poTransportMode').value = inv.transportMode || '';
     $('poGstRate').value = inv.gstRate || 0;
     $('poGstType').value = inv.gstType || 'intra';
@@ -4651,10 +4695,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poContactPhone').value = '';
     $('poPoNumber').value = '';
     $('poPoDate').value = '';
-    $('poBankName').value = 'Bank of Baroda';
-    $('poBankBranch').value = 'Noothancheri Branch';
-    $('poAccountNumber').value = '69550200000025';
-    $('poIfscCode').value = 'BARBOVJNOOT';
+    $('poPayBank').checked = true;
+    $('poBankFields').classList.remove('hidden');
+    $('poGpayFields').classList.add('hidden');
+    $('poBankName').value = '';
+    $('poBankBranch').value = '';
+    $('poAccountNumber').value = '';
+    $('poIfscCode').value = '';
+    $('poGpayNumber').value = '';
     $('poTransportMode').value = 'By Road';
     $('poGstRate').value = 9;
     $('poGstType').value = 'intra';
@@ -4801,6 +4849,15 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poPoDate').value = v.poDate || '';
       $('poGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
       $('poGstType').dispatchEvent(new Event('change'));
+      const vpm = v.paymentMode || 'bank';
+      if (vpm === 'gpay') { $('poPayGpay').checked = true; } else { $('poPayBank').checked = true; }
+      $('poBankFields').classList.toggle('hidden', vpm !== 'bank');
+      $('poGpayFields').classList.toggle('hidden', vpm !== 'gpay');
+      $('poBankName').value = v.bankName || '';
+      $('poBankBranch').value = v.bankBranch || '';
+      $('poAccountNumber').value = v.accountNumber || '';
+      $('poIfscCode').value = v.ifscCode || '';
+      $('poGpayNumber').value = v.gpayNumber || '';
       if (v.consignees && v.consignees.length > 0) {
         $('poSameAsVendor').checked = false;
         $('poConsigneeFields').classList.remove('hidden');
@@ -5008,10 +5065,13 @@ document.addEventListener('DOMContentLoaded', () => {
       + '<tr><td class="inv-flbl" style="width:35%">P.Order No.</td><td>' + esc($('poPoNumber').value) + '</td></tr>'
       + '<tr><td class="inv-flbl">P.O. Date</td><td>' + poDate + '</td></tr>'
       + '<tr><td class="inv-flbl">Mode of Transport</td><td>' + esc($('poTransportMode').value) + '</td></tr>'
-      + '<tr><td class="inv-flbl">Bank Name</td><td>' + esc($('poBankName').value) + '</td></tr>'
-      + '<tr><td class="inv-flbl">Branch</td><td>' + esc($('poBankBranch').value) + '</td></tr>'
-      + '<tr><td class="inv-flbl">A/C No.</td><td>' + esc($('poAccountNumber').value) + '</td></tr>'
-      + '<tr><td class="inv-flbl">IFSC Code</td><td>' + esc($('poIfscCode').value) + '</td></tr>'
+      + (document.querySelector('input[name="poPayMode"]:checked').value === 'gpay'
+        ? '<tr><td class="inv-flbl">GPay Number</td><td>' + esc($('poGpayNumber').value) + '</td></tr>'
+        : '<tr><td class="inv-flbl">Bank Name</td><td>' + esc($('poBankName').value) + '</td></tr>'
+          + '<tr><td class="inv-flbl">Branch</td><td>' + esc($('poBankBranch').value) + '</td></tr>'
+          + '<tr><td class="inv-flbl">A/C No.</td><td>' + esc($('poAccountNumber').value) + '</td></tr>'
+          + '<tr><td class="inv-flbl">IFSC Code</td><td>' + esc($('poIfscCode').value) + '</td></tr>'
+      )
       + '</table></td></tr></table>'
       + '<table class="inv-tbl inv-items">'
       + '<thead><tr><th style="width:6%">S.No</th><th style="width:28%">Description of Goods</th><th style="width:12%">HSN Code</th><th style="width:10%">No. of Bags</th><th style="width:10%">Quantity</th><th style="width:12%">Rate</th><th style="width:14%">Amount (\u20B9)</th></tr></thead>'

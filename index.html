@@ -697,6 +697,26 @@
               </select>
             </div>
           </div>
+          <div class="copy-type-row">
+            <span class="copy-type-label">Payment Mode</span>
+            <div class="copy-checks">
+              <label class="copy-check"><input type="radio" name="vendPayMode" value="bank" id="vendPayBank" checked /> Bank</label>
+              <label class="copy-check"><input type="radio" name="vendPayMode" value="gpay" id="vendPayGpay" /> GPay</label>
+            </div>
+          </div>
+          <div id="vendBankFields">
+            <div class="row">
+              <div class="field"><label>Bank Name</label><input type="text" id="vendBankName" /></div>
+              <div class="field"><label>Branch</label><input type="text" id="vendBankBranch" /></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Account Number</label><input type="text" id="vendAccNumber" /></div>
+              <div class="field"><label>IFSC Code</label><input type="text" id="vendIfsc" /></div>
+            </div>
+          </div>
+          <div id="vendGpayFields" class="hidden">
+            <div class="field"><label>GPay Number</label><input type="text" id="vendGpayNumber" /></div>
+          </div>
           <div class="consignee-section">
             <div class="consignee-header">
               <label class="consignee-label">Associated Purchase Product</label>
@@ -897,18 +917,34 @@
         </fieldset>
 
         <fieldset>
-          <legend>Order &amp; Bank Details</legend>
+          <legend>Order Details</legend>
           <div class="row">
             <div class="field"><label>P.Order No.</label><input type="text" id="poPoNumber" /></div>
             <div class="field"><label>P.O. Date</label><input type="date" id="poPoDate" /></div>
           </div>
-          <div class="row">
-            <div class="field"><label>Bank Name</label><input type="text" id="poBankName" value="Bank of Baroda" /></div>
-            <div class="field"><label>Branch</label><input type="text" id="poBankBranch" value="Noothancheri Branch" /></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Supplier Payment Details</legend>
+          <div class="copy-type-row">
+            <span class="copy-type-label">Payment Mode</span>
+            <div class="copy-checks">
+              <label class="copy-check"><input type="radio" name="poPayMode" value="bank" id="poPayBank" checked /> Bank</label>
+              <label class="copy-check"><input type="radio" name="poPayMode" value="gpay" id="poPayGpay" /> GPay</label>
+            </div>
           </div>
-          <div class="row">
-            <div class="field"><label>Account Number</label><input type="text" id="poAccountNumber" value="69550200000025" /></div>
-            <div class="field"><label>IFSC Code</label><input type="text" id="poIfscCode" value="BARBOVJNOOT" /></div>
+          <div id="poBankFields">
+            <div class="row">
+              <div class="field"><label>Bank Name</label><input type="text" id="poBankName" /></div>
+              <div class="field"><label>Branch</label><input type="text" id="poBankBranch" /></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Account Number</label><input type="text" id="poAccountNumber" /></div>
+              <div class="field"><label>IFSC Code</label><input type="text" id="poIfscCode" /></div>
+            </div>
+          </div>
+          <div id="poGpayFields" class="hidden">
+            <div class="field"><label>GPay Number</label><input type="text" id="poGpayNumber" /></div>
           </div>
         </fieldset>
 
@@ -994,6 +1030,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=102"></script>
+  <script src="script.js?v=103"></script>
 </body>
 </html>
