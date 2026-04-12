@@ -4630,7 +4630,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poInvoiceNumber').value = inv.invoiceNumber || '';
     $('poInvoiceDate').value = inv.invoiceDate || '';
     $('poVendorName').value = inv.vendorName || '';
-    $('poVendorGstin').value = inv.vendorGstin || '';
+    let loadedGst = inv.vendorGstin || '';
+    if (!loadedGst && inv.vendorName) {
+      const match = vendors.find(v => v.name.toLowerCase() === inv.vendorName.trim().toLowerCase());
+      if (match) loadedGst = match.gstin || '';
+    }
+    $('poVendorGstin').value = loadedGst;
     $('poVendorAddress').value = inv.vendorAddress || '';
     $('poSameAsVendor').checked = inv.sameAsVendor !== false;
     $('poConsigneeFields').classList.toggle('hidden', inv.sameAsVendor !== false);
@@ -5039,12 +5044,19 @@ document.addEventListener('DOMContentLoaded', () => {
         + '<tr><td class="inv-flbl">A/C No.</td><td>' + esc($('poAccountNumber').value) + '</td></tr>'
         + '<tr><td class="inv-flbl">IFSC Code</td><td>' + esc($('poIfscCode').value) + '</td></tr>';
 
+    let vendGst = $('poVendorGstin').value.trim();
+    if (!vendGst) {
+      const vn = $('poVendorName').value.trim().toLowerCase();
+      const match = vendors.find(v => v.name.toLowerCase() === vn);
+      if (match) vendGst = match.gstin || '';
+    }
+
     return '<div class="inv">'
       + '<div class="inv-hdr">'
       + '<div class="inv-hdr-name">' + esc($('poVendorName').value) + '</div>'
       + '<div class="inv-hdr-addr">' + esc($('poVendorAddress').value) + '</div>'
       + '</div>'
-      + '<div class="inv-gstin-row"><span><b>GSTIN:</b> ' + esc($('poVendorGstin').value) + '</span><span>' + (copyType || '') + '</span></div>'
+      + '<div class="inv-gstin-row"><span><b>GSTIN:</b> ' + esc(vendGst) + '</span><span>' + (copyType || '') + '</span></div>'
       + '<table class="inv-tbl"><tr>'
       + '<td class="inv-buyer-cell" style="width:50%">'
       + '<div class="inv-lbl">Buyer</div>'
