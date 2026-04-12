@@ -1722,9 +1722,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="co-days-sep">to</span>
             <input type="number" class="days-input co-days-to" min="0" value="" placeholder="∞" title="To days" />
             <span class="co-days-hint">days</span>
+            <label class="days-filter-toggle co-days-inv-toggle"><input type="checkbox" class="co-days-include-inv" /><span>+Invoices</span></label>
             <button type="button" class="btn btn-sm btn-primary co-days-view" data-company="${eName}">View</button>
             <button type="button" class="btn btn-sm btn-secondary co-days-pdf" data-company="${eName}">PDF</button>
-            <label class="days-filter-toggle co-days-inv-toggle"><input type="checkbox" class="co-days-include-inv" /><span>+Invoices</span></label>
           </div>`
         : '';
       const invoiceTable = openFifo.length

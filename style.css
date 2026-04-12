@@ -1453,6 +1453,7 @@ input.inv-rate-input {
   background: var(--surface);
   color: var(--text);
 }
+.days-input::placeholder { font-size: 1.6rem; line-height: 1; }
 .days-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,58,92,.12); }
 .days-filter-hint { font-size: .78rem; color: var(--text-muted); }
 .days-filter-toggle {
