@@ -1852,6 +1852,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showCompanyDaysFilterOverlay(companyName, fromDays, toDays) {
+    daysFilterOverlayCtx = { company: companyName, from: fromDays, to: toDays };
     const rows = getCompanyFilteredDueInvoices(companyName, fromDays, toDays);
     const rangeText = (fromDays === 0 && toDays === Infinity) ? 'All'
       : toDays === Infinity ? fromDays + ' days and older'
@@ -2398,6 +2399,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Days Aging Filter ──
   let daysFilterFromVal = 30;
   let daysFilterToVal = Infinity;
+  let daysFilterOverlayCtx = null;
 
   function getFilteredDueInvoices(fromDays, toDays) {
     const companyNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))];
@@ -2479,12 +2481,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('daysFilterViewBtn').addEventListener('click', () => {
+    daysFilterOverlayCtx = null;
     renderDaysFilterResult();
     $('daysFilterOverlay').classList.remove('hidden');
   });
 
   $('daysFilterCloseBtn').addEventListener('click', () => {
     $('daysFilterOverlay').classList.add('hidden');
+    daysFilterOverlayCtx = null;
   });
 
   function buildDaysFilterPdfHtml(fromDays, toDays) {
@@ -2679,7 +2683,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('daysFilterResultPdfBtn').addEventListener('click', () => {
-    downloadDaysFilterPdf().catch(() => alert('Could not generate PDF. Try again.'));
+    if (daysFilterOverlayCtx) {
+      const ctx = daysFilterOverlayCtx;
+      const withInv = $('daysFilterWithInvoicesOverlay').checked;
+      downloadCompanyDaysFilterPdf(ctx.company, ctx.from, ctx.to, withInv).catch(() => alert('Could not generate PDF. Try again.'));
+    } else {
+      downloadDaysFilterPdf().catch(() => alert('Could not generate PDF. Try again.'));
+    }
   });
 
   // ── Browser Notifications for Due Reminders ──
