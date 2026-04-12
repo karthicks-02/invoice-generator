@@ -1429,7 +1429,8 @@ input.inv-rate-input {
   gap: .35rem;
   flex-wrap: wrap;
 }
-.days-preset.active {
+.days-preset.active,
+.co-days-btn.active {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
