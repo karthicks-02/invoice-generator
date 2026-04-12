@@ -1703,7 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pay-company-nums">
             <span class="pay-num-group">Total <strong>₹${fmtNum(co.totalAmt)}</strong></span>
             <span class="pay-num-group">Credited <strong>₹${fmtNum(co.credited)}</strong></span>
-            ${co.totalTds > 0 ? `<span class="pay-num-group">TDS <strong>₹${fmtNum(co.totalTds)}</strong></span>` : ''}
+            <span class="pay-num-group">TDS <strong>₹${fmtNum(co.totalTds)}</strong></span>
             <span class="pay-num-group pay-outstanding">${isPaid ? '<span style="color:#059669">Fully Paid</span>' : `Outstanding <strong>₹${fmtNum(co.outstanding)}</strong>`}</span>
           </div>
         </div>
