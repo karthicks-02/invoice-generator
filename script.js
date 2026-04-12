@@ -1862,26 +1862,42 @@ document.addEventListener('DOMContentLoaded', () => {
     $('daysFilterTitle').textContent = companyName + ' \u2014 ' + rangeText;
     const totalBal = rows.reduce((s, r) => s + r.balance, 0);
     $('daysFilterSummary').textContent = rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total Balance Due: \u20b9' + fmtNum(totalBal);
-    const tbody = $('daysFilterBody');
-    tbody.textContent = '';
+    const content = $('daysFilterContent');
+    content.textContent = '';
     if (rows.length === 0) {
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 5;
-      td.style.cssText = 'text-align:center;padding:1rem;color:var(--text-muted)';
-      td.textContent = 'No invoices in this range.';
-      tr.appendChild(td);
-      tbody.appendChild(tr);
+      const p = document.createElement('p');
+      p.style.cssText = 'text-align:center;padding:1.5rem;color:var(--text-muted)';
+      p.textContent = 'No invoices in this range.';
+      content.appendChild(p);
     } else {
+      const tbl = document.createElement('table');
+      tbl.className = 'data-table pay-table-tight';
+      const thead = document.createElement('thead');
+      const headTr = document.createElement('tr');
+      ['Invoice No.', 'Invoice Date', 'Balance Due', 'Days'].forEach((t, i) => {
+        const th = document.createElement('th');
+        if (i === 1) th.className = 'pay-col-date';
+        if (i === 2) th.className = 'r';
+        if (i === 3) th.className = 'c';
+        th.textContent = t;
+        headTr.appendChild(th);
+      });
+      thead.appendChild(headTr);
+      tbl.appendChild(thead);
+      const tbody = document.createElement('tbody');
       rows.forEach(r => {
         const tr = document.createElement('tr');
         const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
-        const td2 = document.createElement('td'); td2.textContent = r.company; tr.appendChild(td2);
-        const td3 = document.createElement('td'); td3.className = 'pay-col-date'; td3.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td3);
-        const td4 = document.createElement('td'); td4.className = 'r'; td4.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td4);
-        const td5 = document.createElement('td'); td5.className = 'c'; td5.textContent = r.days + 'd'; tr.appendChild(td5);
+        const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
+        const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
+        const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= 30 ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
         tbody.appendChild(tr);
       });
+      tbl.appendChild(tbody);
+      const wrap = document.createElement('div');
+      wrap.className = 'pay-table-scroll';
+      wrap.appendChild(tbl);
+      content.appendChild(wrap);
     }
     $('daysFilterTotals').textContent = '';
     const strong1 = document.createElement('strong'); strong1.textContent = 'Total: \u20b9' + fmtNum(totalBal);
