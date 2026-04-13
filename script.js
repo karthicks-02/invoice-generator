@@ -2965,7 +2965,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   function canShareFiles() {
+    if (!isMobileDevice()) return false;
     if (!navigator.share) return false;
     try {
       var testFile = new File(['x'], 't.pdf', { type: 'application/pdf' });
