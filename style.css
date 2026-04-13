@@ -1785,31 +1785,46 @@ input.inv-rate-input {
 .wa-check-item {
   display: flex;
   align-items: center;
-  gap: .6rem;
-  padding: .45rem .65rem;
+  justify-content: space-between;
+  padding: .5rem .55rem .5rem .65rem;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  cursor: pointer;
   transition: all .15s;
 }
 .wa-check-item:hover { border-color: #25D366; background: #f0faf4; }
+.wa-check-item-left {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
 .wa-check-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   accent-color: #25D366;
   flex-shrink: 0;
+  cursor: pointer;
 }
 .wa-check-item-num {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: .5px;
+  font-variant-numeric: tabular-nums;
 }
-.wa-check-item-label {
-  font-size: .8rem;
-  color: var(--text-muted);
-  margin-left: auto;
+.wa-check-item-del {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
 }
+.wa-check-item-del:hover { color: var(--danger); }
 .wa-check-empty {
   font-size: .85rem;
   color: var(--text-muted);

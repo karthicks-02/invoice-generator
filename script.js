@@ -2910,8 +2910,10 @@ document.addEventListener('DOMContentLoaded', () => {
       list.appendChild(empty);
     }
     waDialogNumbers.forEach(function(entry, idx) {
-      var item = document.createElement('label');
+      var item = document.createElement('div');
       item.className = 'wa-check-item';
+      var lbl = document.createElement('label');
+      lbl.className = 'wa-check-item-left';
       var cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = entry.checked;
@@ -2922,12 +2924,23 @@ document.addEventListener('DOMContentLoaded', () => {
       var numSpan = document.createElement('span');
       numSpan.className = 'wa-check-item-num';
       numSpan.textContent = '+91 ' + entry.phone;
-      var labelSpan = document.createElement('span');
-      labelSpan.className = 'wa-check-item-label';
-      labelSpan.textContent = entry.source || '';
-      item.appendChild(cb);
-      item.appendChild(numSpan);
-      if (entry.source) item.appendChild(labelSpan);
+      lbl.appendChild(cb);
+      lbl.appendChild(numSpan);
+      item.appendChild(lbl);
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'wa-check-item-del';
+      del.textContent = '\u00d7';
+      del.title = 'Remove';
+      del.addEventListener('click', function() {
+        if (entry.source === 'Recent') {
+          var recents = getWaRecentNumbers().filter(function(n) { return n !== entry.phone; });
+          try { localStorage.setItem('wa_recent_phones', JSON.stringify(recents)); } catch (e) {}
+        }
+        waDialogNumbers.splice(idx, 1);
+        renderWaCheckList();
+      });
+      item.appendChild(del);
       list.appendChild(item);
     });
     updateWaSendBtn();
@@ -3030,32 +3043,31 @@ document.addEventListener('DOMContentLoaded', () => {
       var fname = result.fname;
       var file = new File([blob], fname, { type: 'application/pdf' });
 
-      var sharedViaApi = false;
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: fname, text: 'Invoice due report' });
-          sharedViaApi = true;
+          return;
         } catch (shareErr) {
           if (shareErr.name === 'AbortError') return;
         }
       }
 
-      if (!sharedViaApi) {
-        var blobUrl = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = fname;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
 
-        var waBase = 'https://wa.me/';
-        for (var pi = 0; pi < phones.length; pi++) {
-          window.open(waBase + '91' + phones[pi], '_blank');
-        }
-        showWaToast(phones.length);
+      var waBase = 'https://wa.me/';
+      for (var pi = 0; pi < phones.length; pi++) {
+        window.open(waBase + '91' + phones[pi], '_blank');
       }
+      showWaToast(phones.length);
 
     } catch (e) {
       alert('Could not generate PDF. Try again.');
