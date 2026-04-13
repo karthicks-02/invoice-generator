@@ -2965,7 +2965,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function canShareFiles() {
+    if (!navigator.share) return false;
+    try {
+      var testFile = new File(['x'], 't.pdf', { type: 'application/pdf' });
+      return navigator.canShare ? navigator.canShare({ files: [testFile] }) : false;
+    } catch (e) { return false; }
+  }
+
+  async function mobileDirectShare(pdfGeneratorFn) {
+    try {
+      var result = await pdfGeneratorFn(true);
+      if (!result || !result.blob) { alert('Could not generate PDF.'); return; }
+      var file = new File([result.blob], result.fname, { type: 'application/pdf' });
+      showWaReadyOverlay(file, []);
+    } catch (e) {
+      alert('Could not generate PDF. Try again.');
+    }
+  }
+
   function openWhatsappDialog(label, pdfGeneratorFn, companyName) {
+    if (canShareFiles()) {
+      mobileDirectShare(pdfGeneratorFn);
+      return;
+    }
+
     whatsappPdfGenerator = pdfGeneratorFn;
     $('whatsappPdfLabel').textContent = label || 'Invoice report';
     waDialogNumbers = [];
@@ -2995,13 +3019,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function showWaReadyOverlay(file, phones) {
     waReadyFile = file;
     waReadyPhones = phones;
-    var hasShare = !!navigator.share;
-    var testFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-    var hasFileShare = hasShare && navigator.canShare && navigator.canShare({ files: [testFile] });
 
-    if (hasFileShare) {
-      $('waReadyHint').textContent = 'Tap below \u2014 pick WhatsApp \u2014 the PDF is attached automatically.';
-      $('waReadyShareBtn').textContent = 'Share to WhatsApp';
+    if (canShareFiles()) {
+      $('waReadyHint').textContent = 'Tap below \u2192 choose WhatsApp \u2192 pick the contact \u2192 PDF is attached!';
+      $('waReadyShareBtn').textContent = '\u{1F4E4} Share PDF via WhatsApp';
     } else {
       $('waReadyHint').textContent = 'PDF downloaded. Tap below to open WhatsApp chats, then attach the file.';
       $('waReadyShareBtn').textContent = 'Open WhatsApp';
@@ -3018,51 +3039,32 @@ document.addEventListener('DOMContentLoaded', () => {
   $('waReadyShareBtn').addEventListener('click', async function() {
     if (!waReadyFile) return;
     var phones = waReadyPhones;
-
     var freshFile = new File([waReadyFile], waReadyFile.name, { type: 'application/pdf' });
 
     $('waReadyOverlay').classList.add('hidden');
     waReadyFile = null;
     waReadyPhones = [];
 
-    var debugInfo = 'Share API: ' + !!navigator.share +
-      '\ncanShare: ' + !!(navigator.canShare) +
-      '\nFile size: ' + freshFile.size + ' bytes' +
-      '\nFile name: ' + freshFile.name;
-
-    if (navigator.share) {
+    if (canShareFiles()) {
       try {
-        var shareData = { files: [freshFile] };
-        var canShareFiles = navigator.canShare ? navigator.canShare(shareData) : 'N/A';
-        debugInfo += '\ncanShare(files): ' + canShareFiles;
-
-        if (navigator.canShare && !canShareFiles) {
-          throw new Error('canShare returned false');
-        }
-        await navigator.share(shareData);
+        await navigator.share({ files: [freshFile] });
         return;
       } catch (shareErr) {
         if (shareErr.name === 'AbortError') return;
-        debugInfo += '\nShare error: ' + shareErr.name + ' - ' + shareErr.message;
-        alert('Share failed (debug info):\n' + debugInfo);
-        var blobUrl = URL.createObjectURL(freshFile);
-        var a = document.createElement('a');
-        a.href = blobUrl; a.download = freshFile.name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
       }
-    } else {
-      alert('No Share API (debug info):\n' + debugInfo);
-      var blobUrl = URL.createObjectURL(freshFile);
-      var a = document.createElement('a');
-      a.href = blobUrl; a.download = freshFile.name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
     }
 
-    var waBase = 'https://wa.me/';
-    for (var pi = 0; pi < phones.length; pi++) {
-      window.open(waBase + '91' + phones[pi], '_blank');
+    var blobUrl = URL.createObjectURL(freshFile);
+    var a = document.createElement('a');
+    a.href = blobUrl; a.download = freshFile.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
+
+    if (phones.length > 0) {
+      var waBase = 'https://wa.me/';
+      for (var pi = 0; pi < phones.length; pi++) {
+        window.open(waBase + '91' + phones[pi], '_blank');
+      }
     }
   });
 
