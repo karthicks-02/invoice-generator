@@ -1767,6 +1767,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <label class="days-filter-toggle co-days-inv-toggle"><input type="checkbox" class="co-days-include-inv" /><span>+Invoices</span></label>
             <button type="button" class="btn btn-sm btn-primary co-days-view" data-company="${eName}">View</button>
             <button type="button" class="btn btn-sm btn-secondary co-days-pdf" data-company="${eName}">PDF</button>
+            <button type="button" class="btn btn-sm btn-whatsapp co-days-wa" data-company="${eName}">WhatsApp</button>
           </div>`
         : '';
       const invoiceTable = openFifo.length
@@ -1870,6 +1871,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       bar.querySelector('.co-days-pdf').addEventListener('click', () => {
+        const f = parseInt(fromInput.value, 10);
+        const t = parseInt(toInput.value, 10);
+        const from = Number.isNaN(f) ? 0 : Math.max(0, f);
+        const to = (toInput.value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
+        const withInv = bar.querySelector('.co-days-include-inv').checked;
+        downloadCompanyDaysFilterPdf(company, from, to, withInv);
+      });
+
+      bar.querySelector('.co-days-wa').addEventListener('click', () => {
         const f = parseInt(fromInput.value, 10);
         const t = parseInt(toInput.value, 10);
         const from = Number.isNaN(f) ? 0 : Math.max(0, f);
