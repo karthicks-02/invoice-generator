@@ -3116,19 +3116,6 @@ document.addEventListener('DOMContentLoaded', () => {
       var fname = result.fname;
       var file = new File([blob], fname, { type: 'application/pdf' });
 
-      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-      if (!isMobile) {
-        var blobUrl = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = fname;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
-      }
-
       showWaReadyOverlay(file, phones);
 
     } catch (e) {
