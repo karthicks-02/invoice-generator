@@ -1798,7 +1798,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
             <button type="button" class="btn-pay-summary-pdf btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" title="Download PDF: payments, outstanding, pending invoices">Summary PDF</button>
-            <button type="button" class="btn-pay-wa btn btn-sm btn-whatsapp" data-company="${escHtml(co.name)}" title="Share summary via WhatsApp">WhatsApp</button>
             <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Summary</button>
             ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
