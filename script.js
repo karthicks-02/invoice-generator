@@ -1797,6 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
             <button type="button" class="btn-pay-summary-pdf btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" title="Download PDF: payments, outstanding, pending invoices">Summary PDF</button>
+            <button type="button" class="btn-pay-wa btn btn-sm btn-whatsapp" data-company="${escHtml(co.name)}" title="Share summary via WhatsApp">WhatsApp</button>
             <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Summary</button>
             ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
@@ -2210,6 +2211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<div class="pay-sum-dialog">
         <div class="pay-sum-toolbar">
           <button type="button" class="btn btn-primary btn-sm btn-pay-summary-pdf" data-company="${ne}">Download summary PDF</button>
+          <button type="button" class="btn btn-sm btn-whatsapp btn-pay-wa" data-company="${ne}">WhatsApp</button>
         </div>
         <div class="pay-sum-hdr">
           <div class="pay-sum-co">${escHtml(COMPANY.name)}</div>
@@ -2370,6 +2372,18 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       e.preventDefault();
       downloadCompanyPaymentSummaryPDF(pdfBtn.dataset.company).catch(() => alert('Could not generate PDF. Try again.'));
+      return;
+    }
+    const waBtn = e.target.closest('.btn-pay-wa');
+    if (waBtn && waBtn.dataset.company) {
+      e.stopPropagation();
+      e.preventDefault();
+      var co = waBtn.dataset.company;
+      openWhatsappDialog(
+        co + ' \u2014 payment summary',
+        function(asBlob) { return asBlob ? downloadCompanyPaymentSummaryPDF(co, true) : downloadCompanyPaymentSummaryPDF(co); },
+        co
+      );
       return;
     }
     const vw = e.target.closest('.btn-view');
@@ -4247,7 +4261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>`;
   }
 
-  async function downloadCompanyPaymentSummaryPDF(companyName) {
+  async function downloadCompanyPaymentSummaryPDF(companyName, returnBlob) {
     if (!companyName) return;
     const state = saveViewState();
     const paper = $('invoicePaper');
@@ -4265,6 +4279,10 @@ document.addEventListener('DOMContentLoaded', () => {
       html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 }
     };
     try {
+      if (returnBlob) {
+        var blob = await html2pdf().set({ ...payPdfOpt, filename: fname }).from(paper).outputPdf('blob');
+        return { blob: blob, fname: fname };
+      }
       await html2pdf().set({ ...payPdfOpt, filename: fname }).from(paper).save();
     } finally {
       shield.remove();
@@ -4671,6 +4689,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-vpay btn btn-sm btn-primary" data-vendor="${escHtml(co.name)}">+ Payment</button>` : ''}
             <button type="button" class="btn-vpay-summary-pdf btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}" title="Download PDF: payments, payable, pending PO invoices">Summary PDF</button>
+            <button type="button" class="btn-vpay-wa btn btn-sm btn-whatsapp" data-vendor="${escHtml(co.name)}" title="Share summary via WhatsApp">WhatsApp</button>
             <button class="btn-vhistory btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}">Summary</button>
             ${!isPaid ? `<button class="btn-vremind btn btn-sm btn-secondary" data-vendor="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
@@ -4752,6 +4771,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<div class="pay-sum-dialog">
         <div class="pay-sum-toolbar">
           <button type="button" class="btn btn-primary btn-sm btn-vpay-summary-pdf" data-vendor="${ne}">Download summary PDF</button>
+          <button type="button" class="btn btn-sm btn-whatsapp btn-vpay-wa" data-vendor="${ne}">WhatsApp</button>
         </div>
         <div class="pay-sum-hdr">
           <div class="pay-sum-co">${escHtml(COMPANY.name)}</div>
@@ -4908,6 +4928,18 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       e.preventDefault();
       downloadVendorPaymentSummaryPDF(pdfBtn.dataset.vendor).catch(() => alert('Could not generate PDF. Try again.'));
+      return;
+    }
+    const vwaBtn = e.target.closest('.btn-vpay-wa');
+    if (vwaBtn && vwaBtn.dataset.vendor) {
+      e.stopPropagation();
+      e.preventDefault();
+      var vn = vwaBtn.dataset.vendor;
+      openWhatsappDialog(
+        vn + ' \u2014 vendor payment summary',
+        function(asBlob) { return asBlob ? downloadVendorPaymentSummaryPDF(vn, true) : downloadVendorPaymentSummaryPDF(vn); },
+        vn
+      );
       return;
     }
     const vw = e.target.closest('.btn-vpay-view');
@@ -5089,7 +5121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>`;
   }
 
-  async function downloadVendorPaymentSummaryPDF(vendorName) {
+  async function downloadVendorPaymentSummaryPDF(vendorName, returnBlob) {
     if (!vendorName) return;
     const state = saveViewState();
     const paper = $('invoicePaper');
@@ -5107,6 +5139,10 @@ document.addEventListener('DOMContentLoaded', () => {
       html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 }
     };
     try {
+      if (returnBlob) {
+        var blob = await html2pdf().set({ ...payPdfOpt, filename: fname }).from(paper).outputPdf('blob');
+        return { blob: blob, fname: fname };
+      }
       await html2pdf().set({ ...payPdfOpt, filename: fname }).from(paper).save();
     } finally {
       shield.remove();
