@@ -3124,6 +3124,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('daysFilterPdfBtn').addEventListener('click', function() {
+    downloadDaysFilterPdf(false);
+  });
+
+  $('daysFilterWaBtn').addEventListener('click', function() {
     var fromD = daysFilterFromVal;
     var toD = daysFilterToVal;
     var rangeLabel = toD === Infinity ? fromD + 'd+' : fromD + 'd\u2013' + toD + 'd';
@@ -3135,6 +3139,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('daysFilterResultPdfBtn').addEventListener('click', function() {
+    if (daysFilterOverlayCtx) {
+      var ctx = daysFilterOverlayCtx;
+      var withInv = $('daysFilterWithInvoicesOverlay').checked;
+      downloadCompanyDaysFilterPdf(ctx.company, ctx.from, ctx.to, withInv);
+    } else {
+      downloadDaysFilterPdf(false);
+    }
+  });
+
+  $('daysFilterResultWaBtn').addEventListener('click', function() {
     if (daysFilterOverlayCtx) {
       var ctx = daysFilterOverlayCtx;
       var withInv = $('daysFilterWithInvoicesOverlay').checked;

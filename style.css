@@ -1703,12 +1703,12 @@ input.inv-rate-input {
   width: 100%;
   font-size: .9rem !important;
 }
-.whatsapp-send-btn {
+.whatsapp-send-btn, .btn-whatsapp {
   background: #25D366 !important;
   border-color: #25D366 !important;
   color: #fff !important;
 }
-.whatsapp-send-btn:hover {
+.whatsapp-send-btn:hover, .btn-whatsapp:hover {
   background: #1da851 !important;
   border-color: #1da851 !important;
 }
