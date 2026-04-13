@@ -2995,8 +2995,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function showWaReadyOverlay(file, phones) {
     waReadyFile = file;
     waReadyPhones = phones;
-    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
+    var hasShare = !!navigator.share;
+    var testFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+    var hasFileShare = hasShare && navigator.canShare && navigator.canShare({ files: [testFile] });
+
+    if (hasFileShare) {
       $('waReadyHint').textContent = 'Tap below \u2014 pick WhatsApp \u2014 the PDF is attached automatically.';
       $('waReadyShareBtn').textContent = 'Share to WhatsApp';
     } else {
@@ -3014,29 +3017,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('waReadyShareBtn').addEventListener('click', async function() {
     if (!waReadyFile) return;
-    var file = waReadyFile;
     var phones = waReadyPhones;
+
+    var freshFile = new File([waReadyFile], waReadyFile.name, { type: 'application/pdf' });
+
     $('waReadyOverlay').classList.add('hidden');
+    waReadyFile = null;
+    waReadyPhones = [];
 
-    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var debugInfo = 'Share API: ' + !!navigator.share +
+      '\ncanShare: ' + !!(navigator.canShare) +
+      '\nFile size: ' + freshFile.size + ' bytes' +
+      '\nFile name: ' + freshFile.name;
 
-    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (navigator.share) {
       try {
-        await navigator.share({ files: [file], title: file.name, text: 'Invoice due report' });
-        waReadyFile = null;
-        waReadyPhones = [];
+        var shareData = { files: [freshFile] };
+        var canShareFiles = navigator.canShare ? navigator.canShare(shareData) : 'N/A';
+        debugInfo += '\ncanShare(files): ' + canShareFiles;
+
+        if (navigator.canShare && !canShareFiles) {
+          throw new Error('canShare returned false');
+        }
+        await navigator.share(shareData);
         return;
       } catch (shareErr) {
-        if (shareErr.name === 'AbortError') { waReadyFile = null; waReadyPhones = []; return; }
+        if (shareErr.name === 'AbortError') return;
+        debugInfo += '\nShare error: ' + shareErr.name + ' - ' + shareErr.message;
+        alert('Share failed (debug info):\n' + debugInfo);
+        var blobUrl = URL.createObjectURL(freshFile);
+        var a = document.createElement('a');
+        a.href = blobUrl; a.download = freshFile.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
       }
+    } else {
+      alert('No Share API (debug info):\n' + debugInfo);
+      var blobUrl = URL.createObjectURL(freshFile);
+      var a = document.createElement('a');
+      a.href = blobUrl; a.download = freshFile.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
     }
 
     var waBase = 'https://wa.me/';
     for (var pi = 0; pi < phones.length; pi++) {
       window.open(waBase + '91' + phones[pi], '_blank');
     }
-    waReadyFile = null;
-    waReadyPhones = [];
   });
 
   $('waAddNumBtn').addEventListener('click', function() {
