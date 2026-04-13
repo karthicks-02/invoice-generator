@@ -2989,15 +2989,54 @@ document.addEventListener('DOMContentLoaded', () => {
     whatsappPdfGenerator = null;
   }
 
-  function showWaToast(count) {
-    var toast = $('waInstructionToast');
-    toast.classList.remove('hidden');
-    clearTimeout(toast._tid);
-    toast._tid = setTimeout(function() { toast.classList.add('hidden'); }, 15000);
+  var waReadyFile = null;
+  var waReadyPhones = [];
+
+  function showWaReadyOverlay(file, phones) {
+    waReadyFile = file;
+    waReadyPhones = phones;
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      $('waReadyHint').textContent = 'Tap below \u2014 pick WhatsApp \u2014 the PDF is attached automatically.';
+      $('waReadyShareBtn').textContent = 'Share to WhatsApp';
+    } else {
+      $('waReadyHint').textContent = 'PDF downloaded. Tap below to open WhatsApp chats, then attach the file.';
+      $('waReadyShareBtn').textContent = 'Open WhatsApp';
+    }
+    $('waReadyOverlay').classList.remove('hidden');
   }
 
-  $('waToastCloseBtn').addEventListener('click', function() {
-    $('waInstructionToast').classList.add('hidden');
+  $('waReadyCloseBtn').addEventListener('click', function() {
+    $('waReadyOverlay').classList.add('hidden');
+    waReadyFile = null;
+    waReadyPhones = [];
+  });
+
+  $('waReadyShareBtn').addEventListener('click', async function() {
+    if (!waReadyFile) return;
+    var file = waReadyFile;
+    var phones = waReadyPhones;
+    $('waReadyOverlay').classList.add('hidden');
+
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: file.name, text: 'Invoice due report' });
+        waReadyFile = null;
+        waReadyPhones = [];
+        return;
+      } catch (shareErr) {
+        if (shareErr.name === 'AbortError') { waReadyFile = null; waReadyPhones = []; return; }
+      }
+    }
+
+    var waBase = 'https://wa.me/';
+    for (var pi = 0; pi < phones.length; pi++) {
+      window.open(waBase + '91' + phones[pi], '_blank');
+    }
+    waReadyFile = null;
+    waReadyPhones = [];
   });
 
   $('waAddNumBtn').addEventListener('click', function() {
@@ -3045,29 +3084,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: fname, text: 'Invoice due report' });
-          return;
-        } catch (shareErr) {
-          if (shareErr.name === 'AbortError') return;
-        }
+      if (!isMobile) {
+        var blobUrl = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
       }
 
-      var blobUrl = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
-
-      var waBase = 'https://wa.me/';
-      for (var pi = 0; pi < phones.length; pi++) {
-        window.open(waBase + '91' + phones[pi], '_blank');
-      }
-      showWaToast(phones.length);
+      showWaReadyOverlay(file, phones);
 
     } catch (e) {
       alert('Could not generate PDF. Try again.');

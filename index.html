@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Karthick Industries</title>
-  <link rel="stylesheet" href="style.css?v=34" />
+  <link rel="stylesheet" href="style.css?v=35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -350,15 +350,14 @@
         </div>
       </div>
 
-      <!-- WhatsApp Instruction Toast -->
-      <div id="waInstructionToast" class="wa-toast hidden">
-        <div class="wa-toast-inner">
-          <div class="wa-toast-icon">&#128206;</div>
-          <div class="wa-toast-text">
-            <strong>PDF downloaded!</strong>
-            <span>In WhatsApp, tap the <strong>attach</strong> button and pick the file.</span>
-          </div>
-          <button type="button" class="wa-toast-close" id="waToastCloseBtn">&times;</button>
+      <!-- WhatsApp PDF Ready Overlay -->
+      <div id="waReadyOverlay" class="overlay hidden">
+        <div class="overlay-box wa-ready-box">
+          <div class="wa-ready-check">&#10003;</div>
+          <h3>PDF Ready!</h3>
+          <p class="wa-ready-hint" id="waReadyHint">Tap the button below to share via WhatsApp</p>
+          <button type="button" class="btn whatsapp-send-btn wa-big-btn" id="waReadyShareBtn">Share to WhatsApp</button>
+          <button type="button" class="btn btn-secondary wa-small-btn" id="waReadyCloseBtn">Close</button>
         </div>
       </div>
 
@@ -1167,6 +1166,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=125"></script>
+  <script src="script.js?v=126"></script>
 </body>
 </html>
