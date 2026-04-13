@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Karthick Industries</title>
-  <link rel="stylesheet" href="style.css?v=30" />
+  <link rel="stylesheet" href="style.css?v=33" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -318,6 +318,50 @@
         </div>
       </div>
 
+      <!-- WhatsApp Share Overlay -->
+      <div id="whatsappOverlay" class="overlay hidden">
+        <div class="overlay-box whatsapp-share-box">
+          <div class="wa-dialog-header">
+            <div class="wa-icon-circle">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.313 0-4.46-.768-6.178-2.064l-.435-.336-3.26 1.093 1.093-3.26-.336-.435A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+            </div>
+            <div>
+              <h3>Send PDF via WhatsApp</h3>
+              <p class="wa-report-label" id="whatsappPdfLabel">Filtered invoices due report</p>
+            </div>
+          </div>
+          <div class="wa-numbers-section" id="waNumbersSection">
+            <label class="wa-field-label">Send to</label>
+            <div class="wa-check-list" id="waCheckList"></div>
+          </div>
+          <div class="wa-add-section">
+            <label class="wa-field-label">Add number</label>
+            <div class="wa-add-row">
+              <span class="whatsapp-country-code">+91</span>
+              <input type="tel" id="whatsappPhoneInput" class="wa-phone-input" placeholder="9876543210" maxlength="10" inputmode="numeric" />
+              <button type="button" class="btn btn-sm btn-primary" id="waAddNumBtn">Add</button>
+            </div>
+          </div>
+          <div class="wa-btn-stack">
+            <button type="button" class="btn whatsapp-send-btn wa-big-btn" id="whatsappSendBtn" disabled>Send to WhatsApp</button>
+            <button type="button" class="btn btn-secondary wa-small-btn" id="whatsappDownloadOnlyBtn">Just download PDF</button>
+            <button type="button" class="btn btn-secondary wa-small-btn" id="whatsappCancelBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WhatsApp Instruction Toast -->
+      <div id="waInstructionToast" class="wa-toast hidden">
+        <div class="wa-toast-inner">
+          <div class="wa-toast-icon">&#128206;</div>
+          <div class="wa-toast-text">
+            <strong>PDF downloaded!</strong>
+            <span>In WhatsApp, tap the <strong>attach</strong> button and pick the file.</span>
+          </div>
+          <button type="button" class="wa-toast-close" id="waToastCloseBtn">&times;</button>
+        </div>
+      </div>
+
       <!-- Set Reminder Overlay -->
       <div id="reminderOverlay" class="overlay hidden">
         <div class="overlay-box">
@@ -436,6 +480,17 @@
             <div class="field"><label>Contact Person</label><input type="text" id="custContact" /></div>
             <div class="field"><label>Phone</label><input type="text" id="custPhone" /></div>
           </div>
+          <div class="field">
+            <label>WhatsApp Numbers (for sending reports)</label>
+            <div class="wa-numbers-wrap" id="custWaNumbersWrap">
+              <div class="wa-numbers-list" id="custWaNumbersList"></div>
+              <div class="wa-numbers-add-row">
+                <span class="whatsapp-country-code wa-num-code">+91</span>
+                <input type="tel" id="custWaNumInput" class="wa-num-input" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" />
+                <button type="button" class="btn btn-sm btn-primary" id="custWaNumAddBtn">Add</button>
+              </div>
+            </div>
+          </div>
           <div class="row three">
             <div class="field"><label>P.Order No.</label><input type="text" id="custPoNumber" placeholder="Default for invoices" /></div>
             <div class="field"><label>P.O. Date</label><input type="date" id="custPoDate" /></div>
@@ -498,6 +553,7 @@
               <th>P.Order / Date</th>
               <th>Contact Person</th>
               <th>Phone</th>
+              <th>WhatsApp</th>
               <th>Consignees</th>
               <th>Actions</th>
             </tr>
@@ -1111,6 +1167,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=121"></script>
+  <script src="script.js?v=124"></script>
 </body>
 </html>

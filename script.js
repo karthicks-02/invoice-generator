@@ -203,7 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const poParts = [];
       if (c.poNumber) poParts.push(escHtml(c.poNumber));
       if (c.poDate) poParts.push(formatShortDate(c.poDate));
-      const poSummary = poParts.length ? poParts.join(' · ') : '—';
+      const poSummary = poParts.length ? poParts.join(' &middot; ') : '&mdash;';
+      const waCount = c.waNumbers ? c.waNumbers.length : 0;
+      const waDisplay = waCount > 0 ? c.waNumbers.map(n => escHtml(n)).join(', ') : '&mdash;';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="checkbox" class="cust-check" data-i="${i}" /></td>
@@ -213,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="cust-po-cell">${poSummary}</td>
         <td>${escHtml(c.contact)}</td>
         <td>${escHtml(c.phone)}</td>
+        <td class="wa-col">${waDisplay}</td>
         <td>${conCount}</td>
         <td class="actions">
           <button class="btn-edit" data-i="${i}">Edit</button>
@@ -230,6 +233,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   let tempConsignees = [];
+  let tempWaNumbers = [];
+
+  function renderCustWaNumbers() {
+    var list = $('custWaNumbersList');
+    while (list.firstChild) list.removeChild(list.firstChild);
+    tempWaNumbers.forEach(function(num, i) {
+      var chip = document.createElement('span');
+      chip.className = 'wa-num-chip';
+      chip.textContent = '+91 ' + num;
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'wa-num-chip-del';
+      del.textContent = '\u00d7';
+      del.addEventListener('click', function() {
+        tempWaNumbers.splice(i, 1);
+        renderCustWaNumbers();
+      });
+      chip.appendChild(del);
+      list.appendChild(chip);
+    });
+  }
+
+  $('custWaNumAddBtn').addEventListener('click', function() {
+    var val = $('custWaNumInput').value.replace(/\D/g, '');
+    if (val.length !== 10) { alert('Enter a valid 10-digit number.'); return; }
+    if (tempWaNumbers.indexOf(val) >= 0) { alert('Number already added.'); return; }
+    tempWaNumbers.push(val);
+    $('custWaNumInput').value = '';
+    renderCustWaNumbers();
+  });
+
+  $('custWaNumInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('custWaNumAddBtn').click(); }
+  });
 
   let editConIdx = -1;
 
@@ -367,8 +404,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custGstType').value = 'intra';
     tempConsignees = [];
     tempCustProducts = [];
+    tempWaNumbers = [];
     renderConsigneeList();
     renderCustProdList();
+    renderCustWaNumbers();
     resetConsigneeForm();
     $('custProdFormRow').classList.add('hidden');
     showCustForm();
@@ -389,7 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
       poDate: $('custPoDate').value,
       gstType: $('custGstType').value,
       consignees: [...tempConsignees],
-      associatedProducts: [...tempCustProducts]
+      associatedProducts: [...tempCustProducts],
+      waNumbers: [...tempWaNumbers]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
     if (editCustIdx >= 0) {
@@ -418,8 +458,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
+      tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
       renderConsigneeList();
       renderCustProdList();
+      renderCustWaNumbers();
       resetConsigneeForm();
       $('custProdFormRow').classList.add('hidden');
       showCustForm();
@@ -1832,7 +1874,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const from = Number.isNaN(f) ? 0 : Math.max(0, f);
         const to = (toInput.value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
         const withInv = bar.querySelector('.co-days-include-inv').checked;
-        downloadCompanyDaysFilterPdf(company, from, to, withInv).catch(() => alert('Could not generate PDF. Try again.'));
+        openWhatsappDialog(
+          company + ' \u2014 due invoices',
+          function(asBlob) {
+            return asBlob
+              ? downloadCompanyDaysFilterPdfBlob(company, from, to, withInv)
+              : downloadCompanyDaysFilterPdf(company, from, to, withInv);
+          },
+          company
+        );
       });
 
       applyCoFilter();
@@ -2641,7 +2691,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return $('daysFilterWithInvoices').checked || $('daysFilterWithInvoicesOverlay').checked;
   }
 
-  async function downloadDaysFilterPdf() {
+  async function downloadDaysFilterPdf(returnBlob) {
     const fromD = daysFilterFromVal;
     const toD = daysFilterToVal;
     const withInvoices = isIncludeFullInvoices();
@@ -2671,6 +2721,10 @@ document.addEventListener('DOMContentLoaded', () => {
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       await new Promise(r => setTimeout(r, 80));
       try {
+        if (returnBlob) {
+          const pdfObj = await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).toPdf().get('pdf');
+          return { blob: pdfObj.output('blob'), fname };
+        }
         await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).save();
       } finally {
         shield.remove();
@@ -2738,22 +2792,306 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tmpC) tmpC.remove();
     }
 
+    if (returnBlob) {
+      const blob = pdf.output('blob');
+      overlay.remove();
+      restoreViewState(state);
+      return { blob, fname };
+    }
     pdf.save(fname);
     overlay.remove();
     restoreViewState(state);
   }
 
-  $('daysFilterPdfBtn').addEventListener('click', () => {
-    downloadDaysFilterPdf().catch(() => alert('Could not generate PDF. Try again.'));
+  async function downloadCompanyDaysFilterPdfBlob(companyName, fromDays, toDays, withInvoices) {
+    const rows = getCompanyFilteredDueInvoices(companyName, fromDays, toDays);
+    if (withInvoices && rows.length === 0) { alert('No invoices to include in this range.'); return; }
+    const state = saveViewState();
+    const paper = $('invoicePaper');
+    const safe = (companyName || 'company').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, 48);
+    const rangeLabel = (fromDays === 0 && toDays === Infinity) ? 'all' : toDays === Infinity ? fromDays + 'd-plus' : fromDays + 'd-to-' + toDays + 'd';
+    const fname = 'due-' + safe + '-' + rangeLabel + '.pdf';
+    const summaryOpt = { ...PDF_OPT, margin: [0.35, 0.42, 0.35, 0.42], html2canvas: { ...PDF_OPT.html2canvas, scale: 1.65, scrollX: 0, scrollY: 0 } };
+    if (!withInvoices) {
+      paper.textContent = '';
+      paper.appendChild(buildCompanyDaysFilterPdfHtml(companyName, fromDays, toDays));
+      paper.classList.add('payment-summary-pdf');
+      const shield = showPaperForCapture();
+      window.scrollTo(0, 0);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 80));
+      try {
+        const pdfObj = await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).toPdf().get('pdf');
+        return { blob: pdfObj.output('blob'), fname };
+      } finally { shield.remove(); restoreViewState(state); paper.classList.remove('payment-summary-pdf'); const tmp = document.getElementById('html2pdf__container'); if (tmp) tmp.remove(); }
+    }
+    const overlay = document.createElement('div');
+    overlay.id = 'pdfBulkOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+    msg.textContent = 'Generating summary page...';
+    const bar = document.createElement('div');
+    bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width .3s;';
+    bar.appendChild(fill); overlay.append(msg, bar); document.body.appendChild(overlay);
+    paper.textContent = '';
+    paper.appendChild(buildCompanyDaysFilterPdfHtml(companyName, fromDays, toDays));
+    paper.classList.add('payment-summary-pdf');
+    const shield = showPaperForCapture();
+    window.scrollTo(0, 0);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
+    let pdf = await html2pdf().set({ ...summaryOpt, filename: fname }).from(paper).toPdf().get('pdf');
+    shield.remove(); paper.classList.remove('payment-summary-pdf');
+    let tmpC = document.getElementById('html2pdf__container'); if (tmpC) tmpC.remove();
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('homePanel').classList.add('hidden');
+    $('invoiceView').classList.remove('hidden');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+    paper.style.overflow = 'visible';
+    for (let i = 0; i < rows.length; i++) {
+      msg.textContent = 'Generating invoice ' + (i + 1) + ' of ' + rows.length + '...';
+      fill.style.width = Math.round(((i + 1) / rows.length) * 100) + '%';
+      const matchedInv = invoices.find(x => x.id === rows[i].inv.id);
+      if (!matchedInv) continue;
+      prepareInvoiceForCapture(matchedInv);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pageW = pdf.internal.pageSize.getWidth();
+      const m = 0.3; const usableW = pageW - m * 2;
+      const imgH = (canvas.height * usableW) / canvas.width;
+      pdf.addPage(); pdf.addImage(imgData, 'JPEG', m, m, usableW, imgH);
+      tmpC = document.getElementById('html2pdf__container'); if (tmpC) tmpC.remove();
+    }
+    const blob = pdf.output('blob');
+    overlay.remove(); restoreViewState(state);
+    return { blob, fname };
+  }
+
+  // ── WhatsApp Share Dialog ──
+  let whatsappPdfGenerator = null;
+  var waDialogNumbers = [];
+
+  function getCustomerWaNumbers(companyName) {
+    if (!companyName) return [];
+    var lc = companyName.toLowerCase();
+    var cust = customers.find(function(c) { return (c.name || '').toLowerCase() === lc; });
+    return (cust && cust.waNumbers && cust.waNumbers.length) ? cust.waNumbers.slice() : [];
+  }
+
+  function getWaRecentNumbers() {
+    try {
+      var arr = JSON.parse(localStorage.getItem('wa_recent_phones') || '[]');
+      return Array.isArray(arr) ? arr.slice(0, 10) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveWaRecentNumbers(phoneArr) {
+    var existing = getWaRecentNumbers();
+    phoneArr.forEach(function(p) {
+      existing = existing.filter(function(n) { return n !== p; });
+      existing.unshift(p);
+    });
+    if (existing.length > 10) existing.length = 10;
+    try { localStorage.setItem('wa_recent_phones', JSON.stringify(existing)); } catch (e) {}
+  }
+
+  function renderWaCheckList() {
+    var list = $('waCheckList');
+    while (list.firstChild) list.removeChild(list.firstChild);
+    if (waDialogNumbers.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'wa-check-empty';
+      empty.textContent = 'No numbers added yet. Add a number below.';
+      list.appendChild(empty);
+    }
+    waDialogNumbers.forEach(function(entry, idx) {
+      var item = document.createElement('label');
+      item.className = 'wa-check-item';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = entry.checked;
+      cb.addEventListener('change', function() {
+        waDialogNumbers[idx].checked = cb.checked;
+        updateWaSendBtn();
+      });
+      var numSpan = document.createElement('span');
+      numSpan.className = 'wa-check-item-num';
+      numSpan.textContent = '+91 ' + entry.phone;
+      var labelSpan = document.createElement('span');
+      labelSpan.className = 'wa-check-item-label';
+      labelSpan.textContent = entry.source || '';
+      item.appendChild(cb);
+      item.appendChild(numSpan);
+      if (entry.source) item.appendChild(labelSpan);
+      list.appendChild(item);
+    });
+    updateWaSendBtn();
+  }
+
+  function addWaDialogNumber(phone, source, autoCheck) {
+    if (waDialogNumbers.some(function(e) { return e.phone === phone; })) return false;
+    waDialogNumbers.push({ phone: phone, source: source || '', checked: autoCheck !== false });
+    return true;
+  }
+
+  function updateWaSendBtn() {
+    var count = waDialogNumbers.filter(function(e) { return e.checked; }).length;
+    var btn = $('whatsappSendBtn');
+    btn.disabled = count === 0;
+    if (count === 0) {
+      btn.textContent = 'Send to WhatsApp';
+    } else if (count === 1) {
+      btn.textContent = 'Send to WhatsApp';
+    } else {
+      btn.textContent = 'Send to ' + count + ' numbers';
+    }
+  }
+
+  function openWhatsappDialog(label, pdfGeneratorFn, companyName) {
+    whatsappPdfGenerator = pdfGeneratorFn;
+    $('whatsappPdfLabel').textContent = label || 'Invoice report';
+    waDialogNumbers = [];
+
+    var custNums = getCustomerWaNumbers(companyName);
+    custNums.forEach(function(n) { addWaDialogNumber(n, 'Customer', true); });
+
+    var recent = getWaRecentNumbers();
+    recent.forEach(function(n) { addWaDialogNumber(n, 'Recent', custNums.length === 0); });
+
+    $('whatsappPhoneInput').value = '';
+    renderWaCheckList();
+    $('whatsappOverlay').classList.remove('hidden');
+    if (waDialogNumbers.length === 0) {
+      setTimeout(function() { $('whatsappPhoneInput').focus(); }, 100);
+    }
+  }
+
+  function closeWhatsappDialog() {
+    $('whatsappOverlay').classList.add('hidden');
+    whatsappPdfGenerator = null;
+  }
+
+  function showWaToast(count) {
+    var toast = $('waInstructionToast');
+    toast.classList.remove('hidden');
+    clearTimeout(toast._tid);
+    toast._tid = setTimeout(function() { toast.classList.add('hidden'); }, 15000);
+  }
+
+  $('waToastCloseBtn').addEventListener('click', function() {
+    $('waInstructionToast').classList.add('hidden');
   });
 
-  $('daysFilterResultPdfBtn').addEventListener('click', () => {
+  $('waAddNumBtn').addEventListener('click', function() {
+    var val = $('whatsappPhoneInput').value.replace(/\D/g, '');
+    if (val.length !== 10) { alert('Enter a valid 10-digit number.'); return; }
+    if (!addWaDialogNumber(val, 'Manual', true)) { alert('Number already in the list.'); return; }
+    $('whatsappPhoneInput').value = '';
+    renderWaCheckList();
+  });
+
+  $('whatsappPhoneInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('waAddNumBtn').click(); }
+  });
+
+  $('whatsappCancelBtn').addEventListener('click', closeWhatsappDialog);
+
+  $('whatsappDownloadOnlyBtn').addEventListener('click', async function() {
+    if (!whatsappPdfGenerator) return;
+    var gen = whatsappPdfGenerator;
+    closeWhatsappDialog();
+    try { await gen(false); }
+    catch (e) { alert('Could not generate PDF. Try again.'); }
+  });
+
+  $('whatsappSendBtn').addEventListener('click', async function() {
+    var selected = waDialogNumbers.filter(function(e) { return e.checked; });
+    if (selected.length === 0) { alert('Select at least one number.'); return; }
+
+    var gen = whatsappPdfGenerator;
+    if (!gen) return;
+
+    var phones = selected.map(function(e) { return e.phone; });
+    saveWaRecentNumbers(phones);
+    closeWhatsappDialog();
+
+    try {
+      var result = await gen(true);
+      if (!result || !result.blob) {
+        alert('Could not generate PDF.');
+        return;
+      }
+      var blob = result.blob;
+      var fname = result.fname;
+      var file = new File([blob], fname, { type: 'application/pdf' });
+
+      var sharedViaApi = false;
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: fname, text: 'Invoice due report' });
+          sharedViaApi = true;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return;
+        }
+      }
+
+      if (!sharedViaApi) {
+        var blobUrl = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 15000);
+
+        var waBase = 'https://wa.me/';
+        for (var pi = 0; pi < phones.length; pi++) {
+          window.open(waBase + '91' + phones[pi], '_blank');
+        }
+        showWaToast(phones.length);
+      }
+
+    } catch (e) {
+      alert('Could not generate PDF. Try again.');
+    }
+  });
+
+  $('daysFilterPdfBtn').addEventListener('click', function() {
+    var fromD = daysFilterFromVal;
+    var toD = daysFilterToVal;
+    var rangeLabel = toD === Infinity ? fromD + 'd+' : fromD + 'd\u2013' + toD + 'd';
+    openWhatsappDialog(
+      'All customers \u2014 invoices due (' + rangeLabel + ')',
+      function(asBlob) { return asBlob ? downloadDaysFilterPdf(true) : downloadDaysFilterPdf(false); },
+      null
+    );
+  });
+
+  $('daysFilterResultPdfBtn').addEventListener('click', function() {
     if (daysFilterOverlayCtx) {
-      const ctx = daysFilterOverlayCtx;
-      const withInv = $('daysFilterWithInvoicesOverlay').checked;
-      downloadCompanyDaysFilterPdf(ctx.company, ctx.from, ctx.to, withInv).catch(() => alert('Could not generate PDF. Try again.'));
+      var ctx = daysFilterOverlayCtx;
+      var withInv = $('daysFilterWithInvoicesOverlay').checked;
+      openWhatsappDialog(
+        ctx.company + ' \u2014 due invoices',
+        function(asBlob) {
+          return asBlob
+            ? downloadCompanyDaysFilterPdfBlob(ctx.company, ctx.from, ctx.to, withInv)
+            : downloadCompanyDaysFilterPdf(ctx.company, ctx.from, ctx.to, withInv);
+        },
+        ctx.company
+      );
     } else {
-      downloadDaysFilterPdf().catch(() => alert('Could not generate PDF. Try again.'));
+      openWhatsappDialog(
+        'Invoices due report',
+        function(asBlob) { return asBlob ? downloadDaysFilterPdf(true) : downloadDaysFilterPdf(false); },
+        null
+      );
     }
   });
 
@@ -2890,8 +3228,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
+      tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
       renderConsigneeList();
       renderCustProdList();
+      renderCustWaNumbers();
     },
     { showOnEmpty: false }
   );
@@ -2912,8 +3252,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
+      tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
       renderConsigneeList();
       renderCustProdList();
+      renderCustWaNumbers();
     },
     { showOnEmpty: false }
   );
