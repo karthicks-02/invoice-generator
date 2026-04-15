@@ -1,14 +1,13 @@
-const CACHE_NAME = 'ki-invoice-v1';
+const CACHE_NAME = 'ki-invoice-v2';
 
-const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/script.js',
-  '/db.js',
-  '/firebase-config.js',
-  '/emailjs-config.js',
-  '/manifest.json',
+const APP_SHELL_NAMES = [
+  'index.html',
+  'style.css',
+  'script.js',
+  'db.js',
+  'firebase-config.js',
+  'emailjs-config.js',
+  'manifest.json',
 ];
 
 const CDN_ASSETS = [
@@ -22,9 +21,11 @@ const CDN_ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+  const scope = self.registration.scope;
+  const urls = APP_SHELL_NAMES.map((name) => new URL(name, scope).href);
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL).catch(() => {});
+      return cache.addAll(urls).catch(() => {});
     })
   );
   self.skipWaiting();
