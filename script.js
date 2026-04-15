@@ -792,9 +792,27 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  function syncInvoiceItemsToProducts(itemsList) {
+    let changed = false;
+    itemsList.forEach(it => {
+      const name = (it.description || '').trim();
+      if (!name) return;
+      const idx = products.findIndex(p => p.name.trim().toLowerCase() === name.toLowerCase());
+      if (idx >= 0) {
+        if (it.hsn && !products[idx].hsn) { products[idx].hsn = it.hsn; changed = true; }
+        if (it.rate && !products[idx].rate) { products[idx].rate = it.rate; changed = true; }
+      } else {
+        products.push({ name, hsn: it.hsn || '', rate: it.rate || 0 });
+        changed = true;
+      }
+    });
+    if (changed) { saveProducts(); renderProducts(); }
+  }
+
   function saveCurrentInvoice() {
     if (getInvoiceNumberConflict($('invoiceNumber').value, editingInvoiceId)) return false;
     const data = collectInvoiceData();
+    syncInvoiceItemsToProducts(data.items);
     if (editingInvoiceId) {
       const idx = invoices.findIndex(inv => inv.id === editingInvoiceId);
       if (idx >= 0) {
@@ -5842,8 +5860,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  function syncPoItemsToPurchaseProducts(itemsList) {
+    let changed = false;
+    itemsList.forEach(it => {
+      const name = (it.description || '').trim();
+      if (!name) return;
+      const idx = purchaseProducts.findIndex(p => p.name.trim().toLowerCase() === name.toLowerCase());
+      if (idx >= 0) {
+        if (it.hsn && !purchaseProducts[idx].hsn) { purchaseProducts[idx].hsn = it.hsn; changed = true; }
+        if (it.rate && !purchaseProducts[idx].rate) { purchaseProducts[idx].rate = it.rate; changed = true; }
+      } else {
+        purchaseProducts.push({ name, hsn: it.hsn || '', rate: it.rate || 0 });
+        changed = true;
+      }
+    });
+    if (changed) { savePurchaseProducts(); renderPurchaseProducts(); }
+  }
+
   function saveCurrentPoInvoice() {
     const data = collectPoInvoiceData();
+    syncPoItemsToPurchaseProducts(data.items);
     if (editingPoInvoiceId) {
       const idx = poInvoices.findIndex(inv => inv.id === editingPoInvoiceId);
       if (idx >= 0) {
