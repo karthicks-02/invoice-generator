@@ -1310,6 +1310,7 @@ input.inv-rate-input {
 .assoc-prod-row > .field {
   flex: 1;
   min-width: 140px;
+  margin-bottom: 0;
 }
 .assoc-prod-row > .field:first-child {
   min-width: 180px;
@@ -1317,7 +1318,6 @@ input.inv-rate-input {
 .assoc-prod-actions {
   display: flex;
   gap: 6px;
-  padding-bottom: 6px;
   flex-shrink: 0;
 }
 .consignee-item {
