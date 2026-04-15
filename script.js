@@ -5753,6 +5753,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  $('poGstType').addEventListener('change', e => {
+    if (e.target.value === 'inter') {
+      $('poGstRate').value = 18;
+    } else {
+      $('poGstRate').value = 9;
+    }
+  });
+
   let poInvoices = [];
   let editingPoInvoiceId = null;
   let poItems = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
@@ -6048,6 +6056,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poVendorAddress').value = v.address;
       $('poPoNumber').value = v.poNumber || '';
       $('poPoDate').value = v.poDate || '';
+      const vendTypes = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
+      document.querySelectorAll('.poBillType').forEach(cb => cb.checked = vendTypes.includes(cb.value));
       $('poGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
       $('poGstType').dispatchEvent(new Event('change'));
       const vpm = v.paymentMode || 'bank';
@@ -6203,7 +6213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const taxRows = gstType === 'intra'
       ? '<tr><td class="r" colspan="2">CGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(cgstAmt) + '</td></tr>'
         + '<tr><td class="r" colspan="2">SGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(sgstAmt) + '</td></tr>'
-      : '<tr><td class="r" colspan="2">IGST @ ' + (gstRate * 2) + '%</td><td class="r">' + fmtNum(igstAmt) + '</td></tr>';
+      : '<tr><td class="r" colspan="2">IGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(igstAmt) + '</td></tr>';
 
     const payModeVal = document.querySelector('input[name="poPayMode"]:checked').value;
     const paymentRows = payModeVal === 'gpay'
