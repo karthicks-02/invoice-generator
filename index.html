@@ -520,7 +520,6 @@
           </div>
           <div class="consignee-section">
             <label class="consignee-label">Associated Products</label>
-            <div id="custProdList"></div>
             <div id="custProdFormRow">
               <div class="row three">
                 <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="custProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
@@ -528,9 +527,11 @@
                 <div class="field"><label>Rate</label><input type="text" id="custProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
               </div>
               <div style="display:flex;gap:8px;margin-bottom:.75rem">
+                <button type="button" class="btn btn-secondary btn-sm" id="clearCustProdBtn">Clear All</button>
                 <button type="button" class="btn btn-primary btn-sm" id="saveCustProdBtn">Add Product</button>
               </div>
             </div>
+            <div id="custProdList"></div>
           </div>
           <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
             <button class="btn btn-primary" id="saveCustBtn">Save</button>
@@ -833,7 +834,6 @@
           </div>
           <div class="consignee-section">
             <label class="consignee-label">Associated Purchase Product</label>
-            <div id="vendProdList"></div>
             <div id="vendProdFormRow">
               <div class="row three">
                 <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="vendProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
@@ -841,9 +841,11 @@
                 <div class="field"><label>Rate</label><input type="text" id="vendProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
               </div>
               <div style="display:flex;gap:8px;margin-bottom:.75rem">
+                <button type="button" class="btn btn-secondary btn-sm" id="clearVendProdBtn">Clear All</button>
                 <button type="button" class="btn btn-primary btn-sm" id="saveVendProdBtn">Add Product</button>
               </div>
             </div>
+            <div id="vendProdList"></div>
           </div>
           <div class="form-actions" style="display:flex;gap:8px;justify-content:center">
             <button class="btn btn-primary" id="saveVendBtn">Save</button>
@@ -1165,6 +1167,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=136"></script>
+  <script src="script.js?v=137"></script>
 </body>
 </html>

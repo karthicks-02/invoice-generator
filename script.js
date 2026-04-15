@@ -540,6 +540,11 @@ document.addEventListener('DOMContentLoaded', () => {
     resetCustProdForm();
   });
 
+  $('clearCustProdBtn').addEventListener('click', () => {
+    tempCustProducts = [];
+    renderCustProdList();
+  });
+
   $('custProdList').addEventListener('click', e => {
     if (e.target.classList.contains('btn-del')) {
       tempCustProducts.splice(+e.target.dataset.cpi, 1);
@@ -5563,6 +5568,11 @@ document.addEventListener('DOMContentLoaded', () => {
       renderVendProdList();
     }
     resetVendProdForm();
+  });
+
+  $('clearVendProdBtn').addEventListener('click', () => {
+    tempVendProducts = [];
+    renderVendProdList();
   });
 
   $('vendProdList').addEventListener('click', e => {
