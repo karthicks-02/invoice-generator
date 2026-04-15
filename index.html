@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Karthick Industries</title>
-  <link rel="stylesheet" href="style.css?v=36" />
+  <link rel="stylesheet" href="style.css?v=37" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -520,11 +520,11 @@
           </div>
           <div class="consignee-section">
             <label class="consignee-label">Associated Products</label>
-            <div id="custProdFormRow" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:.75rem">
-              <div class="field" style="flex:1;min-width:160px;position:relative"><label>Product Name</label><input type="text" id="custProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
-              <div class="field" style="flex:1;min-width:120px"><label>HSN Code</label><input type="text" id="custProdHsnInput" /></div>
-              <div class="field" style="flex:1;min-width:100px"><label>Rate</label><input type="text" id="custProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
-              <div style="display:flex;gap:6px;padding-bottom:2px">
+            <div id="custProdFormRow" class="assoc-prod-row">
+              <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="custProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
+              <div class="field"><label>HSN Code</label><input type="text" id="custProdHsnInput" /></div>
+              <div class="field"><label>Rate</label><input type="text" id="custProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
+              <div class="assoc-prod-actions">
                 <button type="button" class="btn btn-secondary btn-sm" id="clearCustProdBtn">Clear</button>
                 <button type="button" class="btn btn-primary btn-sm" id="saveCustProdBtn">Add Product</button>
               </div>
@@ -832,11 +832,11 @@
           </div>
           <div class="consignee-section">
             <label class="consignee-label">Associated Purchase Product</label>
-            <div id="vendProdFormRow" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:.75rem">
-              <div class="field" style="flex:1;min-width:160px;position:relative"><label>Product Name</label><input type="text" id="vendProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
-              <div class="field" style="flex:1;min-width:120px"><label>HSN Code</label><input type="text" id="vendProdHsnInput" /></div>
-              <div class="field" style="flex:1;min-width:100px"><label>Rate</label><input type="text" id="vendProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
-              <div style="display:flex;gap:6px;padding-bottom:2px">
+            <div id="vendProdFormRow" class="assoc-prod-row">
+              <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="vendProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
+              <div class="field"><label>HSN Code</label><input type="text" id="vendProdHsnInput" /></div>
+              <div class="field"><label>Rate</label><input type="text" id="vendProdRateInput" class="inv-rate-input" inputmode="decimal" autocomplete="off" placeholder="0.00" /></div>
+              <div class="assoc-prod-actions">
                 <button type="button" class="btn btn-secondary btn-sm" id="clearVendProdBtn">Clear</button>
                 <button type="button" class="btn btn-primary btn-sm" id="saveVendProdBtn">Add Product</button>
               </div>
@@ -1163,6 +1163,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=138"></script>
+  <script src="script.js?v=139"></script>
 </body>
 </html>

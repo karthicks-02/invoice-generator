@@ -1297,6 +1297,28 @@ input.inv-rate-input {
   color: var(--primary);
   text-transform: uppercase;
   letter-spacing: .04em;
+  margin-bottom: .75rem;
+  display: block;
+}
+.assoc-prod-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: .75rem;
+}
+.assoc-prod-row > .field {
+  flex: 1;
+  min-width: 140px;
+}
+.assoc-prod-row > .field:first-child {
+  min-width: 180px;
+}
+.assoc-prod-actions {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 6px;
+  flex-shrink: 0;
 }
 .consignee-item {
   display: flex;
