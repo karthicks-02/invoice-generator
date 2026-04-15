@@ -4661,15 +4661,18 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>`
         : `<p class="pay-fifo-hint">No payments yet. Open PO invoices show full amounts until you add payments (applied to oldest invoice dates first).</p>`;
 
-      const invoiceRows = openFifo.map(r => `<tr>
+      const invoiceRows = openFifo.map(r => {
+        const days = daysSince(r.inv.invoiceDate || r.inv.createdAt);
+        return `<tr>
           <td>${escHtml(r.inv.invoiceNumber)}</td>
           <td class="pay-col-date">${r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '—'}</td>
           <td class="r">₹${fmtNum(r.gross)}</td>
           <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
           <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
-          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td class="c${days >= 30 ? ' days-overdue' : ''}">${days}d</td>
           <td><button class="btn-vpay-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
       const invoiceTable = openFifo.length
         ? `<div class="pay-table-scroll">
             <table class="data-table pay-table-tight" style="margin:0">
