@@ -298,7 +298,10 @@
       <!-- Credit History Overlay -->
       <div id="payHistoryOverlay" class="overlay hidden">
         <div class="overlay-box pay-history-box">
-          <h3>Payment summary</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">Payment summary</h3>
+            <button class="btn btn-sm btn-secondary" id="payHistoryCloseTopBtn" style="font-size:1.1rem;line-height:1;padding:4px 10px">&times;</button>
+          </div>
           <p class="overlay-subtitle" id="payHistoryLabel"></p>
           <div id="payHistoryList" class="pay-history-scroll"></div>
           <p class="overlay-subtitle" id="payHistorySummary" style="font-weight:600"></p>

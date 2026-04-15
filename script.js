@@ -1791,7 +1791,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r">₹${fmtNum(r.gross)}</td>
           <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
           <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
-          <td class="c${days >= 30 ? ' days-overdue' : ''}">${days}d</td>
+          <td class="c${days >= daysFilterFromVal ? ' days-overdue' : ''}">${days}d</td>
           <td><button class="btn-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
         </tr>`;
       }).join('');
@@ -1803,6 +1803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="preset-pill co-days-btn active" data-from="30" data-to="">30d+</button>
             <button type="button" class="preset-pill co-days-btn" data-from="45" data-to="">45d+</button>
             <button type="button" class="preset-pill co-days-btn" data-from="60" data-to="">60d+</button>
+            <button type="button" class="preset-pill co-days-btn" data-from="90" data-to="">90d+</button>
             <input type="number" class="days-input co-days-from" min="0" value="30" placeholder="0" title="From days" />
             <span class="co-days-sep">to</span>
             <input type="number" class="days-input co-days-to" min="0" value="" placeholder="∞" title="To days" />
@@ -1840,8 +1841,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="pay-company-actions">
             ${!isPaid ? `<button class="btn-pay btn btn-sm btn-primary" data-company="${escHtml(co.name)}">+ Credit</button>` : ''}
-            <button type="button" class="btn-pay-summary-pdf btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" title="Download PDF: payments, outstanding, pending invoices">Summary PDF</button>
             <button class="btn-history btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Summary</button>
+            <button type="button" class="btn-pay-summary-pdf btn btn-sm btn-secondary" data-company="${escHtml(co.name)}" title="Download PDF: payments, outstanding, pending invoices">Summary PDF</button>
             ${!isPaid ? `<button class="btn-remind btn btn-sm btn-secondary" data-company="${escHtml(co.name)}">Remind</button>` : ''}
           </div>
           <div class="pay-company-nums">
@@ -1993,7 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
         const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
         const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
-        const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= 30 ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
+        const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= daysFilterFromVal ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -2240,7 +2241,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r pay-sum-num">₹${fmtNum(r.gross)}</td>
           <td class="r pay-sum-num">₹${fmtNum(r.applied)}</td>
           <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(r.balance)}</td>
-          <td class="c">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td class="c${daysSince(r.inv.invoiceDate || r.inv.createdAt) >= daysFilterFromVal ? ' days-overdue' : ''}">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
           <td class="pay-sum-act"><button type="button" class="btn-view" data-inv-id="${r.inv.id}">View</button></td>
         </tr>`).join('')
       : `<tr><td colspan="7" class="pay-sum-empty">No pending balances — all covered (FIFO).</td></tr>`;
@@ -2389,6 +2390,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('payHistoryCloseBtn').addEventListener('click', () => {
+    $('payHistoryOverlay').classList.add('hidden');
+    payHistoryOpenCompany = null;
+  });
+  $('payHistoryCloseTopBtn').addEventListener('click', () => {
     $('payHistoryOverlay').classList.add('hidden');
     payHistoryOpenCompany = null;
   });
@@ -2564,6 +2569,7 @@ document.addEventListener('DOMContentLoaded', () => {
       daysFilterFromVal = parseInt(btn.dataset.from, 10) || 0;
       daysFilterToVal = btn.dataset.to ? parseInt(btn.dataset.to, 10) : Infinity;
       syncDaysFilterInputs();
+      renderPaymentView();
     });
   });
 
@@ -2571,12 +2577,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const v = parseInt($('daysFilterFrom').value, 10);
     daysFilterFromVal = Number.isNaN(v) ? 0 : Math.max(0, v);
     document.querySelectorAll('.days-preset').forEach(b => b.classList.remove('active'));
+    renderPaymentView();
   });
 
   $('daysFilterTo').addEventListener('input', () => {
     const v = parseInt($('daysFilterTo').value, 10);
     daysFilterToVal = ($('daysFilterTo').value === '' || Number.isNaN(v)) ? Infinity : Math.max(0, v);
     document.querySelectorAll('.days-preset').forEach(b => b.classList.remove('active'));
+    renderPaymentView();
   });
 
   function renderDaysFilterResult() {
@@ -2636,7 +2644,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
           const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
           const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
-          const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= 30 ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
+          const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= daysFilterFromVal ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
           tbody.appendChild(tr);
         });
         tbl.appendChild(tbody);
@@ -2732,7 +2740,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const c1 = document.createElement('td'); c1.style.cssText = tdS; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
         const c2 = document.createElement('td'); c2.style.cssText = tdS; c2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c2);
         const c3 = document.createElement('td'); c3.style.cssText = tdS + 'text-align:right;font-variant-numeric:tabular-nums;'; c3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c3);
-        const c4 = document.createElement('td'); c4.style.cssText = tdS + 'text-align:center;' + (r.days >= 30 ? 'color:#dc2626;font-weight:700;' : ''); c4.textContent = r.days + 'd'; tr.appendChild(c4);
+        const c4 = document.createElement('td'); c4.style.cssText = tdS + 'text-align:center;' + (r.days >= daysFilterFromVal ? 'color:#dc2626;font-weight:700;' : ''); c4.textContent = r.days + 'd'; tr.appendChild(c4);
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -4227,14 +4235,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
 
     const pendRows = s.openFifo.length
-      ? s.openFifo.map(r => `<tr style="border-bottom:1px solid #e2e8f0">
+      ? s.openFifo.map(r => { const _d = daysSince(r.inv.invoiceDate || r.inv.createdAt); return `<tr style="border-bottom:1px solid #e2e8f0">
           <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
           <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
           <td style="${amt}">₹${fmtNum(r.gross)}</td>
           <td style="${amt}">₹${fmtNum(r.applied)}</td>
           <td style="${amt}font-weight:600;">₹${fmtNum(r.balance)}</td>
-          <td style="${td}text-align:center;">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
-        </tr>`).join('')
+          <td style="${td}text-align:center;${_d >= daysFilterFromVal ? 'color:#dc2626;font-weight:700;' : ''}">${_d}d</td>
+        </tr>`; }).join('')
       : `<tr><td colspan="6" style="padding:8px;text-align:center;color:#059669">No pending balances — all covered (FIFO).</td></tr>`;
 
     const allInvRows = s.fifoRows.length
