@@ -28,7 +28,6 @@ self.addEventListener('install', (e) => {
       return cache.addAll(urls).catch(() => {});
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
