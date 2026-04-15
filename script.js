@@ -1910,6 +1910,8 @@ document.addEventListener('DOMContentLoaded', () => {
         applyCoFilter();
       });
 
+      applyCoFilter();
+
       bar.querySelector('.co-days-view').addEventListener('click', () => {
         const f = parseInt(fromInput.value, 10);
         const t = parseInt(toInput.value, 10);
