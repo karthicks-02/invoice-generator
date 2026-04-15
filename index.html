@@ -326,6 +326,17 @@
               <button type="button" class="btn btn-sm btn-secondary" id="daysFilterCloseBtn">&times;</button>
             </div>
           </div>
+          <div class="days-filter-overlay-pills" id="daysFilterOverlayPills">
+            <button type="button" class="preset-pill overlay-days-btn active" data-from="0" data-to="">All</button>
+            <button type="button" class="preset-pill overlay-days-btn" data-from="30" data-to="">30d+</button>
+            <button type="button" class="preset-pill overlay-days-btn" data-from="45" data-to="">45d+</button>
+            <button type="button" class="preset-pill overlay-days-btn" data-from="60" data-to="">60d+</button>
+            <button type="button" class="preset-pill overlay-days-btn" data-from="90" data-to="">90d+</button>
+            <input type="number" class="days-input" id="daysFilterOverlayFrom" min="0" value="" placeholder="0" style="width:50px" />
+            <span>to</span>
+            <input type="number" class="days-input" id="daysFilterOverlayTo" min="0" value="" placeholder="∞" style="width:50px" />
+            <span>days</span>
+          </div>
           <p class="days-filter-summary" id="daysFilterSummary"></p>
           <div class="days-filter-content" id="daysFilterContent"></div>
           <div class="days-filter-totals" id="daysFilterTotals"></div>

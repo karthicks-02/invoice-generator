@@ -1974,6 +1974,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('daysFilterTitle').textContent = companyName + ' \u2014 ' + rangeText;
     const totalBal = rows.reduce((s, r) => s + r.balance, 0);
     $('daysFilterSummary').textContent = rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ' \u00b7 Total Balance Due: \u20b9' + fmtNum(totalBal);
+
+    document.querySelectorAll('.overlay-days-btn').forEach(b => {
+      const bf = parseInt(b.dataset.from, 10) || 0;
+      const bt = b.dataset.to ? parseInt(b.dataset.to, 10) : Infinity;
+      b.classList.toggle('active', bf === fromDays && bt === toDays);
+    });
+    $('daysFilterOverlayFrom').value = fromDays || '';
+    $('daysFilterOverlayTo').value = toDays === Infinity ? '' : toDays;
+
+    const threshold = fromDays || daysFilterFromVal;
     const content = $('daysFilterContent');
     content.textContent = '';
     if (rows.length === 0) {
@@ -2002,7 +2012,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
         const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
         const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
-        const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= daysFilterFromVal ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
+        const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= threshold ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -2679,6 +2689,36 @@ document.addEventListener('DOMContentLoaded', () => {
   $('daysFilterCloseBtn').addEventListener('click', () => {
     $('daysFilterOverlay').classList.add('hidden');
     daysFilterOverlayCtx = null;
+  });
+
+  function refilterOverlay() {
+    if (!daysFilterOverlayCtx) return;
+    const f = parseInt($('daysFilterOverlayFrom').value, 10);
+    const t = parseInt($('daysFilterOverlayTo').value, 10);
+    const from = Number.isNaN(f) ? 0 : Math.max(0, f);
+    const to = ($('daysFilterOverlayTo').value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
+    daysFilterOverlayCtx.from = from;
+    daysFilterOverlayCtx.to = to;
+    showCompanyDaysFilterOverlay(daysFilterOverlayCtx.company, from, to);
+  }
+
+  document.querySelectorAll('.overlay-days-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.overlay-days-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      $('daysFilterOverlayFrom').value = btn.dataset.from === '0' ? '' : btn.dataset.from;
+      $('daysFilterOverlayTo').value = btn.dataset.to || '';
+      refilterOverlay();
+    });
+  });
+
+  $('daysFilterOverlayFrom').addEventListener('input', () => {
+    document.querySelectorAll('.overlay-days-btn').forEach(b => b.classList.remove('active'));
+    refilterOverlay();
+  });
+  $('daysFilterOverlayTo').addEventListener('input', () => {
+    document.querySelectorAll('.overlay-days-btn').forEach(b => b.classList.remove('active'));
+    refilterOverlay();
   });
 
   function buildDaysFilterPdfHtml(fromDays, toDays) {

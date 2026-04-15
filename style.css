@@ -1518,6 +1518,17 @@ input.inv-rate-input {
   font-weight: 700;
   margin: 0;
 }
+.days-filter-overlay-pills {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin-bottom: .75rem;
+}
+.days-filter-overlay-pills span {
+  font-size: .8rem;
+  color: var(--text-muted);
+}
 .days-filter-summary {
   font-size: .85rem;
   color: var(--text-muted);
