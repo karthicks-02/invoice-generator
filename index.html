@@ -1183,7 +1183,7 @@
   </div>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js?v=3').then(function(reg) {
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function(reg) {
         reg.addEventListener('updatefound', function() {
           var worker = reg.installing;
           worker.addEventListener('statechange', function() {
@@ -1199,6 +1199,7 @@
         navigator.serviceWorker.addEventListener('controllerchange', function() {
           window.location.reload();
         });
+        setInterval(function() { reg.update(); }, 60000);
       }).catch(function() {});
     }
   </script>

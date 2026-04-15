@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ki-invoice-v3';
+const CACHE_NAME = 'ki-invoice-v4';
 
 const APP_SHELL_NAMES = [
   'index.html',
@@ -56,20 +56,29 @@ self.addEventListener('fetch', (e) => {
 
   const isCDN = CDN_ASSETS.some((cdn) => e.request.url.startsWith(cdn));
 
-  if (isCDN || url.origin === self.location.origin) {
+  if (url.origin === self.location.origin) {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else if (isCDN) {
     e.respondWith(
       caches.match(e.request).then((cached) => {
-        const fetched = fetch(e.request)
-          .then((response) => {
-            if (response && response.status === 200) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-            }
-            return response;
-          })
-          .catch(() => cached);
-
-        return cached || fetched;
+        if (cached) return cached;
+        return fetch(e.request).then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        });
       })
     );
   }
