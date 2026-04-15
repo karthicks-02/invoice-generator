@@ -509,14 +509,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function resetCustProdForm() {
+    $('custProdNameInput').value = '';
+    $('custProdHsnInput').value = '';
+    $('custProdRateInput').value = '';
+    $('custProdFormRow').classList.add('hidden');
+  }
+
   $('addCustProdBtn').addEventListener('click', () => {
-    $('custProdInput').value = '';
+    resetCustProdForm();
     $('custProdFormRow').classList.remove('hidden');
-    $('custProdInput').focus();
+    $('custProdNameInput').focus();
   });
 
-  $('cancelCustProdBtn').addEventListener('click', () => {
-    $('custProdFormRow').classList.add('hidden');
+  $('cancelCustProdBtn').addEventListener('click', resetCustProdForm);
+
+  $('saveCustProdBtn').addEventListener('click', () => {
+    const name = $('custProdNameInput').value.trim();
+    const hsn = $('custProdHsnInput').value.trim();
+    const parsedRate = parseRateToStore($('custProdRateInput').value);
+    const rate = parsedRate == null ? 0 : parsedRate;
+    if (!name) { alert('Product Name is required'); return; }
+
+    const existIdx = products.findIndex(p => p.name.trim().toLowerCase() === name.toLowerCase());
+    if (existIdx >= 0) {
+      products[existIdx].hsn = hsn || products[existIdx].hsn;
+      products[existIdx].rate = rate || products[existIdx].rate;
+    } else {
+      products.push({ name, hsn, rate });
+    }
+    saveProducts();
+    renderProducts();
+
+    const canonical = existIdx >= 0 ? products[existIdx].name : name;
+    if (!tempCustProducts.includes(canonical)) {
+      tempCustProducts.push(canonical);
+      renderCustProdList();
+    }
+    resetCustProdForm();
   });
 
   $('custProdList').addEventListener('click', e => {
@@ -3360,18 +3390,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Associated Products Autocomplete (in customer form) ──
   createAutocomplete(
-    $('custProdInput'),
+    $('custProdNameInput'),
     val => products
       .filter(p => !tempCustProducts.includes(p.name) &&
         (p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val)))
-      .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)} | ₹${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</small>`, data: p })),
+      .map(p => ({ label: escHtml(p.name) + '<small>HSN: ' + escHtml(p.hsn) + ' | \u20B9' + Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '</small>', data: p })),
     p => {
-      if (!tempCustProducts.includes(p.name)) {
-        tempCustProducts.push(p.name);
-        renderCustProdList();
-      }
-      $('custProdInput').value = '';
-      $('custProdFormRow').classList.add('hidden');
+      $('custProdNameInput').value = p.name;
+      $('custProdHsnInput').value = p.hsn;
+      const pr = Number(p.rate);
+      $('custProdRateInput').value = Number.isFinite(pr) ? String(Math.round(pr * 100) / 100) : '';
     }
   );
 
