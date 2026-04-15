@@ -1870,7 +1870,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const company = bar.dataset.company;
       const section = bar.closest('.pay-company-section');
       if (!section) return;
-      const tbody = section.querySelector('.pay-table-tight tbody');
+      const nextWrap = bar.nextElementSibling;
+      const tbody = nextWrap ? nextWrap.querySelector('tbody') : null;
       const fromInput = bar.querySelector('.co-days-from');
       const toInput = bar.querySelector('.co-days-to');
 
