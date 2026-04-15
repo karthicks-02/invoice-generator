@@ -1799,12 +1799,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const coFilterBar = openFifo.length
         ? `<div class="co-days-filter" data-company="${eName}">
             <span class="co-days-label">Filter:</span>
-            <button type="button" class="preset-pill co-days-btn" data-from="0" data-to="">All</button>
-            <button type="button" class="preset-pill co-days-btn active" data-from="30" data-to="">30d+</button>
+            <button type="button" class="preset-pill co-days-btn active" data-from="0" data-to="">All</button>
+            <button type="button" class="preset-pill co-days-btn" data-from="30" data-to="">30d+</button>
             <button type="button" class="preset-pill co-days-btn" data-from="45" data-to="">45d+</button>
             <button type="button" class="preset-pill co-days-btn" data-from="60" data-to="">60d+</button>
             <button type="button" class="preset-pill co-days-btn" data-from="90" data-to="">90d+</button>
-            <input type="number" class="days-input co-days-from" min="0" value="30" placeholder="0" title="From days" />
+            <input type="number" class="days-input co-days-from" min="0" value="" placeholder="0" title="From days" />
             <span class="co-days-sep">to</span>
             <input type="number" class="days-input co-days-to" min="0" value="" placeholder="∞" title="To days" />
             <span class="co-days-hint">days</span>
