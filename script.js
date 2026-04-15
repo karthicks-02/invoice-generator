@@ -541,8 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('clearCustProdBtn').addEventListener('click', () => {
-    tempCustProducts = [];
-    renderCustProdList();
+    resetCustProdForm();
   });
 
   $('custProdList').addEventListener('click', e => {
@@ -5571,8 +5570,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('clearVendProdBtn').addEventListener('click', () => {
-    tempVendProducts = [];
-    renderVendProdList();
+    resetVendProdForm();
   });
 
   $('vendProdList').addEventListener('click', e => {
