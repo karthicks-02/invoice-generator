@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCustProdList();
     renderCustWaNumbers();
     resetConsigneeForm();
-    $('custProdFormRow').classList.add('hidden');
+    resetCustProdForm();
     showCustForm();
   });
 
@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCustProdList();
       renderCustWaNumbers();
       resetConsigneeForm();
-      $('custProdFormRow').classList.add('hidden');
+      resetCustProdForm();
       showCustForm();
     }
     if (e.target.classList.contains('btn-del')) {
@@ -513,16 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custProdNameInput').value = '';
     $('custProdHsnInput').value = '';
     $('custProdRateInput').value = '';
-    $('custProdFormRow').classList.add('hidden');
   }
-
-  $('addCustProdBtn').addEventListener('click', () => {
-    resetCustProdForm();
-    $('custProdFormRow').classList.remove('hidden');
-    $('custProdNameInput').focus();
-  });
-
-  $('cancelCustProdBtn').addEventListener('click', resetCustProdForm);
 
   $('saveCustProdBtn').addEventListener('click', () => {
     const name = $('custProdNameInput').value.trim();
@@ -5547,16 +5538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendProdNameInput').value = '';
     $('vendProdHsnInput').value = '';
     $('vendProdRateInput').value = '';
-    $('vendProdFormRow').classList.add('hidden');
   }
-
-  $('addVendProdBtn').addEventListener('click', () => {
-    resetVendProdForm();
-    $('vendProdFormRow').classList.remove('hidden');
-    $('vendProdNameInput').focus();
-  });
-
-  $('cancelVendProdBtn').addEventListener('click', resetVendProdForm);
 
   $('saveVendProdBtn').addEventListener('click', () => {
     const name = $('vendProdNameInput').value.trim();
@@ -5640,7 +5622,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tempVendConsignees = [];
     tempVendProducts = [];
     renderVendProdList();
-    $('vendProdFormRow').classList.add('hidden');
+    resetVendProdForm();
     showVendForm();
   });
 
@@ -5705,7 +5687,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tempVendConsignees = v.consignees ? v.consignees.map(x => ({ ...x })) : [];
       tempVendProducts = v.associatedProducts ? [...v.associatedProducts] : [];
       renderVendProdList();
-      $('vendProdFormRow').classList.add('hidden');
+      resetVendProdForm();
       showVendForm();
     }
     if (e.target.classList.contains('btn-del')) {

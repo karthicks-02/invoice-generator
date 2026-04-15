@@ -519,12 +519,9 @@
             </div>
           </div>
           <div class="consignee-section">
-            <div class="consignee-header">
-              <label class="consignee-label">Associated Products</label>
-              <button type="button" class="btn btn-secondary btn-sm" id="addCustProdBtn">+ Add</button>
-            </div>
+            <label class="consignee-label">Associated Products</label>
             <div id="custProdList"></div>
-            <div id="custProdFormRow" class="hidden">
+            <div id="custProdFormRow">
               <div class="row three">
                 <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="custProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
                 <div class="field"><label>HSN Code</label><input type="text" id="custProdHsnInput" /></div>
@@ -532,7 +529,6 @@
               </div>
               <div style="display:flex;gap:8px;margin-bottom:.75rem">
                 <button type="button" class="btn btn-primary btn-sm" id="saveCustProdBtn">Add Product</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="cancelCustProdBtn">Cancel</button>
               </div>
             </div>
           </div>
@@ -836,12 +832,9 @@
             <div class="field"><label>GPay Number</label><input type="text" id="vendGpayNumber" /></div>
           </div>
           <div class="consignee-section">
-            <div class="consignee-header">
-              <label class="consignee-label">Associated Purchase Product</label>
-              <button type="button" class="btn btn-secondary btn-sm" id="addVendProdBtn">+ Add</button>
-            </div>
+            <label class="consignee-label">Associated Purchase Product</label>
             <div id="vendProdList"></div>
-            <div id="vendProdFormRow" class="hidden">
+            <div id="vendProdFormRow">
               <div class="row three">
                 <div class="field" style="position:relative"><label>Product Name</label><input type="text" id="vendProdNameInput" autocomplete="off" placeholder="Type to search..." /></div>
                 <div class="field"><label>HSN Code</label><input type="text" id="vendProdHsnInput" /></div>
@@ -849,7 +842,6 @@
               </div>
               <div style="display:flex;gap:8px;margin-bottom:.75rem">
                 <button type="button" class="btn btn-primary btn-sm" id="saveVendProdBtn">Add Product</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="cancelVendProdBtn">Cancel</button>
               </div>
             </div>
           </div>
@@ -1173,6 +1165,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=135"></script>
+  <script src="script.js?v=136"></script>
 </body>
 </html>
