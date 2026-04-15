@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ki-invoice-v2';
+const CACHE_NAME = 'ki-invoice-v3';
 
 const APP_SHELL_NAMES = [
   'index.html',
