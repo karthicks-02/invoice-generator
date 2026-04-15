@@ -1880,9 +1880,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = parseInt(toInput.value, 10);
         const from = Number.isNaN(f) ? 0 : Math.max(0, f);
         const to = (toInput.value === '' || Number.isNaN(t)) ? Infinity : Math.max(0, t);
+        const threshold = from || daysFilterFromVal;
         tbody.querySelectorAll('tr[data-days]').forEach(tr => {
           const d = parseInt(tr.dataset.days, 10);
           tr.style.display = (d >= from && (to === Infinity || d <= to)) ? '' : 'none';
+          const daysTd = tr.querySelector('td.c');
+          if (daysTd) {
+            daysTd.classList.toggle('days-overdue', d >= threshold);
+          }
         });
       }
 
