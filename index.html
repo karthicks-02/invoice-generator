@@ -1173,9 +1173,30 @@
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
   <script src="script.js?v=140"></script>
+  <!-- Update banner (hidden by default) -->
+  <div id="updateBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a3a5c;color:#fff;padding:12px 16px;align-items:center;justify-content:space-between;z-index:9999;font-family:Inter,system-ui,sans-serif;font-size:14px;box-shadow:0 -2px 10px rgba(0,0,0,.15)">
+    <span>Update available</span>
+    <button id="updateBtn" style="background:#fff;color:#1a3a5c;border:none;padding:8px 18px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer">Refresh</button>
+  </div>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(function() {});
+      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        reg.addEventListener('updatefound', function() {
+          var worker = reg.installing;
+          worker.addEventListener('statechange', function() {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              var bar = document.getElementById('updateBar');
+              bar.style.display = 'flex';
+              document.getElementById('updateBtn').onclick = function() {
+                worker.postMessage('SKIP_WAITING');
+              };
+            }
+          });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          window.location.reload();
+        });
+      }).catch(function() {});
     }
   </script>
 </body>
