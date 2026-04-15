@@ -1452,7 +1452,8 @@ input.inv-rate-input {
   flex-wrap: wrap;
 }
 .days-preset.active,
-.co-days-btn.active {
+.co-days-btn.active,
+.overlay-days-btn.active {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
