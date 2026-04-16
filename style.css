@@ -1172,7 +1172,7 @@ input.inv-rate-input {
 .pay-sum-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
   font-size: 0.78rem;
   border: 1px solid #94a3b8;
   margin-bottom: 0.25rem;
