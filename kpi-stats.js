@@ -110,15 +110,11 @@
         })
         .reduce(function (s, inv) { return s + calcTotal(inv); }, 0);
 
+      /* payments structure: { "CompanyName": { credits: [...], totalCredited: N } } */
       var paid = 0;
-      Object.values(payData).forEach(function (arr) {
-        var items = Array.isArray(arr) ? arr : Object.values(arr || {});
-        items.forEach(function (p) {
-          if (!p || typeof p !== 'object') return;
-          paid += parseFloat(p.amount) || 0;
-          var tds = Array.isArray(p.tds) ? p.tds : Object.values(p.tds || {});
-          tds.forEach(function (t) { if (t && typeof t === 'object') paid += parseFloat(t.amount) || 0; });
-        });
+      Object.values(payData).forEach(function (rec) {
+        if (!rec || typeof rec !== 'object') return;
+        paid += Number(rec.totalCredited) || 0;
       });
 
       countUp('kpiRevenue',      revenue,                     fmtMoney, 1400);

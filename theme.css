@@ -307,20 +307,24 @@ header h1 {
 }
 
 .home-kpi-label {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-size: 10px; font-weight: 700;
   color: #7a6a9a; text-transform: uppercase;
-  letter-spacing: 1.4px; margin-bottom: 8px;
+  letter-spacing: 1.6px; margin-bottom: 10px;
   position: relative; z-index: 2;
 }
 .home-kpi-value {
-  font-family: 'Syne', 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Syne', sans-serif;
   font-size: clamp(22px, 2.5vw, 30px);
   font-weight: 800; color: #1e1040;
-  letter-spacing: -1px; line-height: 1;
-  margin-bottom: 4px; position: relative; z-index: 2;
+  letter-spacing: -0.5px; line-height: 1;
+  margin-bottom: 6px; position: relative; z-index: 2;
+  font-variant-numeric: tabular-nums;
 }
 .home-kpi-sub {
-  font-size: 11px; color: #7a6a9a;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 11px; font-weight: 600;
+  color: #7a6a9a; letter-spacing: 0.2px;
   position: relative; z-index: 2;
 }
 
@@ -1020,19 +1024,26 @@ legend {
 
 /* Bigger, bolder KPI values */
 .home-kpi-value {
-  font-family: 'Syne', 'Inter', sans-serif;
-  font-size: clamp(24px, 2.8vw, 34px);
+  font-family: 'Plus Jakarta Sans', 'Syne', sans-serif;
+  font-size: clamp(24px, 2.8vw, 32px);
   font-weight: 800;
   color: #1e1040;
-  letter-spacing: -1.2px;
+  letter-spacing: -0.5px;
   line-height: 1;
   margin-bottom: 6px;
   position: relative; z-index: 2;
+  font-variant-numeric: tabular-nums;
 }
-.home-kpi-revenue .home-kpi-value { font-size: clamp(26px, 3vw, 38px); }
+.home-kpi-revenue .home-kpi-value {
+  font-size: clamp(26px, 3vw, 36px);
+  letter-spacing: -0.8px;
+}
 
-/* Outstanding value — amber tint */
-.home-kpi-outstanding .home-kpi-value { color: #92400e; }
+/* Outstanding — warm red/amber */
+.home-kpi-outstanding .home-kpi-value { color: #b45309; }
 
-/* Month value — emerald tint */
-.home-kpi-month .home-kpi-value { color: #065f46; }
+/* Month — emerald */
+.home-kpi-month .home-kpi-value { color: #047857; }
+
+/* Count — indigo */
+.home-kpi-count .home-kpi-value { color: #4f46e5; font-size: clamp(28px, 3.2vw, 40px); }
