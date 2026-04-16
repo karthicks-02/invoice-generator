@@ -746,9 +746,10 @@ input.inv-rate-input {
 .data-table .btn-download:hover { background: #f5f3ff; }
 
 /* ===== Graph Dialog ===== */
-.graph-dialog {
+.overlay-box.graph-dialog {
   width: min(1100px, 94vw);
   max-width: 94vw;
+  min-width: min(900px, 94vw);
   max-height: 92vh;
   overflow-y: auto;
 }
