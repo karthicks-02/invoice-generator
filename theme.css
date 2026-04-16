@@ -625,6 +625,11 @@ legend {
   overflow-y: auto;
   padding: 1rem 0;
 }
+#payHistoryOverlay,
+#vpayHistoryOverlay {
+  align-items: flex-start !important;
+  padding: 2vh 0 2vh !important;
+}
 
 .overlay-box {
   background: rgba(255,255,255,0.72);
@@ -1696,8 +1701,9 @@ legend {
 .overlay-box.pay-history-box {
   min-width: min(860px, 93vw) !important;
   max-width: min(1080px, 96vw) !important;
-  max-height: 92vh !important;
+  max-height: 94vh !important;
   overflow-y: auto !important;
+  margin-top: 1vh !important;
   background: rgba(250,248,255,0.92) !important;
   backdrop-filter: blur(36px) saturate(220%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(220%) !important;
