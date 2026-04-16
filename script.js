@@ -198,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custEmpty').style.display = filtered.length ? 'none' : 'block';
     $('custEmpty').textContent = customers.length ? 'No matching customers.' : 'No customers added yet.';
     $('custTable').style.display = filtered.length ? 'table' : 'none';
+    const custFrag = document.createDocumentFragment();
     filtered.forEach(({ c, i }) => {
       const conCount = c.consignees ? c.consignees.length : 0;
       const poParts = [];
@@ -221,8 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-edit" data-i="${i}">Edit</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
-      tbody.appendChild(tr);
+      custFrag.appendChild(tr);
     });
+    tbody.appendChild(custFrag);
     if ($('custSelectAll')) $('custSelectAll').checked = false;
   }
 
@@ -574,6 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('prodEmpty').style.display = filtered.length ? 'none' : 'block';
     $('prodEmpty').textContent = products.length ? 'No matching products.' : 'No products added yet.';
     $('prodTable').style.display = filtered.length ? 'table' : 'none';
+    const prodFrag = document.createDocumentFragment();
     filtered.forEach(({ p, i }) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -585,8 +588,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-edit" data-i="${i}">Edit</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
-      tbody.appendChild(tr);
+      prodFrag.appendChild(tr);
     });
+    tbody.appendChild(prodFrag);
     if ($('prodSelectAll')) $('prodSelectAll').checked = false;
   }
 
@@ -5339,44 +5343,21 @@ document.addEventListener('DOMContentLoaded', () => {
     $('pprodEmpty').style.display = filtered.length ? 'none' : 'block';
     $('pprodEmpty').textContent = purchaseProducts.length ? 'No matching purchase products.' : 'No purchase products added yet.';
     $('pprodTable').style.display = filtered.length ? 'table' : 'none';
+    const pprodFrag = document.createDocumentFragment();
     filtered.forEach(({ p, i }) => {
       const tr = document.createElement('tr');
-      const tdCheck = document.createElement('td');
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'pprod-check';
-      cb.dataset.i = i;
-      tdCheck.appendChild(cb);
-      tr.appendChild(tdCheck);
-
-      const tdName = document.createElement('td');
-      tdName.textContent = p.name;
-      tr.appendChild(tdName);
-
-      const tdHsn = document.createElement('td');
-      tdHsn.textContent = p.hsn;
-      tr.appendChild(tdHsn);
-
-      const tdRate = document.createElement('td');
-      tdRate.textContent = Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-      tr.appendChild(tdRate);
-
-      const tdAct = document.createElement('td');
-      tdAct.className = 'actions';
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn-edit';
-      editBtn.dataset.i = i;
-      editBtn.textContent = 'Edit';
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-del';
-      delBtn.dataset.i = i;
-      delBtn.textContent = 'Delete';
-      tdAct.appendChild(editBtn);
-      tdAct.appendChild(delBtn);
-      tr.appendChild(tdAct);
-
-      tbody.appendChild(tr);
+      tr.innerHTML = `
+        <td><input type="checkbox" class="pprod-check" data-i="${i}" /></td>
+        <td>${escHtml(p.name)}</td>
+        <td>${escHtml(p.hsn)}</td>
+        <td>${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+        <td class="actions">
+          <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-del" data-i="${i}">Delete</button>
+        </td>`;
+      pprodFrag.appendChild(tr);
     });
+    tbody.appendChild(pprodFrag);
     if ($('pprodSelectAll')) $('pprodSelectAll').checked = false;
   }
 
@@ -5557,48 +5538,26 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendEmpty').style.display = filtered.length ? 'none' : 'block';
     $('vendEmpty').textContent = vendors.length ? 'No matching vendors.' : 'No vendors added yet.';
     $('vendTable').style.display = filtered.length ? 'table' : 'none';
+    const vendFrag = document.createDocumentFragment();
     filtered.forEach(({ v, i }) => {
-      const tr = document.createElement('tr');
-      const tdCheck = document.createElement('td');
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'vend-check';
-      cb.dataset.i = i;
-      tdCheck.appendChild(cb);
-      tr.appendChild(tdCheck);
-
       const types = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
       const typeLabel = types.map(t => t === 'material' ? 'Material' : 'Labor').join(', ') || '—';
-      const fields = [
-        v.name,
-        v.gstin,
-        typeLabel,
-        customerGstTypeLabel(v.gstType),
-        v.contact,
-        v.phone
-      ];
-      fields.forEach(text => {
-        const td = document.createElement('td');
-        td.textContent = text;
-        tr.appendChild(td);
-      });
-
-      const tdAct = document.createElement('td');
-      tdAct.className = 'actions';
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn-edit';
-      editBtn.dataset.i = i;
-      editBtn.textContent = 'Edit';
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-del';
-      delBtn.dataset.i = i;
-      delBtn.textContent = 'Delete';
-      tdAct.appendChild(editBtn);
-      tdAct.appendChild(delBtn);
-      tr.appendChild(tdAct);
-
-      tbody.appendChild(tr);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="checkbox" class="vend-check" data-i="${i}" /></td>
+        <td>${escHtml(v.name)}</td>
+        <td>${escHtml(v.gstin)}</td>
+        <td>${escHtml(typeLabel)}</td>
+        <td>${escHtml(customerGstTypeLabel(v.gstType))}</td>
+        <td>${escHtml(v.contact)}</td>
+        <td>${escHtml(v.phone)}</td>
+        <td class="actions">
+          <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-del" data-i="${i}">Delete</button>
+        </td>`;
+      vendFrag.appendChild(tr);
     });
+    tbody.appendChild(vendFrag);
     if ($('vendSelectAll')) $('vendSelectAll').checked = false;
   }
 
