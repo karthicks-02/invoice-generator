@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.svg" />
 
   <link rel="stylesheet" href="style.css?v=40" />
-  <link rel="stylesheet" href="theme.css?v=4" />
+  <link rel="stylesheet" href="theme.css?v=5" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -143,58 +143,69 @@
         </div>
       </div>
 
-      <!-- Module cards grid (unchanged — all data-view attrs preserved) -->
+      <!-- Module cards grid — premium v2 (data-view attrs preserved) -->
       <div class="home-cards">
-        <div class="home-card" data-view="customerView">
-          <div class="home-card-icon">C</div>
-          <h3>Customer List</h3>
-          <p>Manage your customers</p>
+
+        <div class="home-card hc-blue" data-view="customerView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Customer List</div><div class="hc-desc">Manage your customers</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="productView">
-          <div class="home-card-icon">P</div>
-          <h3>Product List</h3>
-          <p>Manage your products</p>
+
+        <div class="home-card hc-green" data-view="productView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.72V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.72c.57-.38 1-1 1-1.71V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-8H4V4l16-.01V6z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Product List</div><div class="hc-desc">Manage your products</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="invoiceView">
-          <div class="home-card-icon">I</div>
-          <h3>Invoice</h3>
-          <p>Generate tax invoices</p>
+
+        <div class="home-card hc-purple" data-view="invoiceView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-4h8v2H8zm0-4h5v2H8z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Invoice</div><div class="hc-desc">Generate tax invoices</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="invoiceListView">
-          <div class="home-card-icon">A</div>
-          <h3>All Invoices</h3>
-          <p>View &amp; manage invoices</p>
+
+        <div class="home-card hc-indigo" data-view="invoiceListView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">All Invoices</div><div class="hc-desc">View &amp; manage invoices</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="paymentView">
-          <div class="home-card-icon">C₹</div>
-          <h3>Customer Payment</h3>
-          <p>Track customer outstanding &amp; payments</p>
+
+        <div class="home-card hc-amber" data-view="paymentView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Customer Payment</div><div class="hc-desc">Track outstanding &amp; payments</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="vendorPayView">
-          <div class="home-card-icon">V₹</div>
-          <h3>Vendor Payment</h3>
-          <p>Track payable &amp; payments to vendors</p>
+
+        <div class="home-card hc-rose" data-view="vendorPayView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Vendor Payment</div><div class="hc-desc">Track payables to vendors</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="vendorView">
-          <div class="home-card-icon">V</div>
-          <h3>Vendor / Supplier</h3>
-          <p>Manage your vendors</p>
+
+        <div class="home-card hc-teal" data-view="vendorView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Vendor / Supplier</div><div class="hc-desc">Manage your vendors</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="purchaseProdView">
-          <div class="home-card-icon">PP</div>
-          <h3>Purchase Product</h3>
-          <p>Manage purchase products</p>
+
+        <div class="home-card hc-orange" data-view="purchaseProdView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.43 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">Purchase Product</div><div class="hc-desc">Manage purchase products</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="poInvoiceView">
-          <div class="home-card-icon">PO</div>
-          <h3>PO Invoice</h3>
-          <p>Generate purchase order invoices</p>
+
+        <div class="home-card hc-violet" data-view="poInvoiceView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">PO Invoice</div><div class="hc-desc">Generate purchase order invoices</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
-        <div class="home-card" data-view="poInvoiceListView">
-          <div class="home-card-icon">AP</div>
-          <h3>All PO Invoices</h3>
-          <p>View &amp; manage PO invoices</p>
+
+        <div class="home-card hc-cyan" data-view="poInvoiceListView">
+          <div class="hc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v14H0v3c0 1.66 1.34 3 3 3h18c1.66 0 3-1.34 3-3V2l-1.5 1.5zM22 19c0 .55-.45 1-1 1s-1-.45-1-1v-3H5V5h17v14zM7 16h10v-2H7v2zm0-4h10v-2H7v2zM7 8h10V6H7v2z"/></svg></div>
+          <div class="hc-body"><div class="hc-title">All PO Invoices</div><div class="hc-desc">View &amp; manage PO invoices</div></div>
+          <div class="hc-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
+
       </div>
     </section>
 
