@@ -207,7 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return (c.name || '').toLowerCase().includes(query)
         || (c.gstin || '').toLowerCase().includes(query)
         || (c.contact || '').toLowerCase().includes(query)
-        || (c.phone || '').toLowerCase().includes(query);
+        || (c.phone || '').toLowerCase().includes(query)
+        || customerGstTypeLabel(c.gstType).toLowerCase().includes(query)
+        || (c.gstType || '').toLowerCase().includes(query);
     });
     $('custEmpty').style.display = filtered.length ? 'none' : 'block';
     $('custEmpty').textContent = customers.length ? 'No matching customers.' : 'No customers added yet.';
