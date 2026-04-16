@@ -116,49 +116,106 @@
     ctx.fill();
   }
 
-  /* ── Chart.js revenue chart ──────────────────────────────── */
+  /* ── Chart.js revenue chart — premium bar+line combo ──────── */
   function renderChart(labels, data) {
     var canvas = document.getElementById('revenueChart');
     if (!canvas || typeof Chart === 'undefined') return;
     if (window._kpiChart) { window._kpiChart.destroy(); window._kpiChart = null; }
+
     var ctx = canvas.getContext('2d');
-    var grad = ctx.createLinearGradient(0, 0, 0, 200);
-    grad.addColorStop(0, 'rgba(124,58,237,0.20)');
-    grad.addColorStop(1, 'rgba(124,58,237,0.00)');
+    var chartH = (canvas.parentElement || {}).offsetHeight || 210;
+
+    /* Area gradient under the line */
+    var areaGrad = ctx.createLinearGradient(0, 0, 0, chartH);
+    areaGrad.addColorStop(0, 'rgba(124,58,237,0.22)');
+    areaGrad.addColorStop(0.75, 'rgba(124,58,237,0.04)');
+    areaGrad.addColorStop(1,  'rgba(124,58,237,0.00)');
+
+    /* Bar colours — highlight the current (last) month */
+    var barColors = data.map(function (_, i) {
+      return i === data.length - 1
+        ? 'rgba(124,58,237,0.65)'   /* current month — vivid */
+        : 'rgba(124,58,237,0.14)';  /* past months — translucent */
+    });
+
+    /* Glow plugin — applies canvas shadow only while drawing the line */
+    var glowPlugin = {
+      id: 'kpiLineGlow',
+      beforeDatasetDraw: function (chart, args) {
+        if (args.index !== 1) return;
+        chart.ctx.save();
+        chart.ctx.shadowBlur  = 18;
+        chart.ctx.shadowColor = 'rgba(124,58,237,0.72)';
+      },
+      afterDatasetDraw: function (chart, args) {
+        if (args.index !== 1) return;
+        chart.ctx.restore();
+      }
+    };
+
     window._kpiChart = new Chart(canvas, {
-      type: 'line',
+      type: 'bar',
+      plugins: [glowPlugin],
       data: {
         labels: labels,
-        datasets: [{
-          data: data,
-          borderColor: '#7c3aed',
-          borderWidth: 2.5,
-          pointRadius: 3,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#7c3aed',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          tension: 0.42,
-          fill: true,
-          backgroundColor: grad
-        }]
+        datasets: [
+          /* Dataset 0 — bars */
+          {
+            type: 'bar',
+            data: data,
+            backgroundColor: barColors,
+            hoverBackgroundColor: data.map(function () { return 'rgba(124,58,237,0.55)'; }),
+            borderRadius: { topLeft: 8, topRight: 8 },
+            borderSkipped: 'bottom',
+            maxBarThickness: 28,
+            order: 2
+          },
+          /* Dataset 1 — glowing line */
+          {
+            type: 'line',
+            data: data,
+            borderColor: '#7c3aed',
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 7,
+            pointHoverBackgroundColor: '#7c3aed',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 3,
+            tension: 0.44,
+            fill: true,
+            backgroundColor: areaGrad,
+            order: 1
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 1000, easing: 'easeInOutQuart' },
+        animation: { duration: 900, easing: 'easeOutQuart' },
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(15,10,40,0.92)',
-            titleColor: 'rgba(255,255,255,0.5)',
-            bodyColor: '#fff',
-            padding: 12,
-            cornerRadius: 12,
+            backgroundColor: 'rgba(12,6,32,0.96)',
+            titleColor: 'rgba(255,255,255,0.42)',
+            bodyColor: '#ffffff',
+            padding: { top: 12, bottom: 14, left: 16, right: 16 },
+            cornerRadius: 14,
             displayColors: false,
+            titleFont: {
+              family: "'Plus Jakarta Sans',sans-serif", size: 11, weight: '600'
+            },
+            bodyFont: {
+              family: "'Plus Jakarta Sans',sans-serif", size: 19, weight: '800'
+            },
             callbacks: {
-              label: function (c) { return '  ' + fmtMoney(c.parsed.y); }
-            }
+              title: function (items) { return items[0].label; },
+              label: function (c) {
+                if (c.datasetIndex !== 1) return null;
+                return fmtMoney(c.parsed.y);
+              }
+            },
+            filter: function (item) { return item.datasetIndex === 1; }
           }
         },
         scales: {
@@ -166,18 +223,21 @@
             grid: { display: false },
             border: { display: false },
             ticks: {
-              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 },
-              color: '#9585bb'
+              font: { family: "'Plus Jakarta Sans',sans-serif", size: 11, weight: '600' },
+              color: function (c) {
+                return c.index === labels.length - 1 ? '#7c3aed' : '#a49bbe';
+              }
             }
           },
           y: {
-            grid: { color: 'rgba(124,58,237,0.06)' },
+            grid: { color: 'rgba(124,58,237,0.055)', drawTicks: false },
             border: { display: false, dash: [4, 4] },
             ticks: {
-              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 },
-              color: '#9585bb',
+              font: { family: "'Plus Jakarta Sans',sans-serif", size: 10 },
+              color: '#b8aed6',
+              padding: 10,
               callback: function (v) { return fmtMoney(v); },
-              maxTicksLimit: 5
+              maxTicksLimit: 4
             }
           }
         }
