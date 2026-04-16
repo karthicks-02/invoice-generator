@@ -1685,4 +1685,271 @@ legend {
 .data-table-wrap::-webkit-scrollbar { width: 5px; height: 5px; }
 .data-table-wrap::-webkit-scrollbar-track { background: transparent; }
 .data-table-wrap::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.22); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════
+   Premium Payment Summary Modal  (overrides style.css)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Wider modal container ─────────────────────────────── */
+.overlay-box.pay-history-box {
+  min-width: min(860px, 93vw) !important;
+  max-width: min(1080px, 96vw) !important;
+  background: rgba(250,248,255,0.82) !important;
+  backdrop-filter: blur(36px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(220%) !important;
+  border: 1px solid rgba(255,255,255,0.88) !important;
+  box-shadow:
+    0 32px 80px rgba(99,62,240,0.22),
+    0 2px 0 rgba(255,255,255,0.9) inset,
+    0 0 0 1px rgba(124,58,237,0.06) !important;
+  padding: 28px 32px 24px !important;
+}
+
+/* ── Modal title row ───────────────────────────────────── */
+.pay-history-box h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #1e1040 !important;
+  letter-spacing: -0.3px !important;
+}
+
+/* ── Subtitle / company label ──────────────────────────── */
+#payHistoryLabel, #vpayHistoryLabel {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: #7c3aed !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  margin: 2px 0 0 !important;
+}
+
+/* ── Pay-sum dialog base ───────────────────────────────── */
+.pay-sum-dialog {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.88rem !important;
+  color: #2d1b6e !important;
+  line-height: 1.5 !important;
+}
+
+/* ── Toolbar (PDF / WhatsApp buttons row) ──────────────── */
+.pay-sum-toolbar {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 16px !important;
+  flex-wrap: wrap !important;
+}
+
+/* ── Header block (company name + meta) ────────────────── */
+.pay-sum-hdr {
+  background: linear-gradient(135deg, rgba(124,58,237,0.07), rgba(99,102,241,0.04)) !important;
+  border: 1px solid rgba(124,58,237,0.12) !important;
+  border-left: 4px solid #7c3aed !important;
+  border-radius: 14px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 20px !important;
+  border-bottom: none !important;
+}
+.pay-sum-co {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
+  color: #1e1040 !important;
+  letter-spacing: -0.2px !important;
+}
+.pay-sum-title {
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  color: #7c3aed !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  margin-top: 4px !important;
+}
+.pay-sum-meta {
+  font-size: 0.83rem !important;
+  color: #4a3570 !important;
+  margin-top: 8px !important;
+}
+.pay-sum-gen {
+  font-size: 0.72rem !important;
+  color: #9585b4 !important;
+  margin-top: 2px !important;
+}
+
+/* ── Section headings ──────────────────────────────────── */
+.pay-sum-h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #7c3aed !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  margin: 20px 0 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.pay-sum-h4::after {
+  content: '' !important;
+  flex: 1 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, rgba(124,58,237,0.20), transparent) !important;
+}
+
+/* ── Figures at a glance — stat cards ──────────────────── */
+.pay-sum-figures {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: none !important;
+  margin-bottom: 12px !important;
+}
+.pay-sum-figures tbody tr {
+  transition: background 0.15s !important;
+}
+.pay-sum-figures td {
+  padding: 9px 14px !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(124,58,237,0.06) !important;
+  font-size: 0.87rem !important;
+  color: #3d2a7a !important;
+  vertical-align: middle !important;
+}
+.pay-sum-figures td:last-child {
+  font-variant-numeric: tabular-nums !important;
+}
+.pay-sum-zebra {
+  background: rgba(124,58,237,0.04) !important;
+}
+.pay-sum-figures tr:hover td {
+  background: rgba(124,58,237,0.07) !important;
+}
+.pay-sum-out-row td {
+  background: linear-gradient(90deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02)) !important;
+  color: #b91c1c !important;
+  font-weight: 700 !important;
+}
+.pay-sum-out-row td strong {
+  color: #b91c1c !important;
+}
+
+/* ── Main tables (payments, pending, fifo) ─────────────── */
+.pay-sum-table {
+  border: 1px solid rgba(124,58,237,0.10) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  font-size: 0.82rem !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+.pay-sum-table thead th {
+  background: linear-gradient(135deg, #4c1d95, #6d28d9) !important;
+  color: rgba(255,255,255,0.92) !important;
+  padding: 9px 12px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+  border: none !important;
+}
+.pay-sum-table td {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid rgba(124,58,237,0.06) !important;
+  vertical-align: middle !important;
+  color: #2d1b6e !important;
+  font-size: 0.82rem !important;
+  word-wrap: break-word !important;
+}
+.pay-sum-table tbody tr:last-child td { border-bottom: none !important; }
+.pay-sum-table tbody tr:hover td {
+  background: rgba(124,58,237,0.04) !important;
+}
+.pay-sum-row-cleared td {
+  color: #9585b4 !important;
+}
+.pay-sum-num {
+  font-variant-numeric: tabular-nums !important;
+  font-weight: 600 !important;
+  color: #1e1040 !important;
+  white-space: nowrap !important;
+}
+.pay-sum-strong {
+  font-weight: 700 !important;
+  color: #1e1040 !important;
+  white-space: nowrap !important;
+}
+.pay-sum-empty {
+  text-align: center !important;
+  padding: 20px !important;
+  color: #9585b4 !important;
+  font-size: 0.82rem !important;
+  font-style: italic !important;
+}
+.pay-sum-fifo-note {
+  font-size: 0.73rem !important;
+  color: #9585b4 !important;
+  margin: 0 0 4px !important;
+  font-style: italic !important;
+}
+
+/* ── Scroll containers ─────────────────────────────────── */
+.pay-history-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(124,58,237,0.22) transparent !important;
+}
+.pay-history-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+.pay-history-scroll::-webkit-scrollbar-track { background: transparent; }
+.pay-history-scroll::-webkit-scrollbar-thumb {
+  background: rgba(124,58,237,0.22);
+  border-radius: 3px;
+}
+.pay-sum-scroll {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin-bottom: 4px !important;
+}
+
+/* ── Summary footer bar ────────────────────────────────── */
+#payHistorySummary, #vpayHistorySummary {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  color: #7c3aed !important;
+  background: rgba(124,58,237,0.05) !important;
+  border: 1px solid rgba(124,58,237,0.12) !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+  margin: 8px 0 12px !important;
+}
+
+/* ── Close button top-right ────────────────────────────── */
+#payHistoryCloseTopBtn {
+  background: rgba(124,58,237,0.08) !important;
+  border: 1px solid rgba(124,58,237,0.16) !important;
+  color: #7c3aed !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.18s, transform 0.18s;
+}
+#payHistoryCloseTopBtn:hover {
+  background: rgba(124,58,237,0.18) !important;
+  transform: rotate(90deg) scale(1.1) !important;
+}
+
+/* ── Action buttons inside table ───────────────────────── */
+.pay-sum-table .btn-edit-credit,
+.pay-sum-table .btn-view {
+  font-size: 0.72rem !important;
+  padding: 3px 10px !important;
+  border-radius: 100px !important;
+  white-space: nowrap !important;
+}
+.pay-sum-act { white-space: nowrap !important; }
 .data-table-wrap::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.42); }
