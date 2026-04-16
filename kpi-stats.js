@@ -112,9 +112,11 @@
 
       var paid = 0;
       Object.values(payData).forEach(function (arr) {
-        (arr || []).forEach(function (p) {
+        var items = Array.isArray(arr) ? arr : Object.values(arr || {});
+        items.forEach(function (p) {
           paid += parseFloat(p.amount) || 0;
-          (p.tds || []).forEach(function (t) { paid += parseFloat(t.amount) || 0; });
+          var tds = Array.isArray(p.tds) ? p.tds : Object.values(p.tds || {});
+          tds.forEach(function (t) { paid += parseFloat(t.amount) || 0; });
         });
       });
 
