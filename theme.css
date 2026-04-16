@@ -1319,14 +1319,9 @@ legend {
   .kpi-trend.trend-down::after, .kpi-trend.trend-up::after { animation: none; display: none; }
 }
 
-/* Sparkline canvas */
+/* Sparkline canvas — hidden */
 .kpi-spark {
-  position: absolute;
-  bottom: 12px; right: 12px;
-  width: 80px; height: 32px;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 /* ── Revenue Chart Card ─────────────────────────────── */
