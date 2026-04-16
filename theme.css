@@ -675,8 +675,8 @@ legend {
 #payHistoryOverlay,
 #vpayHistoryOverlay,
 #daysFilterOverlay {
-  align-items: flex-start !important;
-  padding: 2vh 0 2vh !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .overlay-box {
@@ -702,9 +702,9 @@ legend {
 .overlay-box.pay-history-box,
 .days-filter-result-box.overlay-box {
   background: rgba(250,248,255,0.92);
-  max-height: 94vh !important;
+  max-height: 90vh !important;
   overflow-y: auto !important;
-  margin-top: 1vh !important;
+  margin: auto !important;
 }
 .whatsapp-share-box.overlay-box,
 .wa-ready-box.overlay-box {
@@ -1762,9 +1762,9 @@ legend {
 .overlay-box.pay-history-box {
   min-width: min(860px, 93vw) !important;
   max-width: min(1080px, 96vw) !important;
-  max-height: 94vh !important;
+  max-height: 90vh !important;
   overflow-y: auto !important;
-  margin-top: 1vh !important;
+  margin: auto !important;
   background: rgba(250,248,255,0.92) !important;
   backdrop-filter: blur(36px) saturate(220%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(220%) !important;
