@@ -642,6 +642,140 @@
       var actCountEl = document.getElementById('activityCount');
       if (actCountEl) actCountEl.textContent = activities.length + ' recent';
 
+      /* ═══════════════════════════════════════════════════════
+         SIDEBAR WIDGETS
+         ═══════════════════════════════════════════════════════ */
+
+      /* ── 1. Today's Snapshot ───────────────────────────── */
+      var todayStr = now.toISOString().slice(0, 10);
+      var todayInvs = invoices.filter(function (inv) {
+        var d = (inv.createdAt || inv.invoiceDate || inv.date || '').slice(0, 10);
+        return d === todayStr;
+      });
+      setText('todayInvCount', todayInvs.length.toString());
+      setText('todayInvAmt', fmtMoney(todayInvs.reduce(function (s, inv) { return s + calcTotal(inv); }, 0)));
+      var todayPayCount = 0, todayPayTotal = 0;
+      Object.values(payData).forEach(function (rec) {
+        if (!rec || !rec.credits) return;
+        rec.credits.forEach(function (c) {
+          if ((c.date || '').slice(0, 10) === todayStr) {
+            todayPayCount++;
+            todayPayTotal += Number(c.amount) || 0;
+          }
+        });
+      });
+      setText('todayPayCount', todayPayCount.toString());
+      setText('todayPayAmt', fmtMoney(todayPayTotal));
+
+      /* ── 2. Collection Rate Ring ───────────────────────── */
+      var collPct = revenue > 0 ? Math.round((paid / revenue) * 100) : 0;
+      var circumference = 2 * Math.PI * 52;
+      var arc = document.getElementById('collectionArc');
+      var pctText = document.getElementById('collectionPct');
+      if (arc) {
+        setTimeout(function () {
+          arc.setAttribute('stroke-dasharray', Math.round((collPct / 100) * circumference) + ' ' + Math.round(circumference));
+          if (collPct >= 70) arc.setAttribute('stroke', '#16a34a');
+          else if (collPct >= 40) arc.setAttribute('stroke', '#f59e0b');
+          else arc.setAttribute('stroke', '#ef4444');
+        }, 300);
+      }
+      if (pctText) pctText.textContent = collPct + '%';
+
+      /* ── 3. Pending Reminders ──────────────────────────── */
+      var remList = document.getElementById('sidebarReminders');
+      if (remList) {
+        remList.textContent = '';
+        var reminders = [];
+        Object.keys(payData).forEach(function (company) {
+          var rec = payData[company];
+          if (!rec || !rec.reminder || !rec.reminder.date) return;
+          if (new Date(rec.reminder.date) > now) return;
+          var compTotal = invoices.filter(function (inv) { return inv.buyerName === company; })
+            .reduce(function (s, inv) { return s + calcTotal(inv); }, 0);
+          var compPaidAmt = Number(rec.totalCredited) || 0;
+          var compOut = Math.max(0, compTotal - compPaidAmt);
+          if (compOut <= 0) return;
+          reminders.push({ name: company, amt: compOut });
+        });
+        reminders.sort(function (a, b) { return b.amt - a.amt; });
+        if (reminders.length === 0) {
+          var none = document.createElement('div');
+          none.className = 'reminder-none';
+          none.textContent = 'No reminders due';
+          remList.appendChild(none);
+        } else {
+          reminders.slice(0, 4).forEach(function (r) {
+            var row = document.createElement('div');
+            row.className = 'reminder-row';
+            var dot = document.createElement('div');
+            dot.className = 'reminder-dot';
+            var name = document.createElement('div');
+            name.className = 'reminder-name';
+            name.textContent = r.name;
+            var amt = document.createElement('div');
+            amt.className = 'reminder-amt';
+            amt.textContent = fmtMoney(r.amt);
+            row.appendChild(dot);
+            row.appendChild(name);
+            row.appendChild(amt);
+            remList.appendChild(row);
+          });
+          if (reminders.length > 4) {
+            var more = document.createElement('div');
+            more.className = 'sidebar-empty';
+            more.textContent = '+' + (reminders.length - 4) + ' more';
+            remList.appendChild(more);
+          }
+        }
+      }
+
+      /* ── 4. Mini Calendar Heatmap ──────────────────────── */
+      var calEl = document.getElementById('miniCalendar');
+      var calTitle = document.getElementById('calendarTitle');
+      if (calEl) {
+        calEl.textContent = '';
+        if (calTitle) calTitle.textContent = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        var dayCounts = {};
+        invoices.forEach(function (inv) {
+          var d = inv.invoiceDate || inv.date || '';
+          if (!d) return;
+          var dd = new Date(d);
+          if (dd.getMonth() === now.getMonth() && dd.getFullYear() === now.getFullYear()) {
+            var day = dd.getDate();
+            dayCounts[day] = (dayCounts[day] || 0) + 1;
+          }
+        });
+        var dayNames = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        dayNames.forEach(function (dn) {
+          var h = document.createElement('div');
+          h.className = 'mini-cal-head';
+          h.textContent = dn;
+          calEl.appendChild(h);
+        });
+        var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+        var offset = firstDay === 0 ? 6 : firstDay - 1;
+        var totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        for (var e = 0; e < offset; e++) {
+          var empty = document.createElement('div');
+          empty.className = 'mini-cal-day cal-empty';
+          calEl.appendChild(empty);
+        }
+        var maxCount = Math.max.apply(null, Object.values(dayCounts).concat([1]));
+        for (var d = 1; d <= totalDays; d++) {
+          var cell = document.createElement('div');
+          cell.className = 'mini-cal-day';
+          cell.textContent = d;
+          if (d === now.getDate()) cell.classList.add('cal-today');
+          var cnt = dayCounts[d] || 0;
+          if (cnt > 0) {
+            var intensity = Math.ceil((cnt / maxCount) * 4);
+            cell.classList.add('cal-heat-' + Math.min(intensity, 4));
+          }
+          calEl.appendChild(cell);
+        }
+      }
+
     }).catch(function (err) {
       loaded = false;
       shimmer(false);
