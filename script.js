@@ -1428,38 +1428,98 @@ document.addEventListener('DOMContentLoaded', () => {
       data = days.map(d => dayMap[d]);
     }
 
+    const areaGrad = ctx.createLinearGradient(0, 0, 0, ctx.canvas.parentElement.offsetHeight || 400);
+    areaGrad.addColorStop(0, 'rgba(124,58,237,0.28)');
+    areaGrad.addColorStop(0.5, 'rgba(124,58,237,0.08)');
+    areaGrad.addColorStop(1, 'rgba(124,58,237,0.01)');
+
+    const lineGrad = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+    lineGrad.addColorStop(0, '#7c3aed');
+    lineGrad.addColorStop(0.5, '#6366f1');
+    lineGrad.addColorStop(1, '#a78bfa');
+
+    const showBars = data.length <= 12;
+
+    const datasets = [{
+      type: 'line',
+      label: chartLabel,
+      data,
+      borderColor: lineGrad,
+      backgroundColor: areaGrad,
+      borderWidth: 3,
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: '#fff',
+      pointBorderColor: '#7c3aed',
+      pointBorderWidth: 2.5,
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      pointHoverBackgroundColor: '#7c3aed',
+      pointHoverBorderColor: '#fff',
+      pointHoverBorderWidth: 3,
+      order: 0
+    }];
+
+    if (showBars) {
+      datasets.unshift({
+        type: 'bar',
+        label: chartLabel + ' (bar)',
+        data,
+        backgroundColor: 'rgba(124,58,237,0.10)',
+        borderColor: 'rgba(124,58,237,0.18)',
+        borderWidth: 1,
+        borderRadius: 6,
+        barPercentage: 0.55,
+        categoryPercentage: 0.7,
+        order: 1
+      });
+    }
+
     revenueChart = new Chart(ctx, {
       type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: chartLabel,
-          data,
-          borderColor: '#1a3a5c',
-          backgroundColor: 'rgba(26, 58, 92, 0.1)',
-          borderWidth: 2,
-          tension: 0.3,
-          fill: true,
-          pointBackgroundColor: '#1a3a5c',
-          pointRadius: 4
-        }]
-      },
+      data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: 'rgba(30,16,64,0.92)',
+            titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 13, weight: '700' },
+            bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 13 },
+            padding: { top: 10, bottom: 10, left: 14, right: 14 },
+            cornerRadius: 12,
+            borderColor: 'rgba(124,58,237,0.25)',
+            borderWidth: 1,
+            displayColors: false,
             callbacks: {
-              label: c => '₹' + c.raw.toLocaleString('en-IN', { minimumFractionDigits: 2 })
-            }
+              title: items => items[0]?.label || '',
+              label: c => {
+                if (c.datasetIndex !== (showBars ? 1 : 0)) return null;
+                return '₹' + c.raw.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+              }
+            },
+            filter: item => item.datasetIndex === (showBars ? 1 : 0)
           }
         },
         scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: '600' },
+              color: '#7a6a9a'
+            }
+          },
           y: {
             beginAtZero: true,
+            grid: { color: 'rgba(124,58,237,0.06)', drawBorder: false },
+            border: { display: false },
             ticks: {
-              callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
+              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: '600' },
+              color: '#9585b4',
+              padding: 8,
+              callback: v => '₹' + (v >= 10000000 ? (v / 10000000).toFixed(1) + 'Cr' : v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
             }
           }
         }

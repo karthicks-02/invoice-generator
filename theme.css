@@ -608,14 +608,61 @@ legend {
 
 /* Graph dialog */
 .graph-dialog {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255,255,255,0.80);
+  background: rgba(250,248,255,0.94) !important;
+  backdrop-filter: blur(36px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(220%) !important;
+  border: 1px solid rgba(255,255,255,0.88) !important;
   border-radius: 24px;
+  padding: 28px 32px 24px !important;
+  box-shadow:
+    0 32px 80px rgba(99,62,240,0.18),
+    0 2px 0 rgba(255,255,255,0.9) inset,
+    0 0 0 1px rgba(124,58,237,0.06) !important;
 }
-.graph-tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
-.graph-tab:hover { color: #1e1040; }
+.graph-dialog-header h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #1e1040 !important;
+  letter-spacing: -0.3px !important;
+}
+.graph-tabs {
+  border-bottom: 2px solid rgba(124,58,237,0.10) !important;
+  margin-bottom: 1rem !important;
+  gap: 4px !important;
+}
+.graph-tab {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: #9585b4 !important;
+  padding: 0.6rem 1.2rem !important;
+  border-radius: 10px 10px 0 0 !important;
+  transition: color 0.2s, background 0.2s, border-color 0.2s !important;
+}
+.graph-tab:hover { color: #1e1040 !important; background: rgba(124,58,237,0.04) !important; }
+.graph-tab.active {
+  color: #7c3aed !important;
+  border-bottom-color: #7c3aed !important;
+  background: rgba(124,58,237,0.06) !important;
+}
+.graph-filters select {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  border: 1px solid rgba(124,58,237,0.15) !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+  color: #2d1b6e !important;
+  background: rgba(255,255,255,0.7) !important;
+}
+.graph-canvas-wrap {
+  background: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(124,58,237,0.08) !important;
+  border-radius: 16px !important;
+  padding: 16px 12px 8px !important;
+  min-height: 420px !important;
+}
 
 /* ── 10. Glass Overlays + Modal Animations ───────────────── */
 .overlay {
@@ -665,7 +712,11 @@ legend {
 }
 
 /* Graph overlay */
-#graphOverlay .overlay-box { max-height: 90vh; }
+#graphOverlay {
+  align-items: flex-start !important;
+  padding: 3vh 0 !important;
+}
+#graphOverlay .overlay-box { max-height: 92vh; }
 
 /* ── 11. Button System ───────────────────────────────────── */
 
