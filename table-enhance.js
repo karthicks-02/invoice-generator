@@ -24,16 +24,17 @@
   });
 
   /* ── Staggered row entrance animation ───────────────────── */
+  var MAX_ANIMATED_ROWS = 20;
   function animateRows(tbody) {
     var rows = Array.from(tbody.querySelectorAll('tr'));
     if (!rows.length) return;
-    rows.forEach(function (tr, i) {
-      tr.classList.remove('tr-enter');
-      tr.style.setProperty('--row-delay', (i * 36) + 'ms');
-      /* Force reflow so removing then re-adding the class restarts animation */
-      void tr.offsetWidth;
-      tr.classList.add('tr-enter');
-    });
+    var limit = Math.min(rows.length, MAX_ANIMATED_ROWS);
+    for (var i = 0; i < limit; i++) {
+      rows[i].classList.remove('tr-enter');
+      rows[i].style.setProperty('--row-delay', (i * 30) + 'ms');
+      void rows[i].offsetWidth;
+      rows[i].classList.add('tr-enter');
+    }
   }
 
   /* Watch tbody childList mutations (bulk render triggers one batch) */

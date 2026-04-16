@@ -978,13 +978,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return sortAsc ? na - nb : nb - na;
     });
 
-    tbody.innerHTML = '';
     $('invListEmpty').style.display = filtered.length ? 'none' : 'block';
     $('invListTable').style.display = filtered.length ? 'table' : 'none';
 
+    const fragment = document.createDocumentFragment();
+    let sum = 0;
     filtered.forEach(inv => {
       const tr = document.createElement('tr');
       const total = computeGrandTotal(inv);
+      sum += total;
       tr.innerHTML = `
         <td><input type="checkbox" class="inv-check" data-inv-id="${inv.id}" /></td>
         <td>${escHtml(inv.invoiceNumber)}</td>
@@ -998,11 +1000,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-download" data-inv-id="${inv.id}">PDF</button>
           <button class="btn-del" data-inv-id="${inv.id}">Delete</button>
         </td>`;
-      tbody.appendChild(tr);
+      fragment.appendChild(tr);
     });
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
     if ($('invSelectAll')) $('invSelectAll').checked = false;
-
-    const sum = filtered.reduce((s, inv) => s + computeGrandTotal(inv), 0);
     const periodEl = $('invTotalSummaryPeriod');
     const valueEl = $('invTotalSummaryValue');
     const countEl = $('invTotalSummaryCount');
@@ -6484,73 +6486,34 @@ document.addEventListener('DOMContentLoaded', () => {
       return 0;
     });
 
-    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
     $('poInvListEmpty').style.display = filtered.length ? 'none' : 'block';
     $('poInvListTable').style.display = filtered.length ? 'table' : 'none';
 
+    const fragment = document.createDocumentFragment();
+    let sum = 0;
     filtered.forEach(inv => {
       const tr = document.createElement('tr');
       const total = computePoGrandTotal(inv);
-
-      const tdCheck = document.createElement('td');
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'po-inv-check';
-      cb.dataset.invId = inv.id;
-      tdCheck.appendChild(cb);
-      tr.appendChild(tdCheck);
-
-      const tdNo = document.createElement('td');
-      tdNo.textContent = inv.invoiceNumber || '';
-      tr.appendChild(tdNo);
-
-      const tdDate = document.createElement('td');
-      tdDate.textContent = inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '';
-      tr.appendChild(tdDate);
-
-      const tdVendor = document.createElement('td');
-      tdVendor.textContent = inv.vendorName || '';
-      tr.appendChild(tdVendor);
-
-      const tdType = document.createElement('td');
+      sum += total;
       const bt = Array.isArray(inv.billType) ? inv.billType : [];
-      tdType.textContent = bt.length ? bt.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') : '—';
-      tr.appendChild(tdType);
-
-      const tdTotal = document.createElement('td');
-      tdTotal.className = 'r';
-      tdTotal.textContent = '\u20B9' + fmtNum(total);
-      tr.appendChild(tdTotal);
-
-      const tdAct = document.createElement('td');
-      tdAct.className = 'actions';
-      const viewBtn = document.createElement('button');
-      viewBtn.className = 'btn-view';
-      viewBtn.dataset.invId = inv.id;
-      viewBtn.textContent = 'View';
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn-edit';
-      editBtn.dataset.invId = inv.id;
-      editBtn.textContent = 'Edit';
-      const pdfBtn = document.createElement('button');
-      pdfBtn.className = 'btn-download';
-      pdfBtn.dataset.invId = inv.id;
-      pdfBtn.textContent = 'PDF';
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-del';
-      delBtn.dataset.invId = inv.id;
-      delBtn.textContent = 'Delete';
-      tdAct.appendChild(viewBtn);
-      tdAct.appendChild(editBtn);
-      tdAct.appendChild(pdfBtn);
-      tdAct.appendChild(delBtn);
-      tr.appendChild(tdAct);
-
-      tbody.appendChild(tr);
+      tr.innerHTML = `
+        <td><input type="checkbox" class="po-inv-check" data-inv-id="${inv.id}" /></td>
+        <td>${escHtml(inv.invoiceNumber || '')}</td>
+        <td>${inv.invoiceDate ? formatShortDate(inv.invoiceDate) : ''}</td>
+        <td>${escHtml(inv.vendorName || '')}</td>
+        <td>${bt.length ? escHtml(bt.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')) : '—'}</td>
+        <td class="r">₹${fmtNum(total)}</td>
+        <td class="actions">
+          <button class="btn-view" data-inv-id="${inv.id}">View</button>
+          <button class="btn-edit" data-inv-id="${inv.id}">Edit</button>
+          <button class="btn-download" data-inv-id="${inv.id}">PDF</button>
+          <button class="btn-del" data-inv-id="${inv.id}">Delete</button>
+        </td>`;
+      fragment.appendChild(tr);
     });
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
     if ($('poInvSelectAll')) $('poInvSelectAll').checked = false;
-
-    const sum = filtered.reduce((s, inv) => s + computePoGrandTotal(inv), 0);
     $('poInvTotalSummaryValue').textContent = '\u20B9' + fmtNum(sum);
     $('poInvTotalSummaryPeriod').textContent = getPoInvoiceListSummaryPeriodLabel();
     $('poInvTotalSummaryCount').textContent = filtered.length + ' PO invoice' + (filtered.length !== 1 ? 's' : '');
