@@ -1595,45 +1595,32 @@ input.inv-rate-input {
   background: rgba(34,197,94,0.12);
   color: #16a34a;
 }
-.days-warm {
-  background: rgba(234,179,8,0.14);
-  color: #a16207;
-}
-.days-hot {
-  background: rgba(249,115,22,0.14);
-  color: #c2410c;
-  animation: days-pulse-orange 2s ease-in-out infinite;
-}
-.days-overdue-pill {
-  background: rgba(220,38,38,0.14);
-  color: #dc2626;
-  animation: days-pulse-red 1.8s ease-in-out infinite;
-}
-.days-critical {
+.days-danger {
   background: #dc2626;
   color: #fff;
-  animation: days-shake 0.4s cubic-bezier(.36,.07,.19,.97) both, days-glow-red 2s ease-in-out 0.5s infinite;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 0 8px rgba(220,38,38,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+  animation:
+    days-pop 0.45s cubic-bezier(.34,1.56,.64,1) both,
+    days-beacon 2s ease-in-out 0.5s infinite;
 }
-@keyframes days-pulse-orange {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
-  50% { box-shadow: 0 0 8px 2px rgba(249,115,22,0.2); }
+@keyframes days-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
 }
-@keyframes days-pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); transform: scale(1); }
-  50% { box-shadow: 0 0 10px 2px rgba(220,38,38,0.2); transform: scale(1.03); }
-}
-@keyframes days-glow-red {
-  0%, 100% { box-shadow: 0 0 6px rgba(220,38,38,0.3); }
-  50% { box-shadow: 0 0 14px rgba(220,38,38,0.5); }
-}
-@keyframes days-shake {
-  10%, 90% { transform: translateX(-1px); }
-  20%, 80% { transform: translateX(1.5px); }
-  30%, 50%, 70% { transform: translateX(-2px); }
-  40%, 60% { transform: translateX(2px); }
+@keyframes days-beacon {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(220,38,38,0.35), 0 0 0 0 rgba(220,38,38,0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(220,38,38,0.55), 0 0 0 5px rgba(220,38,38,0);
+    transform: scale(1.06);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .days-hot, .days-overdue-pill, .days-critical { animation: none; }
+  .days-danger { animation: none; }
 }
 
 /* Per-company days filter */

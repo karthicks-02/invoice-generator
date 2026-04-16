@@ -1729,10 +1729,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function daysPillClass(days) {
-    if (days >= 60) return 'days-pill days-critical';
-    if (days >= 45) return 'days-pill days-overdue-pill';
-    if (days >= 30) return 'days-pill days-hot';
-    if (days >= 15) return 'days-pill days-warm';
+    if (days >= 30) return 'days-pill days-danger';
     return 'days-pill days-fresh';
   }
 
