@@ -4,8 +4,8 @@
   "description": "Invoice generator & business management for Karthick Industries",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f4f6f9",
-  "theme_color": "#1a3a5c",
+  "background_color": "#ede9ff",
+  "theme_color": "#7c3aed",
   "orientation": "any",
   "icons": [
     {

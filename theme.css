@@ -838,3 +838,77 @@ legend {
 
 /* Row overdue highlight — softer on glass bg */
 .row-overdue { background: rgba(239,68,68,0.07) !important; }
+
+/* ── 15. Responsive Overrides ────────────────────────────── */
+
+/* Tablet: 1024px */
+@media (max-width: 1024px) {
+  .home-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  header { padding: 12px 16px; }
+}
+
+/* Small tablet / large phone: 768px */
+@media (max-width: 768px) {
+  header { padding: 10px 12px; }
+  .header-inner { padding: 10px 16px; border-radius: 18px; }
+  .logo-gem { width: 30px; height: 30px; font-size: 12px; }
+  .logo-name { font-size: 13px; }
+
+  .home-greeting { padding: 16px 4px 14px; }
+  .home-greeting-h1 { font-size: clamp(20px, 5vw, 30px); }
+
+  .home-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+  .home-kpi-card { padding: 14px 16px; border-radius: 16px; }
+  .home-kpi-value { font-size: clamp(18px, 3vw, 24px); }
+
+  .home-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .home-card { padding: 16px 14px; border-radius: 16px; }
+
+  .view-header { border-radius: 14px; padding: 10px 14px; }
+  .overlay-box { border-radius: 20px; }
+}
+
+/* Phone: 600px */
+@media (max-width: 600px) {
+  .home-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .home-kpi-card { padding: 12px 14px; }
+  .home-kpi-label { font-size: 9px; }
+
+  .home-cards { grid-template-columns: 1fr; gap: 8px; }
+  .home-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; text-align: left;
+  }
+  .home-card::after { height: 50%; }
+  .home-card-icon { margin: 0; flex-shrink: 0; width: 42px; height: 42px; border-radius: 13px; }
+
+  header { padding: 8px 10px; }
+  .header-inner { padding: 9px 14px; border-radius: 16px; }
+  .logo-text-group .subtitle { display: none; }
+
+  .data-table-wrap { border-radius: 16px; }
+  .fieldset, fieldset { border-radius: 16px; }
+}
+
+/* Small phone: 380px */
+@media (max-width: 380px) {
+  .home-kpi-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .home-kpi-value { font-size: 18px; letter-spacing: -0.5px; }
+  .home-kpi-card { padding: 10px 12px; }
+}
+
+/* ── 16. Print safety — ensure glass doesn't affect PDF rendering ── */
+@media print {
+  .bg-mesh, .grain { display: none !important; }
+  header { background: none !important; padding: 0 !important; position: static !important; }
+  .header-inner { background: none !important; border: none !important; box-shadow: none !important; }
+  fieldset { background: #fff !important; border: 1px solid #e2e6ed !important; box-shadow: none !important; backdrop-filter: none !important; }
+  .data-table-wrap { background: #fff !important; border: 1px solid #e2e6ed !important; box-shadow: none !important; backdrop-filter: none !important; }
+}
+
+/* ── 17. Reduce motion for accessibility ──────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .bg-mesh::before, .bg-mesh::after { animation: none; }
+  .home-card, .home-kpi-card, .bcard { animation: none; transition: none; }
+  .home-card::before { display: none; }
+}
