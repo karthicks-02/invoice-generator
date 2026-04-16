@@ -7,27 +7,22 @@
 (function () {
   'use strict';
 
-  /* ── Greeting & Date ─────────────────────────────────────── */
-  var homeDateEl = document.getElementById('homeDate');
-  if (homeDateEl) {
-    homeDateEl.textContent = new Date().toLocaleDateString('en-IN', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
-  }
+  /* ── Date & Greeting ─────────────────────────────────────── */
   var kpiMonthEl = document.getElementById('kpiMonthName');
   if (kpiMonthEl) {
     kpiMonthEl.textContent = new Date().toLocaleDateString('en-IN', {
       month: 'long', year: 'numeric'
     });
   }
-  var h1 = document.querySelector('.home-greeting-h1');
-  if (h1) {
-    var hr  = new Date().getHours();
+  var dateSubEl = document.getElementById('homeDate');
+  if (dateSubEl) {
+    var now = new Date();
+    var hr = now.getHours();
     var greet = hr < 12 ? 'Good Morning' : hr < 17 ? 'Good Afternoon' : 'Good Evening';
     var emoji = hr < 12 ? '\uD83D\uDC4B' : hr < 17 ? '\u2600\uFE0F' : '\uD83C\uDF19';
-    var nodes = h1.childNodes;
-    if (nodes[0] && nodes[0].nodeType === 3) nodes[0].textContent = greet + ', ';
-    if (nodes[2] && nodes[2].nodeType === 3) nodes[2].textContent = ' ' + emoji;
+    dateSubEl.textContent = greet + ' ' + emoji + '  \u2022  ' + now.toLocaleDateString('en-IN', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
   }
 
   /* ── State ───────────────────────────────────────────────── */
