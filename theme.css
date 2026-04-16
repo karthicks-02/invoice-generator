@@ -199,3 +199,207 @@ header h1 {
   background: rgba(255,255,255,0.75) !important;
   color: #7c3aed !important;
 }
+
+/* ── 7. Home Panel — Greeting + KPI + Glass Module Cards ─── */
+
+/* Container padding */
+.home-panel { padding: 0; }
+
+/* Greeting section */
+.home-greeting {
+  padding: 24px 4px 20px;
+  animation: fade-up 0.7s cubic-bezier(.16,1,.3,1) 0.1s both;
+}
+.home-greeting-tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 14px 4px 8px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 100px;
+  font-size: 11px; font-weight: 600; color: #7c3aed;
+  margin-bottom: 10px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset;
+}
+.greeting-pip {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.22);
+  animation: pip-pulse 2.5s ease infinite;
+}
+@keyframes pip-pulse {
+  0%,100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.22); }
+  50%      { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+.home-greeting-h1 {
+  font-family: 'Syne', 'Inter', sans-serif;
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 800; color: #1e1040;
+  letter-spacing: -1.2px; line-height: 1.1;
+  margin-bottom: 6px;
+}
+.home-greeting-h1 span {
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 40%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.home-greeting-sub {
+  font-size: 13px; color: #7a6a9a;
+  margin: 0; font-weight: 400;
+}
+
+/* KPI row */
+.home-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+  animation: fade-up 0.7s cubic-bezier(.16,1,.3,1) 0.15s both;
+}
+.home-kpi-card {
+  background: rgba(255,255,255,0.42);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(255,255,255,0.68);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow:
+    0 4px 20px rgba(99,102,241,0.08),
+    0 1px 0 rgba(255,255,255,0.92) inset;
+  position: relative; overflow: hidden;
+  transition: transform 0.35s cubic-bezier(.16,1,.3,1), box-shadow 0.35s ease;
+  cursor: default;
+}
+/* Specular cap */
+.home-kpi-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.32) 0%, transparent 100%);
+  pointer-events: none; border-radius: inherit;
+}
+.home-kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 16px 40px rgba(99,102,241,0.14),
+    0 1px 0 rgba(255,255,255,0.95) inset;
+}
+
+/* Revenue card — special gradient */
+.home-kpi-revenue {
+  background: linear-gradient(145deg, #7c3aed, #6366f1, #8b5cf6);
+  border-color: rgba(255,255,255,0.22);
+  box-shadow:
+    0 8px 30px rgba(99,102,241,0.40),
+    0 1px 0 rgba(255,255,255,0.35) inset;
+}
+.home-kpi-revenue::after {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.18) 0%, transparent 100%);
+}
+.home-kpi-revenue .home-kpi-label { color: rgba(255,255,255,0.65); }
+.home-kpi-revenue .home-kpi-value { color: #fff; }
+.home-kpi-revenue .home-kpi-sub   { color: rgba(255,255,255,0.6); }
+.home-kpi-revenue:hover {
+  box-shadow:
+    0 20px 48px rgba(99,102,241,0.55),
+    0 1px 0 rgba(255,255,255,0.4) inset;
+}
+
+.home-kpi-label {
+  font-size: 10px; font-weight: 700;
+  color: #7a6a9a; text-transform: uppercase;
+  letter-spacing: 1.4px; margin-bottom: 8px;
+  position: relative; z-index: 2;
+}
+.home-kpi-value {
+  font-family: 'Syne', 'Inter', sans-serif;
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 800; color: #1e1040;
+  letter-spacing: -1px; line-height: 1;
+  margin-bottom: 4px; position: relative; z-index: 2;
+}
+.home-kpi-sub {
+  font-size: 11px; color: #7a6a9a;
+  position: relative; z-index: 2;
+}
+
+/* Home module cards grid */
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.home-card {
+  background: rgba(255,255,255,0.42);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(255,255,255,0.68);
+  border-radius: 20px;
+  padding: 22px 18px;
+  box-shadow:
+    0 4px 20px rgba(99,102,241,0.07),
+    0 1px 0 rgba(255,255,255,0.92) inset;
+  position: relative; overflow: hidden;
+  transition: transform 0.35s cubic-bezier(.16,1,.3,1), box-shadow 0.35s ease, border-color 0.35s ease;
+  animation: card-in 0.7s cubic-bezier(.16,1,.3,1) var(--card-delay, 0.2s) both;
+}
+/* Sheen sweep on hover */
+.home-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.22) 50%, transparent 60%);
+  transform: skewX(-15deg);
+  transition: left 0.65s ease;
+  pointer-events: none; z-index: 3;
+}
+.home-card:hover::before { left: 130%; }
+/* Specular cap */
+.home-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.30) 0%, transparent 100%);
+  pointer-events: none; border-radius: inherit;
+}
+.home-card:hover {
+  transform: translateY(-7px) scale(1.02);
+  box-shadow:
+    0 22px 50px rgba(99,102,241,0.18),
+    0 1px 0 rgba(255,255,255,0.95) inset;
+  border-color: rgba(255,255,255,0.90);
+  background: rgba(255,255,255,0.62);
+}
+
+/* Staggered card entrance */
+.home-card:nth-child(1)  { --card-delay: 0.18s; }
+.home-card:nth-child(2)  { --card-delay: 0.22s; }
+.home-card:nth-child(3)  { --card-delay: 0.26s; }
+.home-card:nth-child(4)  { --card-delay: 0.30s; }
+.home-card:nth-child(5)  { --card-delay: 0.34s; }
+.home-card:nth-child(6)  { --card-delay: 0.38s; }
+.home-card:nth-child(7)  { --card-delay: 0.42s; }
+.home-card:nth-child(8)  { --card-delay: 0.46s; }
+.home-card:nth-child(9)  { --card-delay: 0.50s; }
+.home-card:nth-child(10) { --card-delay: 0.54s; }
+
+.home-card-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(99,102,241,0.10));
+  border: 1px solid rgba(255,255,255,0.70);
+  color: #7c3aed;
+  border-radius: 15px; margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10), 0 1px 0 rgba(255,255,255,0.8) inset;
+  position: relative; z-index: 2;
+}
+.home-card h3 {
+  font-size: 1rem; font-weight: 700;
+  color: #1e1040; margin-bottom: .3rem;
+  position: relative; z-index: 2;
+}
+.home-card p {
+  font-size: .82rem; color: #7a6a9a;
+  position: relative; z-index: 2;
+}
