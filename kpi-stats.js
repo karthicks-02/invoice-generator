@@ -1,57 +1,50 @@
 /**
- * kpi-stats.js  v4  —  Live KPI dashboard for Karthick Industries
+ * kpi-stats.js  v6  —  Live KPI dashboard for Karthick Industries
  *
- * Uses BOTH auth.onAuthStateChanged AND a MutationObserver on #homePanel.
- * tryLoad() is called from either path; it proceeds only when both
- * conditions are true: (a) user is signed in, (b) home panel is visible.
- * This is race-free regardless of which event fires first.
+ * Polling-first: checks every 300ms until auth.currentUser is set
+ * AND homePanel is visible. Errors written directly to DOM for diagnosis.
  */
 (function () {
   'use strict';
 
-  /* ── Helpers ─────────────────────────────────────────────── */
-  function el(id) { return document.getElementById(id); }
-
-  /* ── Date / greeting labels (safe DOM manipulation) ──────── */
-  var homeDateEl = el('homeDate');
+  /* ── Date / greeting labels ──────────────────────────────── */
+  var homeDateEl = document.getElementById('homeDate');
   if (homeDateEl) {
     homeDateEl.textContent = new Date().toLocaleDateString('en-IN', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
   }
-  var kpiMonthEl = el('kpiMonthName');
+  var kpiMonthEl = document.getElementById('kpiMonthName');
   if (kpiMonthEl) {
     kpiMonthEl.textContent = new Date().toLocaleDateString('en-IN', {
       month: 'long', year: 'numeric'
     });
   }
-  /* Time-based greeting via text node (no innerHTML) */
   var h1 = document.querySelector('.home-greeting-h1');
   if (h1) {
     var hr = new Date().getHours();
     var greet = hr < 12 ? 'Good Morning' : hr < 17 ? 'Good Afternoon' : 'Good Evening';
     var emoji  = hr < 12 ? '\uD83D\uDC4B' : hr < 17 ? '\u2600\uFE0F' : '\uD83C\uDF19';
-    var nodes = h1.childNodes;
+    var nodes  = h1.childNodes;
     if (nodes[0] && nodes[0].nodeType === 3) nodes[0].textContent = greet + ', ';
     if (nodes[2] && nodes[2].nodeType === 3) nodes[2].textContent = ' ' + emoji;
   }
 
   /* ── State ───────────────────────────────────────────────── */
-  var uid    = null;   /* set by onAuthStateChanged */
-  var loaded = false;  /* prevent duplicate fetches */
+  var loaded = false;
 
-  /* ── Shimmer ─────────────────────────────────────────────── */
+  /* ── DOM helpers ─────────────────────────────────────────── */
   var KPI_IDS = ['kpiRevenue', 'kpiOutstanding', 'kpiThisMonth', 'kpiInvoiceCount'];
+
+  function setKpiText(id, text) {
+    var e = document.getElementById(id);
+    if (e) { e.classList.remove('kpi-loading'); e.textContent = text; }
+  }
+
   function shimmer(on) {
     KPI_IDS.forEach(function (id) {
-      var e = el(id);
+      var e = document.getElementById(id);
       if (e) e.classList[on ? 'add' : 'remove']('kpi-loading');
-    });
-  }
-  function resetDashes() {
-    KPI_IDS.forEach(function (id) {
-      var e = el(id);
-      if (e) { e.textContent = '\u2014'; e.classList.remove('kpi-loading'); }
     });
   }
 
@@ -65,7 +58,7 @@
     return Math.round(sub + tax);
   }
 
-  /* ── Formatters ──────────────────────────────────────────── */
+  /* ── Money formatter ─────────────────────────────────────── */
   function fmtMoney(v) {
     v = Math.round(v);
     if (v >= 10000000) return '\u20B9' + (v / 10000000).toFixed(2) + 'Cr';
@@ -76,7 +69,7 @@
 
   /* ── Animated counter ────────────────────────────────────── */
   function countUp(id, target, fmtr, ms) {
-    var e = el(id);
+    var e = document.getElementById(id);
     if (!e) return;
     e.classList.remove('kpi-loading');
     var steps = Math.max(1, Math.ceil(ms / 16));
@@ -89,9 +82,16 @@
   }
 
   /* ── Core data fetch ─────────────────────────────────────── */
-  function doLoad() {
+  function doLoad(uid) {
     shimmer(true);
-    var base = firestore.collection('users').doc(uid).collection('data');
+
+    var fs;
+    try { fs = firestore; } catch (e) {
+      setKpiText('kpiRevenue', 'No DB');
+      return;
+    }
+
+    var base = fs.collection('users').doc(uid).collection('data');
     Promise.all([
       base.doc('invoices').get(),
       base.doc('payments').get()
@@ -122,47 +122,56 @@
       countUp('kpiOutstanding',  Math.max(0, revenue - paid), fmtMoney, 1000);
       countUp('kpiThisMonth',    month,                       fmtMoney,  900);
       countUp('kpiInvoiceCount', invoices.length,             null,       750);
-    }).catch(function (e) {
+    }).catch(function (err) {
       loaded = false;
       shimmer(false);
-      console.warn('[kpi-stats] Firestore error:', e);
+      /* Write error directly to first card so it's visible without DevTools */
+      setKpiText('kpiRevenue', 'Err:' + (err.code || err.message || '?'));
+      /* Restart polling so it retries */
+      startPoll();
     });
   }
 
-  /* ── tryLoad: proceed only when BOTH uid AND panel are ready ─ */
+  /* ── Reset when navigating away ──────────────────────────── */
   var panel = document.getElementById('homePanel');
-
-  function tryLoad() {
-    if (loaded)  return;
-    if (!uid)    return;
-    if (!panel || panel.classList.contains('hidden')) return;
-    loaded = true;
-    doLoad();
-  }
-
-  /* ── 1. Auth listener (runs regardless of panel state) ───── */
-  auth.onAuthStateChanged(function (user) {
-    if (user) {
-      uid = user.uid;
-      tryLoad();
-    } else {
-      uid    = null;
-      loaded = false;
-      resetDashes();
-    }
-  });
-
-  /* ── 2. Panel visibility watcher ─────────────────────────── */
   if (panel) {
     new MutationObserver(function () {
       if (panel.classList.contains('hidden')) {
-        loaded = false;   /* reset so data refreshes on next home visit */
-      } else {
-        tryLoad();
+        loaded = false;
+        /* Restart poller so data refreshes next time panel opens */
+        startPoll();
       }
     }).observe(panel, { attributes: true, attributeFilter: ['class'] });
-
-    tryLoad(); /* cover the (unlikely) case where panel is already visible */
   }
+
+  /* ── Poll every 300ms until both conditions are met ─────── */
+  var pollTimer = null;
+  var attempts  = 0;
+
+  function startPoll() {
+    if (pollTimer) clearInterval(pollTimer);
+    attempts = 0;
+
+    pollTimer = setInterval(function () {
+      attempts++;
+      if (attempts > 100) { clearInterval(pollTimer); pollTimer = null; return; }
+      if (loaded) { clearInterval(pollTimer); pollTimer = null; return; }
+
+      var user;
+      try { user = (typeof auth !== 'undefined') ? auth.currentUser : null; }
+      catch (e) { user = null; }
+
+      var pnl   = document.getElementById('homePanel');
+      var ready = user && pnl && !pnl.classList.contains('hidden');
+      if (!ready) return;
+
+      clearInterval(pollTimer);
+      pollTimer = null;
+      loaded = true;
+      doLoad(user.uid);
+    }, 300);
+  }
+
+  startPoll();
 
 })();
