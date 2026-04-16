@@ -278,51 +278,52 @@
         </table>
         <p id="invListEmpty" class="empty-msg">No invoices saved yet.</p>
       </div>
-      <!-- Graph Dialog -->
-      <div id="graphOverlay" class="overlay hidden">
-        <div class="overlay-box graph-dialog">
-          <div class="graph-dialog-header">
-            <h3>Revenue Graph</h3>
-            <div style="display:flex;gap:.5rem;align-items:center">
-              <button class="btn btn-sm btn-primary" id="graphDownloadBtn">Download</button>
-              <button class="btn btn-sm btn-secondary" id="graphCloseBtn">&times;</button>
-            </div>
-          </div>
-          <div class="graph-tabs">
-            <button class="graph-tab active" data-mode="monthly">Monthly</button>
-            <button class="graph-tab" data-mode="weekly">Weekly</button>
-            <button class="graph-tab" data-mode="yearly">Yearly</button>
-            <button class="graph-tab" data-mode="custom">Custom</button>
-          </div>
-          <div class="graph-filters" id="graphFilters">
-            <select id="chartYear" class="filter-select" style="min-width:100px"></select>
-            <select id="chartMonth" class="filter-select hidden" style="min-width:120px"></select>
-          </div>
-          <div class="graph-custom-row hidden" id="graphCustomRow">
-            <input type="date" id="graphCustomFrom" class="filter-date" />
-            <input type="date" id="graphCustomTo" class="filter-date" />
-          </div>
-          <div class="graph-canvas-wrap">
-            <canvas id="overlayRevenueChart"></canvas>
+    </div>
+
+    <!-- Graph Dialog (outside views to avoid stacking context from animations) -->
+    <div id="graphOverlay" class="overlay hidden">
+      <div class="overlay-box graph-dialog">
+        <div class="graph-dialog-header">
+          <h3>Revenue Graph</h3>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <button class="btn btn-sm btn-primary" id="graphDownloadBtn">Download</button>
+            <button class="btn btn-sm btn-secondary" id="graphCloseBtn">&times;</button>
           </div>
         </div>
+        <div class="graph-tabs">
+          <button class="graph-tab active" data-mode="monthly">Monthly</button>
+          <button class="graph-tab" data-mode="weekly">Weekly</button>
+          <button class="graph-tab" data-mode="yearly">Yearly</button>
+          <button class="graph-tab" data-mode="custom">Custom</button>
+        </div>
+        <div class="graph-filters" id="graphFilters">
+          <select id="chartYear" class="filter-select" style="min-width:100px"></select>
+          <select id="chartMonth" class="filter-select hidden" style="min-width:120px"></select>
+        </div>
+        <div class="graph-custom-row hidden" id="graphCustomRow">
+          <input type="date" id="graphCustomFrom" class="filter-date" />
+          <input type="date" id="graphCustomTo" class="filter-date" />
+        </div>
+        <div class="graph-canvas-wrap">
+          <canvas id="overlayRevenueChart"></canvas>
+        </div>
       </div>
+    </div>
 
-      <!-- Custom Date Range Overlay -->
-      <div id="customRangeOverlay" class="overlay hidden">
-        <div class="overlay-box">
-          <h3>Custom Date Range</h3>
-          <p class="overlay-subtitle">Select a date range to filter invoices</p>
-          <div class="row">
-            <div class="field"><label>From</label><input type="date" id="customFrom" /></div>
-            <div class="field"><label>To</label><input type="date" id="customTo" /></div>
-          </div>
-          <p id="customRangeCount" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem"></p>
-          <div class="overlay-actions">
-            <button class="btn btn-primary" id="customApplyBtn">Apply Filter</button>
-            <button class="btn btn-primary" id="customDownloadBtn">⬇ Download PDF</button>
-            <button class="btn btn-secondary" id="customCancelBtn">Cancel</button>
-          </div>
+    <!-- Custom Date Range Overlay -->
+    <div id="customRangeOverlay" class="overlay hidden">
+      <div class="overlay-box">
+        <h3>Custom Date Range</h3>
+        <p class="overlay-subtitle">Select a date range to filter invoices</p>
+        <div class="row">
+          <div class="field"><label>From</label><input type="date" id="customFrom" /></div>
+          <div class="field"><label>To</label><input type="date" id="customTo" /></div>
+        </div>
+        <p id="customRangeCount" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem"></p>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="customApplyBtn">Apply Filter</button>
+          <button class="btn btn-primary" id="customDownloadBtn">⬇ Download PDF</button>
+          <button class="btn btn-secondary" id="customCancelBtn">Cancel</button>
         </div>
       </div>
     </div>
