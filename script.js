@@ -1728,6 +1728,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return Math.max(0, n);
   }
 
+  function daysPillClass(days) {
+    if (days >= 60) return 'days-pill days-critical';
+    if (days >= 45) return 'days-pill days-overdue-pill';
+    if (days >= 30) return 'days-pill days-hot';
+    if (days >= 15) return 'days-pill days-warm';
+    return 'days-pill days-fresh';
+  }
+
+  function daysPillHtml(days) {
+    return '<span class="' + daysPillClass(days) + '">' + days + 'd</span>';
+  }
+
   function getPaymentSummarySnapshot(companyName) {
     migratePaymentCreditIds();
     const invs = invoices.filter(inv => inv.buyerName === companyName);
@@ -1849,7 +1861,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r">₹${fmtNum(r.gross)}</td>
           <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
           <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
-          <td class="c${days >= daysFilterFromVal ? ' days-overdue' : ''}">${days}d</td>
+          <td class="c">${daysPillHtml(days)}</td>
           <td><button class="btn-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
         </tr>`;
       }).join('');
@@ -1945,7 +1957,8 @@ document.addEventListener('DOMContentLoaded', () => {
           tr.style.display = (d >= from && (to === Infinity || d <= to)) ? '' : 'none';
           const daysTd = tr.querySelector('td.c');
           if (daysTd) {
-            daysTd.classList.toggle('days-overdue', d >= threshold);
+            var existingSpan = daysTd.querySelector('.days-pill');
+            if (existingSpan) { existingSpan.className = daysPillClass(d); }
           }
         });
       }
@@ -2070,7 +2083,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
         const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
         const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
-        const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= threshold ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
+        const td4 = document.createElement('td'); td4.className = 'c'; var sp4 = document.createElement('span'); sp4.className = daysPillClass(r.days); sp4.textContent = r.days + 'd'; td4.appendChild(sp4); tr.appendChild(td4);
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -2142,7 +2155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const c1 = document.createElement('td'); c1.style.cssText = tdStyle; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
         const c2 = document.createElement('td'); c2.style.cssText = tdStyle; c2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c2);
         const c3 = document.createElement('td'); c3.style.cssText = tdStyle + 'text-align:right;font-variant-numeric:tabular-nums;'; c3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c3);
-        const c4 = document.createElement('td'); c4.style.cssText = tdStyle + 'text-align:center;'; c4.textContent = r.days + 'd'; tr.appendChild(c4);
+        const c4 = document.createElement('td'); c4.style.cssText = tdStyle + 'text-align:center;'; var sp4b = document.createElement('span'); sp4b.className = daysPillClass(r.days); sp4b.textContent = r.days + 'd'; c4.appendChild(sp4b); tr.appendChild(c4);
         tbodyEl.appendChild(tr);
       });
     }
@@ -2317,7 +2330,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r pay-sum-num">₹${fmtNum(r.gross)}</td>
           <td class="r pay-sum-num">₹${fmtNum(r.applied)}</td>
           <td class="r pay-sum-num pay-sum-strong">₹${fmtNum(r.balance)}</td>
-          <td class="c${daysSince(r.inv.invoiceDate || r.inv.createdAt) >= daysFilterFromVal ? ' days-overdue' : ''}">${daysSince(r.inv.invoiceDate || r.inv.createdAt)}d</td>
+          <td class="c">${daysPillHtml(daysSince(r.inv.invoiceDate || r.inv.createdAt))}</td>
           <td class="pay-sum-act"><button type="button" class="btn-view" data-inv-id="${r.inv.id}">View</button></td>
         </tr>`).join('')
       : `<tr><td colspan="7" class="pay-sum-empty">No pending balances — all covered (FIFO).</td></tr>`;
@@ -2720,7 +2733,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const td1 = document.createElement('td'); td1.textContent = r.inv.invoiceNumber; tr.appendChild(td1);
           const td2 = document.createElement('td'); td2.className = 'pay-col-date'; td2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(td2);
           const td3 = document.createElement('td'); td3.className = 'r'; td3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(td3);
-          const td4 = document.createElement('td'); td4.className = 'c' + (r.days >= daysFilterFromVal ? ' days-overdue' : ''); td4.textContent = r.days + 'd'; tr.appendChild(td4);
+          const td4 = document.createElement('td'); td4.className = 'c'; var sp4 = document.createElement('span'); sp4.className = daysPillClass(r.days); sp4.textContent = r.days + 'd'; td4.appendChild(sp4); tr.appendChild(td4);
           tbody.appendChild(tr);
         });
         tbl.appendChild(tbody);
@@ -2846,7 +2859,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const c1 = document.createElement('td'); c1.style.cssText = tdS; c1.textContent = r.inv.invoiceNumber; tr.appendChild(c1);
         const c2 = document.createElement('td'); c2.style.cssText = tdS; c2.textContent = r.inv.invoiceDate ? formatShortDate(r.inv.invoiceDate) : '\u2014'; tr.appendChild(c2);
         const c3 = document.createElement('td'); c3.style.cssText = tdS + 'text-align:right;font-variant-numeric:tabular-nums;'; c3.textContent = '\u20b9' + fmtNum(r.balance); tr.appendChild(c3);
-        const c4 = document.createElement('td'); c4.style.cssText = tdS + 'text-align:center;' + (r.days >= daysFilterFromVal ? 'color:#dc2626;font-weight:700;' : ''); c4.textContent = r.days + 'd'; tr.appendChild(c4);
+        const c4 = document.createElement('td'); c4.style.cssText = tdS + 'text-align:center;'; var sp4c = document.createElement('span'); sp4c.className = daysPillClass(r.days); sp4c.textContent = r.days + 'd'; c4.appendChild(sp4c); tr.appendChild(c4);
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -4824,7 +4837,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="r">₹${fmtNum(r.gross)}</td>
           <td class="r pay-col-settled">₹${fmtNum(r.applied)}</td>
           <td class="r pay-col-balance">₹${fmtNum(r.balance)}</td>
-          <td class="c${days >= 30 ? ' days-overdue' : ''}">${days}d</td>
+          <td class="c">${daysPillHtml(days)}</td>
           <td><button class="btn-vpay-view" data-inv-id="${r.inv.id}" style="font-size:.78rem">View</button></td>
         </tr>`;
       }).join('');
