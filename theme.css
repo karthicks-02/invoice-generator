@@ -626,7 +626,8 @@ legend {
   padding: 1rem 0;
 }
 #payHistoryOverlay,
-#vpayHistoryOverlay {
+#vpayHistoryOverlay,
+#daysFilterOverlay {
   align-items: flex-start !important;
   padding: 2vh 0 2vh !important;
 }
@@ -652,7 +653,12 @@ legend {
 /* Pay credit / history boxes */
 .pay-credit-box.overlay-box,
 .overlay-box.pay-history-box,
-.days-filter-result-box.overlay-box,
+.days-filter-result-box.overlay-box {
+  background: rgba(250,248,255,0.92);
+  max-height: 94vh !important;
+  overflow-y: auto !important;
+  margin-top: 1vh !important;
+}
 .whatsapp-share-box.overlay-box,
 .wa-ready-box.overlay-box {
   background: rgba(255,255,255,0.75);
