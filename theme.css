@@ -537,7 +537,8 @@ legend {
   border: 1px solid rgba(255,255,255,0.65);
   border-radius: 20px;
   box-shadow: 0 4px 24px rgba(99,102,241,0.07), 0 1px 0 rgba(255,255,255,0.90) inset;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 .data-table th {
   background: rgba(248,246,255,0.65);
@@ -1586,7 +1587,8 @@ legend {
   border: 1px solid rgba(255,255,255,0.80) !important;
   border-radius: 20px !important;
   box-shadow: 0 6px 28px rgba(99,102,241,0.08), 0 1px 0 rgba(255,255,255,0.95) inset !important;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 /* Column headers */
@@ -1632,13 +1634,11 @@ legend {
 }
 .data-table tbody tr:hover td:first-child::before { opacity: 1; }
 
-/* Actions fade in on row hover */
+/* Actions always visible */
 .data-table td.actions {
-  opacity: 0.28;
-  transition: opacity 0.18s ease;
+  opacity: 1;
   white-space: nowrap;
 }
-.data-table tbody tr:hover td.actions { opacity: 1; }
 
 /* Action button pill redesign */
 .data-table .btn-view,
