@@ -303,15 +303,16 @@
       /* ── Trend badges (this month vs last month) ─────────── */
       var cur  = buckets[11];
       var prev = buckets[10];
-      function mkTrend(curVal, prevVal) {
-        if (!prevVal) return '';
+      function applyTrend(el, curVal, prevVal) {
+        if (!el || !prevVal) { if (el) el.textContent = ''; return; }
         var pct = Math.round((curVal - prevVal) / prevVal * 100);
-        return (pct >= 0 ? '\u25B2 ' : '\u25BC ') + Math.abs(pct) + '%';
+        var up  = pct >= 0;
+        el.textContent = (up ? '\u25B2 ' : '\u25BC ') + Math.abs(pct) + '%';
+        el.classList.remove('trend-up', 'trend-down');
+        el.classList.add(up ? 'trend-up' : 'trend-down');
       }
-      var monTrend = document.getElementById('kpiMonthTrend');
-      var cntTrend = document.getElementById('kpiCountTrend');
-      if (monTrend) monTrend.textContent = mkTrend(cur.rev, prev.rev);
-      if (cntTrend) cntTrend.textContent = mkTrend(cur.cnt, prev.cnt);
+      applyTrend(document.getElementById('kpiMonthTrend'), cur.rev, prev.rev);
+      applyTrend(document.getElementById('kpiCountTrend'), cur.cnt, prev.cnt);
 
       /* ── Sparklines (last 6 months) ──────────────────────── */
       var spark6 = buckets.slice(6);
