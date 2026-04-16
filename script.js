@@ -171,6 +171,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  document.querySelectorAll('.dash-qa-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var v = btn.dataset.view;
+      if (!v) return;
+      showView(v);
+      if (v === 'invoiceView') resetInvoiceForm();
+      if (v === 'invoiceListView') renderInvoiceList();
+      if (v === 'paymentView') renderPaymentView();
+      if (v === 'customerView') hideCustForm();
+      if (v === 'poInvoiceView') resetPoInvoiceForm();
+    });
+  });
+
   // ══════════════════════════════════════
   // ── Customer List CRUD ──
   // ══════════════════════════════════════
