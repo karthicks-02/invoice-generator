@@ -1350,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderGraph() {
-    const ctx = $('revenueChart').getContext('2d');
+    const ctx = $('overlayRevenueChart').getContext('2d');
     if (revenueChart) revenueChart.destroy();
 
     const isPo = typeof poGraphMode !== 'undefined' && poGraphMode;
@@ -1504,7 +1504,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('graphCustomTo').addEventListener('change', renderGraph);
 
   $('graphDownloadBtn').addEventListener('click', () => {
-    const canvas = $('revenueChart');
+    const canvas = $('overlayRevenueChart');
     const link = document.createElement('a');
     link.download = `revenue-${graphMode}-${Date.now()}.png`;
     link.href = canvas.toDataURL('image/png');
