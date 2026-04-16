@@ -747,7 +747,7 @@ input.inv-rate-input {
 
 /* ===== Graph Dialog ===== */
 .graph-dialog {
-  width: min(960px, 94vw);
+  width: min(1100px, 94vw);
   max-width: 94vw;
   max-height: 92vh;
   overflow-y: auto;
@@ -797,7 +797,7 @@ input.inv-rate-input {
 .graph-canvas-wrap {
   position: relative;
   width: 100%;
-  min-height: 420px;
+  min-height: 480px;
 }
 
 /* ===== Reminder Presets ===== */
@@ -2017,7 +2017,7 @@ input.inv-rate-input {
   .wa-ready-box.overlay-box { min-width: unset; }
 
   .graph-dialog { width: 100%; }
-  .graph-canvas-wrap { min-height: 280px; }
+  .graph-canvas-wrap { min-height: 320px; }
 
   .outstanding-bar { padding: .85rem 1rem; }
   .outstanding-label { font-size: .82rem; }

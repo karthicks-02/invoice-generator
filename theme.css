@@ -657,11 +657,11 @@ legend {
   background: rgba(255,255,255,0.7) !important;
 }
 .graph-canvas-wrap {
-  background: rgba(255,255,255,0.5) !important;
-  border: 1px solid rgba(124,58,237,0.08) !important;
+  background: rgba(255,255,255,0.45) !important;
+  border: 1px solid rgba(124,58,237,0.06) !important;
   border-radius: 16px !important;
-  padding: 16px 12px 8px !important;
-  min-height: 420px !important;
+  padding: 20px 16px 10px !important;
+  min-height: 480px !important;
 }
 
 /* ── 10. Glass Overlays + Modal Animations ───────────────── */
@@ -713,10 +713,14 @@ legend {
 
 /* Graph overlay */
 #graphOverlay {
-  align-items: flex-start !important;
-  padding: 3vh 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2vh 0 !important;
 }
-#graphOverlay .overlay-box { max-height: 92vh; }
+#graphOverlay .overlay-box {
+  max-height: 92vh;
+  margin: auto;
+}
 
 /* ── 11. Button System ───────────────────────────────────── */
 
