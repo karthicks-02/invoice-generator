@@ -375,144 +375,134 @@
 
       <div id="payCompanyList"></div>
       <p id="payEmpty" class="empty-msg hidden">No companies found.</p>
+    </div>
 
-      <!-- Add Credit Overlay -->
-      <div id="payFormOverlay" class="overlay hidden">
-        <div class="overlay-box pay-credit-box">
-          <h3 id="payFormHeading">Add Credit</h3>
-          <p class="overlay-subtitle" id="payFormCompanyLabel"></p>
-          <p class="overlay-subtitle" id="payFormOutstanding" style="font-weight:600;color:var(--danger)"></p>
-          <p class="overlay-subtitle pay-form-fifo-hint" id="payFormFifoHint">Credits apply to the oldest invoices first (by invoice date), until the amount is used up.</p>
-          <div class="field" id="payDateField"><label>Created date &amp; time</label><input type="datetime-local" id="payDateInput" step="60" /></div>
-          <div class="field"><label>Credited Amount (₹)</label><input type="number" id="payAmtInput" min="0" step="0.01" /></div>
-          <div class="tds-section">
-            <label class="tds-label">TDS Amounts</label>
-            <div id="tdsEntries"></div>
-            <button type="button" class="btn btn-sm btn-secondary" id="addTdsBtn" style="margin-top:4px">+ Add TDS</button>
-            <div class="tds-total-row" id="tdsTotalRow" style="display:none">
-              <span>Total TDS: <strong id="tdsTotalDisplay">₹0.00</strong></span>
-              <span>Effective Credit: <strong id="tdsEffectiveDisplay">₹0.00</strong></span>
-            </div>
+    <!-- Customer Payment Overlays (outside view to avoid stacking context) -->
+    <div id="payFormOverlay" class="overlay hidden">
+      <div class="overlay-box pay-credit-box">
+        <h3 id="payFormHeading">Add Credit</h3>
+        <p class="overlay-subtitle" id="payFormCompanyLabel"></p>
+        <p class="overlay-subtitle" id="payFormOutstanding" style="font-weight:600;color:var(--danger)"></p>
+        <p class="overlay-subtitle pay-form-fifo-hint" id="payFormFifoHint">Credits apply to the oldest invoices first (by invoice date), until the amount is used up.</p>
+        <div class="field" id="payDateField"><label>Created date &amp; time</label><input type="datetime-local" id="payDateInput" step="60" /></div>
+        <div class="field"><label>Credited Amount (₹)</label><input type="number" id="payAmtInput" min="0" step="0.01" /></div>
+        <div class="tds-section">
+          <label class="tds-label">TDS Amounts</label>
+          <div id="tdsEntries"></div>
+          <button type="button" class="btn btn-sm btn-secondary" id="addTdsBtn" style="margin-top:4px">+ Add TDS</button>
+          <div class="tds-total-row" id="tdsTotalRow" style="display:none">
+            <span>Total TDS: <strong id="tdsTotalDisplay">₹0.00</strong></span>
+            <span>Effective Credit: <strong id="tdsEffectiveDisplay">₹0.00</strong></span>
           </div>
-          <div class="field"><label>Note (optional)</label><input type="text" id="payNoteInput" /></div>
-          <div class="overlay-actions pay-form-actions">
-            <button type="button" class="btn btn-sm btn-secondary pay-form-delete hidden" id="payFormDeleteBtn">Delete credit</button>
-            <div class="pay-form-actions-right">
-              <button type="button" class="btn btn-primary" id="payFormSaveBtn">Save Credit</button>
-              <button type="button" class="btn btn-secondary" id="payFormCancelBtn">Cancel</button>
-            </div>
+        </div>
+        <div class="field"><label>Note (optional)</label><input type="text" id="payNoteInput" /></div>
+        <div class="overlay-actions pay-form-actions">
+          <button type="button" class="btn btn-sm btn-secondary pay-form-delete hidden" id="payFormDeleteBtn">Delete credit</button>
+          <div class="pay-form-actions-right">
+            <button type="button" class="btn btn-primary" id="payFormSaveBtn">Save Credit</button>
+            <button type="button" class="btn btn-secondary" id="payFormCancelBtn">Cancel</button>
           </div>
         </div>
       </div>
-
-      <!-- Credit History Overlay -->
-      <div id="payHistoryOverlay" class="overlay hidden">
-        <div class="overlay-box pay-history-box">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <h3 style="margin:0">Payment summary</h3>
-            <button class="btn btn-sm btn-secondary" id="payHistoryCloseTopBtn" style="font-size:1.1rem;line-height:1;padding:4px 10px">&times;</button>
-          </div>
-          <p class="overlay-subtitle" id="payHistoryLabel"></p>
-          <div id="payHistoryList" class="pay-history-scroll"></div>
-          <p class="overlay-subtitle" id="payHistorySummary" style="font-weight:600"></p>
-          <div class="overlay-actions">
-            <button class="btn btn-secondary" id="payHistoryCloseBtn">Close</button>
-          </div>
+    </div>
+    <div id="payHistoryOverlay" class="overlay hidden">
+      <div class="overlay-box pay-history-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">Payment summary</h3>
+          <button class="btn btn-sm btn-secondary" id="payHistoryCloseTopBtn" style="font-size:1.1rem;line-height:1;padding:4px 10px">&times;</button>
+        </div>
+        <p class="overlay-subtitle" id="payHistoryLabel"></p>
+        <div id="payHistoryList" class="pay-history-scroll"></div>
+        <p class="overlay-subtitle" id="payHistorySummary" style="font-weight:600"></p>
+        <div class="overlay-actions">
+          <button class="btn btn-secondary" id="payHistoryCloseBtn">Close</button>
         </div>
       </div>
-
-      <!-- Days Filter Result Overlay -->
-      <div id="daysFilterOverlay" class="overlay hidden">
-        <div class="overlay-box days-filter-result-box">
-          <div class="days-filter-result-header">
-            <h3 id="daysFilterTitle">Invoices Due</h3>
-            <div style="display:flex;gap:.5rem;align-items:center">
-              <label class="days-filter-toggle" style="margin-right:.25rem">
-                <input type="checkbox" id="daysFilterWithInvoicesOverlay" />
-                <span>Include full invoices</span>
-              </label>
-              <button type="button" class="btn btn-sm btn-primary" id="daysFilterResultPdfBtn">Download PDF</button>
-              <button type="button" class="btn btn-sm btn-whatsapp" id="daysFilterResultWaBtn" title="Share via WhatsApp">WhatsApp</button>
-              <button type="button" class="btn btn-sm btn-secondary" id="daysFilterCloseBtn">&times;</button>
-            </div>
-          </div>
-          <div class="days-filter-overlay-pills" id="daysFilterOverlayPills">
-            <button type="button" class="preset-pill overlay-days-btn active" data-from="0" data-to="">All</button>
-            <button type="button" class="preset-pill overlay-days-btn" data-from="30" data-to="">30d+</button>
-            <button type="button" class="preset-pill overlay-days-btn" data-from="45" data-to="">45d+</button>
-            <button type="button" class="preset-pill overlay-days-btn" data-from="60" data-to="">60d+</button>
-            <button type="button" class="preset-pill overlay-days-btn" data-from="90" data-to="">90d+</button>
-            <input type="number" class="days-input" id="daysFilterOverlayFrom" min="0" value="" placeholder="0" style="width:50px" />
-            <span>to</span>
-            <input type="number" class="days-input" id="daysFilterOverlayTo" min="0" value="" placeholder="∞" style="width:50px" />
-            <span>days</span>
-          </div>
-          <p class="days-filter-summary" id="daysFilterSummary"></p>
-          <div class="days-filter-content" id="daysFilterContent"></div>
-          <div class="days-filter-totals" id="daysFilterTotals"></div>
-        </div>
-      </div>
-
-      <!-- WhatsApp Share Overlay -->
-      <div id="whatsappOverlay" class="overlay hidden">
-        <div class="overlay-box whatsapp-share-box">
-          <div class="wa-dialog-header">
-            <div class="wa-icon-circle">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.313 0-4.46-.768-6.178-2.064l-.435-.336-3.26 1.093 1.093-3.26-.336-.435A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
-            </div>
-            <div>
-              <h3>Send PDF via WhatsApp</h3>
-              <p class="wa-report-label" id="whatsappPdfLabel">Filtered invoices due report</p>
-            </div>
-          </div>
-          <div class="wa-numbers-section" id="waNumbersSection">
-            <label class="wa-field-label">Send to</label>
-            <div class="wa-check-list" id="waCheckList"></div>
-          </div>
-          <div class="wa-add-section">
-            <label class="wa-field-label">Add number</label>
-            <div class="wa-add-row">
-              <span class="whatsapp-country-code">+91</span>
-              <input type="tel" id="whatsappPhoneInput" class="wa-phone-input" maxlength="10" inputmode="numeric" />
-              <button type="button" class="btn btn-sm btn-primary" id="waAddNumBtn">Add</button>
-            </div>
-          </div>
-          <div class="wa-btn-stack">
-            <button type="button" class="btn whatsapp-send-btn wa-big-btn" id="whatsappSendBtn" disabled>Send to WhatsApp</button>
-            <button type="button" class="btn btn-secondary wa-small-btn" id="whatsappDownloadOnlyBtn">Just download PDF</button>
-            <button type="button" class="btn btn-secondary wa-small-btn" id="whatsappCancelBtn">Cancel</button>
+    </div>
+    <div id="daysFilterOverlay" class="overlay hidden">
+      <div class="overlay-box days-filter-result-box">
+        <div class="days-filter-result-header">
+          <h3 id="daysFilterTitle">Invoices Due</h3>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <label class="days-filter-toggle" style="margin-right:.25rem">
+              <input type="checkbox" id="daysFilterWithInvoicesOverlay" />
+              <span>Include full invoices</span>
+            </label>
+            <button type="button" class="btn btn-sm btn-primary" id="daysFilterResultPdfBtn">Download PDF</button>
+            <button type="button" class="btn btn-sm btn-whatsapp" id="daysFilterResultWaBtn" title="Share via WhatsApp">WhatsApp</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="daysFilterCloseBtn">&times;</button>
           </div>
         </div>
+        <div class="days-filter-overlay-pills" id="daysFilterOverlayPills">
+          <button type="button" class="preset-pill overlay-days-btn active" data-from="0" data-to="">All</button>
+          <button type="button" class="preset-pill overlay-days-btn" data-from="30" data-to="">30d+</button>
+          <button type="button" class="preset-pill overlay-days-btn" data-from="45" data-to="">45d+</button>
+          <button type="button" class="preset-pill overlay-days-btn" data-from="60" data-to="">60d+</button>
+          <button type="button" class="preset-pill overlay-days-btn" data-from="90" data-to="">90d+</button>
+          <input type="number" class="days-input" id="daysFilterOverlayFrom" min="0" value="" placeholder="0" style="width:50px" />
+          <span>to</span>
+          <input type="number" class="days-input" id="daysFilterOverlayTo" min="0" value="" placeholder="∞" style="width:50px" />
+          <span>days</span>
+        </div>
+        <p class="days-filter-summary" id="daysFilterSummary"></p>
+        <div class="days-filter-content" id="daysFilterContent"></div>
+        <div class="days-filter-totals" id="daysFilterTotals"></div>
       </div>
-
-      <!-- WhatsApp PDF Ready Overlay -->
-      <div id="waReadyOverlay" class="overlay hidden">
-        <div class="overlay-box wa-ready-box">
-          <div class="wa-ready-check">&#10003;</div>
-          <h3>PDF Ready!</h3>
-          <p class="wa-ready-hint" id="waReadyHint">Tap the button below to share via WhatsApp</p>
-          <button type="button" class="btn whatsapp-send-btn wa-big-btn" id="waReadyShareBtn">Share to WhatsApp</button>
-          <button type="button" class="btn btn-secondary wa-small-btn" id="waReadyCloseBtn">Close</button>
+    </div>
+    <div id="whatsappOverlay" class="overlay hidden">
+      <div class="overlay-box whatsapp-share-box">
+        <div class="wa-dialog-header">
+          <div class="wa-icon-circle">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.313 0-4.46-.768-6.178-2.064l-.435-.336-3.26 1.093 1.093-3.26-.336-.435A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+          </div>
+          <div>
+            <h3>Send PDF via WhatsApp</h3>
+            <p class="wa-report-label" id="whatsappPdfLabel">Filtered invoices due report</p>
+          </div>
+        </div>
+        <div class="wa-numbers-section" id="waNumbersSection">
+          <label class="wa-field-label">Send to</label>
+          <div class="wa-check-list" id="waCheckList"></div>
+        </div>
+        <div class="wa-add-section">
+          <label class="wa-field-label">Add number</label>
+          <div class="wa-add-row">
+            <span class="whatsapp-country-code">+91</span>
+            <input type="tel" id="whatsappPhoneInput" class="wa-phone-input" maxlength="10" inputmode="numeric" />
+            <button type="button" class="btn btn-sm btn-primary" id="waAddNumBtn">Add</button>
+          </div>
+        </div>
+        <div class="wa-btn-stack">
+          <button type="button" class="btn whatsapp-send-btn wa-big-btn" id="whatsappSendBtn" disabled>Send to WhatsApp</button>
+          <button type="button" class="btn btn-secondary wa-small-btn" id="whatsappDownloadOnlyBtn">Just download PDF</button>
+          <button type="button" class="btn btn-secondary wa-small-btn" id="whatsappCancelBtn">Cancel</button>
         </div>
       </div>
-
-      <!-- Set Reminder Overlay -->
-      <div id="reminderOverlay" class="overlay hidden">
-        <div class="overlay-box">
-          <h3>Set Reminder</h3>
-          <p class="overlay-subtitle" id="reminderInvLabel"></p>
-          <div class="reminder-preset-row">
-            <button type="button" class="preset-pill" data-days="30">30 Days</button>
-            <button type="button" class="preset-pill" data-days="60">60 Days</button>
-            <button type="button" class="preset-pill" data-days="90">90 Days</button>
-          </div>
-          <div class="field"><label>Custom Date</label><input type="date" id="reminderDateInput" /></div>
-          <div class="field"><label>Note (optional)</label><input type="text" id="reminderNoteInput" /></div>
-          <div class="overlay-actions">
-            <button class="btn btn-primary" id="reminderSaveBtn">Save Reminder</button>
-            <button class="btn btn-secondary" id="reminderEmailBtn">Send Email</button>
-            <button class="btn btn-secondary" id="reminderCancelBtn">Cancel</button>
-          </div>
+    </div>
+    <div id="waReadyOverlay" class="overlay hidden">
+      <div class="overlay-box wa-ready-box">
+        <div class="wa-ready-check">&#10003;</div>
+        <h3>PDF Ready!</h3>
+        <p class="wa-ready-hint" id="waReadyHint">Tap the button below to share via WhatsApp</p>
+        <button type="button" class="btn whatsapp-send-btn wa-big-btn" id="waReadyShareBtn">Share to WhatsApp</button>
+        <button type="button" class="btn btn-secondary wa-small-btn" id="waReadyCloseBtn">Close</button>
+      </div>
+    </div>
+    <div id="reminderOverlay" class="overlay hidden">
+      <div class="overlay-box">
+        <h3>Set Reminder</h3>
+        <p class="overlay-subtitle" id="reminderInvLabel"></p>
+        <div class="reminder-preset-row">
+          <button type="button" class="preset-pill" data-days="30">30 Days</button>
+          <button type="button" class="preset-pill" data-days="60">60 Days</button>
+          <button type="button" class="preset-pill" data-days="90">90 Days</button>
+        </div>
+        <div class="field"><label>Custom Date</label><input type="date" id="reminderDateInput" /></div>
+        <div class="field"><label>Note (optional)</label><input type="text" id="reminderNoteInput" /></div>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="reminderSaveBtn">Save Reminder</button>
+          <button class="btn btn-secondary" id="reminderEmailBtn">Send Email</button>
+          <button class="btn btn-secondary" id="reminderCancelBtn">Cancel</button>
         </div>
       </div>
     </div>
@@ -536,56 +526,52 @@
 
       <div id="vpayCompanyList"></div>
       <p id="vpayEmpty" class="empty-msg hidden">No vendors found.</p>
+    </div>
 
-      <!-- Add Payment Overlay -->
-      <div id="vpayFormOverlay" class="overlay hidden">
-        <div class="overlay-box pay-credit-box">
-          <h3 id="vpayFormHeading">Add Payment</h3>
-          <p class="overlay-subtitle" id="vpayFormCompanyLabel"></p>
-          <p class="overlay-subtitle" id="vpayFormOutstanding" style="font-weight:600;color:var(--danger)"></p>
-          <p class="overlay-subtitle pay-form-fifo-hint" id="vpayFormFifoHint">Payments apply to the oldest PO invoices first (by invoice date), until the amount is used up.</p>
-          <div class="field" id="vpayDateField"><label>Payment date &amp; time</label><input type="datetime-local" id="vpayDateInput" step="60" /></div>
-          <div class="field"><label>Payment Amount (₹)</label><input type="number" id="vpayAmtInput" min="0" step="0.01" /></div>
-          <div class="field"><label>Note (optional)</label><input type="text" id="vpayNoteInput" /></div>
-          <div class="overlay-actions pay-form-actions">
-            <button type="button" class="btn btn-sm btn-secondary pay-form-delete hidden" id="vpayFormDeleteBtn">Delete payment</button>
-            <div class="pay-form-actions-right">
-              <button type="button" class="btn btn-primary" id="vpayFormSaveBtn">Save Payment</button>
-              <button type="button" class="btn btn-secondary" id="vpayFormCancelBtn">Cancel</button>
-            </div>
+    <!-- Vendor Payment Overlays (outside view to avoid stacking context) -->
+    <div id="vpayFormOverlay" class="overlay hidden">
+      <div class="overlay-box pay-credit-box">
+        <h3 id="vpayFormHeading">Add Payment</h3>
+        <p class="overlay-subtitle" id="vpayFormCompanyLabel"></p>
+        <p class="overlay-subtitle" id="vpayFormOutstanding" style="font-weight:600;color:var(--danger)"></p>
+        <p class="overlay-subtitle pay-form-fifo-hint" id="vpayFormFifoHint">Payments apply to the oldest PO invoices first (by invoice date), until the amount is used up.</p>
+        <div class="field" id="vpayDateField"><label>Payment date &amp; time</label><input type="datetime-local" id="vpayDateInput" step="60" /></div>
+        <div class="field"><label>Payment Amount (₹)</label><input type="number" id="vpayAmtInput" min="0" step="0.01" /></div>
+        <div class="field"><label>Note (optional)</label><input type="text" id="vpayNoteInput" /></div>
+        <div class="overlay-actions pay-form-actions">
+          <button type="button" class="btn btn-sm btn-secondary pay-form-delete hidden" id="vpayFormDeleteBtn">Delete payment</button>
+          <div class="pay-form-actions-right">
+            <button type="button" class="btn btn-primary" id="vpayFormSaveBtn">Save Payment</button>
+            <button type="button" class="btn btn-secondary" id="vpayFormCancelBtn">Cancel</button>
           </div>
         </div>
       </div>
-
-      <!-- Payment History Overlay -->
-      <div id="vpayHistoryOverlay" class="overlay hidden">
-        <div class="overlay-box pay-history-box">
-          <h3>Payment summary</h3>
-          <p class="overlay-subtitle" id="vpayHistoryLabel"></p>
-          <div id="vpayHistoryList" class="pay-history-scroll"></div>
-          <p class="overlay-subtitle" id="vpayHistorySummary" style="font-weight:600"></p>
-          <div class="overlay-actions">
-            <button class="btn btn-secondary" id="vpayHistoryCloseBtn">Close</button>
-          </div>
+    </div>
+    <div id="vpayHistoryOverlay" class="overlay hidden">
+      <div class="overlay-box pay-history-box">
+        <h3>Payment summary</h3>
+        <p class="overlay-subtitle" id="vpayHistoryLabel"></p>
+        <div id="vpayHistoryList" class="pay-history-scroll"></div>
+        <p class="overlay-subtitle" id="vpayHistorySummary" style="font-weight:600"></p>
+        <div class="overlay-actions">
+          <button class="btn btn-secondary" id="vpayHistoryCloseBtn">Close</button>
         </div>
       </div>
-
-      <!-- Set Reminder Overlay -->
-      <div id="vpayReminderOverlay" class="overlay hidden">
-        <div class="overlay-box">
-          <h3>Set Reminder</h3>
-          <p class="overlay-subtitle" id="vpayReminderInvLabel"></p>
-          <div class="reminder-preset-row" id="vpayReminderPresets">
-            <button type="button" class="preset-pill" data-days="30">30 Days</button>
-            <button type="button" class="preset-pill" data-days="60">60 Days</button>
-            <button type="button" class="preset-pill" data-days="90">90 Days</button>
-          </div>
-          <div class="field"><label>Custom Date</label><input type="date" id="vpayReminderDateInput" /></div>
-          <div class="field"><label>Note (optional)</label><input type="text" id="vpayReminderNoteInput" /></div>
-          <div class="overlay-actions">
-            <button class="btn btn-primary" id="vpayReminderSaveBtn">Save Reminder</button>
-            <button class="btn btn-secondary" id="vpayReminderCancelBtn">Cancel</button>
-          </div>
+    </div>
+    <div id="vpayReminderOverlay" class="overlay hidden">
+      <div class="overlay-box">
+        <h3>Set Reminder</h3>
+        <p class="overlay-subtitle" id="vpayReminderInvLabel"></p>
+        <div class="reminder-preset-row" id="vpayReminderPresets">
+          <button type="button" class="preset-pill" data-days="30">30 Days</button>
+          <button type="button" class="preset-pill" data-days="60">60 Days</button>
+          <button type="button" class="preset-pill" data-days="90">90 Days</button>
+        </div>
+        <div class="field"><label>Custom Date</label><input type="date" id="vpayReminderDateInput" /></div>
+        <div class="field"><label>Note (optional)</label><input type="text" id="vpayReminderNoteInput" /></div>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="vpayReminderSaveBtn">Save Reminder</button>
+          <button class="btn btn-secondary" id="vpayReminderCancelBtn">Cancel</button>
         </div>
       </div>
     </div>
