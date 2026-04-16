@@ -64,8 +64,6 @@
 
     <!-- ======== HOME PANEL ======== -->
     <section id="homePanel" class="home-panel hidden">
-      <div class="dash-layout">
-      <div class="dash-main">
 
       <!-- Greeting banner -->
       <div class="home-greeting">
@@ -387,70 +385,6 @@
           <div class="activity-empty">Loading recent activity...</div>
         </div>
       </div>
-
-      </div><!-- /.dash-main -->
-
-      <!-- ── Sticky Right Sidebar ──────────────────────────── -->
-      <aside class="dash-sidebar">
-
-        <!-- Today's Snapshot -->
-        <div class="sidebar-card">
-          <div class="sidebar-card-title">Today</div>
-          <div class="sidebar-today">
-            <div class="sidebar-today-row">
-              <div class="st-icon st-icon-inv">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
-              </div>
-              <div class="st-info">
-                <div class="st-value" id="todayInvCount">0</div>
-                <div class="st-label">Invoices</div>
-              </div>
-              <div class="st-amt" id="todayInvAmt">₹0</div>
-            </div>
-            <div class="sidebar-today-row">
-              <div class="st-icon st-icon-pay">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-              </div>
-              <div class="st-info">
-                <div class="st-value" id="todayPayCount">0</div>
-                <div class="st-label">Payments</div>
-              </div>
-              <div class="st-amt" id="todayPayAmt">₹0</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Collection Rate -->
-        <div class="sidebar-card">
-          <div class="sidebar-card-title">Collection Rate</div>
-          <div class="collection-ring-wrap">
-            <svg class="collection-ring" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(124,58,237,0.08)" stroke-width="10"/>
-              <circle id="collectionArc" cx="60" cy="60" r="52" fill="none" stroke="#7c3aed" stroke-width="10"
-                      stroke-linecap="round" stroke-dasharray="0 327" transform="rotate(-90 60 60)"
-                      style="transition: stroke-dasharray 1.5s cubic-bezier(.16,1,.3,1);"/>
-              <text x="60" y="56" text-anchor="middle" class="ring-pct" id="collectionPct">—</text>
-              <text x="60" y="72" text-anchor="middle" class="ring-label">collected</text>
-            </svg>
-          </div>
-        </div>
-
-        <!-- Pending Reminders -->
-        <div class="sidebar-card">
-          <div class="sidebar-card-title">Reminders Due</div>
-          <div class="sidebar-reminders" id="sidebarReminders">
-            <div class="sidebar-empty">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Mini Calendar Heatmap -->
-        <div class="sidebar-card">
-          <div class="sidebar-card-title" id="calendarTitle">April 2026</div>
-          <div class="mini-cal" id="miniCalendar"></div>
-        </div>
-
-      </aside>
-      </div><!-- /.dash-layout -->
 
     </section>
 
