@@ -611,3 +611,40 @@ legend {
 }
 .graph-tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
 .graph-tab:hover { color: #1e1040; }
+
+/* ── 10. Glass Overlays + Modal Animations ───────────────── */
+.overlay {
+  background: rgba(139,92,246,0.10);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.overlay-box {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 24px;
+  box-shadow:
+    0 24px 60px rgba(99,102,241,0.18),
+    0 1px 0 rgba(255,255,255,0.95) inset;
+  animation: overlay-enter 0.3s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes overlay-enter {
+  from { opacity:0; transform: scale(0.94) translateY(10px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.overlay-box h3 { color: #1e1040; font-weight: 800; letter-spacing: -0.4px; }
+.overlay-subtitle { color: #7a6a9a; }
+
+/* Pay credit / history boxes */
+.pay-credit-box.overlay-box,
+.overlay-box.pay-history-box,
+.days-filter-result-box.overlay-box,
+.whatsapp-share-box.overlay-box,
+.wa-ready-box.overlay-box {
+  background: rgba(255,255,255,0.75);
+}
+
+/* Graph overlay */
+#graphOverlay .overlay-box { max-height: 90vh; }
