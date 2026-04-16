@@ -145,185 +145,6 @@
         </div>
       </div>
 
-      <!-- ── Quick Actions ──────────────────────────────────── -->
-      <div class="dash-section-title" id="dashQuickTitle">Quick Actions</div>
-      <div class="dash-quick-actions">
-        <button class="dash-qa-btn qa-invoice" data-view="invoiceView">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-4h8v2H8z"/></svg>
-          <span>New Invoice</span>
-        </button>
-        <button class="dash-qa-btn qa-payment" data-view="paymentView">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-          <span>Record Payment</span>
-        </button>
-        <button class="dash-qa-btn qa-po" data-view="poInvoiceView">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-          <span>New PO</span>
-        </button>
-        <button class="dash-qa-btn qa-customer" data-view="customerView">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          <span>Add Customer</span>
-        </button>
-        <button class="dash-qa-btn qa-list" data-view="invoiceListView">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-          <span>All Invoices</span>
-        </button>
-      </div>
-
-      <!-- ── Insights Row 1: Aging + Run Rate ────────────────── -->
-      <div class="dash-section-title">Business Insights</div>
-      <div class="dash-insights-row">
-
-        <!-- Overdue Aging Breakdown -->
-        <div class="dash-widget dash-aging">
-          <div class="dash-widget-header">
-            <h3 class="dash-widget-title">Receivable Aging</h3>
-            <span class="dash-widget-badge" id="agingTotal">—</span>
-          </div>
-          <div class="aging-bars" id="agingBars">
-            <div class="aging-bar-row">
-              <span class="aging-label">0–30d</span>
-              <div class="aging-track"><div class="aging-fill aging-green" id="aging030" style="width:0%"></div></div>
-              <span class="aging-amt" id="agingAmt030">—</span>
-            </div>
-            <div class="aging-bar-row">
-              <span class="aging-label">31–60d</span>
-              <div class="aging-track"><div class="aging-fill aging-yellow" id="aging3160" style="width:0%"></div></div>
-              <span class="aging-amt" id="agingAmt3160">—</span>
-            </div>
-            <div class="aging-bar-row">
-              <span class="aging-label">61–90d</span>
-              <div class="aging-track"><div class="aging-fill aging-orange" id="aging6190" style="width:0%"></div></div>
-              <span class="aging-amt" id="agingAmt6190">—</span>
-            </div>
-            <div class="aging-bar-row">
-              <span class="aging-label">90d+</span>
-              <div class="aging-track"><div class="aging-fill aging-red" id="aging90" style="width:0%"></div></div>
-              <span class="aging-amt" id="agingAmt90">—</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Revenue Forecast -->
-        <div class="dash-widget dash-forecast">
-          <div class="dash-widget-header">
-            <h3 class="dash-widget-title">Month Forecast</h3>
-            <span class="dash-widget-badge" id="forecastBadge">—</span>
-          </div>
-          <div class="forecast-body">
-            <div class="forecast-main" id="forecastValue">—</div>
-            <div class="forecast-sub" id="forecastSub">Projected by month end</div>
-            <div class="forecast-meter">
-              <div class="forecast-meter-fill" id="forecastFill" style="width:0%"></div>
-            </div>
-            <div class="forecast-labels">
-              <span>Current: <strong id="forecastCurrent">—</strong></span>
-              <span>Target: <strong id="forecastTarget">—</strong></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Insights Row 2: Top Customers + Invoice Status ──── -->
-      <div class="dash-insights-row">
-
-        <!-- Top 5 Customers -->
-        <div class="dash-widget dash-top-customers">
-          <div class="dash-widget-header">
-            <h3 class="dash-widget-title">Top Customers</h3>
-            <span class="dash-widget-badge" id="topCustBadge">by revenue</span>
-          </div>
-          <div class="top-cust-list" id="topCustList">
-            <div class="top-cust-empty">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Invoice Status Donut -->
-        <div class="dash-widget dash-donut">
-          <div class="dash-widget-header">
-            <h3 class="dash-widget-title">Payment Status</h3>
-          </div>
-          <div class="donut-body">
-            <canvas id="statusDonut" width="180" height="180"></canvas>
-            <div class="donut-legend" id="donutLegend"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Insights Row 3: Cash Flow + GST Summary ─────────── -->
-      <div class="dash-insights-row">
-
-        <!-- Cash Flow AR vs AP -->
-        <div class="dash-widget dash-cashflow">
-          <div class="dash-widget-header">
-            <h3 class="dash-widget-title">Cash Flow</h3>
-          </div>
-          <div class="cashflow-body">
-            <div class="cf-row cf-in">
-              <div class="cf-icon cf-icon-in">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
-              </div>
-              <div class="cf-info">
-                <div class="cf-label">Receivable (AR)</div>
-                <div class="cf-value" id="cfReceivable">—</div>
-              </div>
-            </div>
-            <div class="cf-divider"></div>
-            <div class="cf-row cf-out">
-              <div class="cf-icon cf-icon-out">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
-              </div>
-              <div class="cf-info">
-                <div class="cf-label">Payable (AP)</div>
-                <div class="cf-value" id="cfPayable">—</div>
-              </div>
-            </div>
-            <div class="cf-divider"></div>
-            <div class="cf-net">
-              <span class="cf-net-label">Net Position</span>
-              <span class="cf-net-value" id="cfNet">—</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- GST Summary -->
-        <div class="dash-widget dash-gst">
-          <div class="dash-widget-header">
-            <h3 class="dash-widget-title">GST This Month</h3>
-          </div>
-          <div class="gst-body">
-            <div class="gst-row">
-              <span class="gst-label">CGST</span>
-              <span class="gst-value" id="gstCgst">—</span>
-            </div>
-            <div class="gst-row">
-              <span class="gst-label">SGST</span>
-              <span class="gst-value" id="gstSgst">—</span>
-            </div>
-            <div class="gst-row">
-              <span class="gst-label">IGST</span>
-              <span class="gst-value" id="gstIgst">—</span>
-            </div>
-            <div class="gst-divider"></div>
-            <div class="gst-row gst-total">
-              <span class="gst-label">Total GST</span>
-              <span class="gst-value" id="gstTotal">—</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Recent Activity Feed ────────────────────────────── -->
-      <div class="dash-widget dash-activity" style="margin-bottom:24px;">
-        <div class="dash-widget-header">
-          <h3 class="dash-widget-title">Recent Activity</h3>
-          <span class="dash-widget-badge" id="activityCount">—</span>
-        </div>
-        <div class="activity-list" id="activityList">
-          <div class="activity-empty">Loading recent activity...</div>
-        </div>
-      </div>
-
       <!-- Module cards — segregated by Customer / Vendor & Purchase -->
 
       <!-- Customer section -->
@@ -397,6 +218,174 @@
           </div>
         </div>
       </div>
+
+      <!-- ── Quick Actions ──────────────────────────────────── -->
+      <div class="dash-section-title" id="dashQuickTitle">Quick Actions</div>
+      <div class="dash-quick-actions">
+        <button class="dash-qa-btn qa-invoice" data-view="invoiceView">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-4h8v2H8z"/></svg>
+          <span>New Invoice</span>
+        </button>
+        <button class="dash-qa-btn qa-payment" data-view="paymentView">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+          <span>Record Payment</span>
+        </button>
+        <button class="dash-qa-btn qa-po" data-view="poInvoiceView">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          <span>New PO</span>
+        </button>
+        <button class="dash-qa-btn qa-customer" data-view="customerView">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>Add Customer</span>
+        </button>
+        <button class="dash-qa-btn qa-list" data-view="invoiceListView">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          <span>All Invoices</span>
+        </button>
+      </div>
+
+      <!-- ── Insights Row 1: Aging + Run Rate ────────────────── -->
+      <div class="dash-section-title">Business Insights</div>
+      <div class="dash-insights-row">
+        <div class="dash-widget dash-aging">
+          <div class="dash-widget-header">
+            <h3 class="dash-widget-title">Receivable Aging</h3>
+            <span class="dash-widget-badge" id="agingTotal">—</span>
+          </div>
+          <div class="aging-bars" id="agingBars">
+            <div class="aging-bar-row">
+              <span class="aging-label">0–30d</span>
+              <div class="aging-track"><div class="aging-fill aging-green" id="aging030" style="width:0%"></div></div>
+              <span class="aging-amt" id="agingAmt030">—</span>
+            </div>
+            <div class="aging-bar-row">
+              <span class="aging-label">31–60d</span>
+              <div class="aging-track"><div class="aging-fill aging-yellow" id="aging3160" style="width:0%"></div></div>
+              <span class="aging-amt" id="agingAmt3160">—</span>
+            </div>
+            <div class="aging-bar-row">
+              <span class="aging-label">61–90d</span>
+              <div class="aging-track"><div class="aging-fill aging-orange" id="aging6190" style="width:0%"></div></div>
+              <span class="aging-amt" id="agingAmt6190">—</span>
+            </div>
+            <div class="aging-bar-row">
+              <span class="aging-label">90d+</span>
+              <div class="aging-track"><div class="aging-fill aging-red" id="aging90" style="width:0%"></div></div>
+              <span class="aging-amt" id="agingAmt90">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="dash-widget dash-forecast">
+          <div class="dash-widget-header">
+            <h3 class="dash-widget-title">Month Forecast</h3>
+            <span class="dash-widget-badge" id="forecastBadge">—</span>
+          </div>
+          <div class="forecast-body">
+            <div class="forecast-main" id="forecastValue">—</div>
+            <div class="forecast-sub" id="forecastSub">Projected by month end</div>
+            <div class="forecast-meter">
+              <div class="forecast-meter-fill" id="forecastFill" style="width:0%"></div>
+            </div>
+            <div class="forecast-labels">
+              <span>Current: <strong id="forecastCurrent">—</strong></span>
+              <span>Target: <strong id="forecastTarget">—</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Insights Row 2: Top Customers + Invoice Status ──── -->
+      <div class="dash-insights-row">
+        <div class="dash-widget dash-top-customers">
+          <div class="dash-widget-header">
+            <h3 class="dash-widget-title">Top Customers</h3>
+            <span class="dash-widget-badge" id="topCustBadge">by revenue</span>
+          </div>
+          <div class="top-cust-list" id="topCustList">
+            <div class="top-cust-empty">Loading...</div>
+          </div>
+        </div>
+        <div class="dash-widget dash-donut">
+          <div class="dash-widget-header">
+            <h3 class="dash-widget-title">Payment Status</h3>
+          </div>
+          <div class="donut-body">
+            <canvas id="statusDonut" width="180" height="180"></canvas>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Insights Row 3: Cash Flow + GST Summary ─────────── -->
+      <div class="dash-insights-row">
+        <div class="dash-widget dash-cashflow">
+          <div class="dash-widget-header">
+            <h3 class="dash-widget-title">Cash Flow</h3>
+          </div>
+          <div class="cashflow-body">
+            <div class="cf-row cf-in">
+              <div class="cf-icon cf-icon-in">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
+              </div>
+              <div class="cf-info">
+                <div class="cf-label">Receivable (AR)</div>
+                <div class="cf-value" id="cfReceivable">—</div>
+              </div>
+            </div>
+            <div class="cf-divider"></div>
+            <div class="cf-row cf-out">
+              <div class="cf-icon cf-icon-out">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
+              </div>
+              <div class="cf-info">
+                <div class="cf-label">Payable (AP)</div>
+                <div class="cf-value" id="cfPayable">—</div>
+              </div>
+            </div>
+            <div class="cf-divider"></div>
+            <div class="cf-net">
+              <span class="cf-net-label">Net Position</span>
+              <span class="cf-net-value" id="cfNet">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="dash-widget dash-gst">
+          <div class="dash-widget-header">
+            <h3 class="dash-widget-title">GST This Month</h3>
+          </div>
+          <div class="gst-body">
+            <div class="gst-row">
+              <span class="gst-label">CGST</span>
+              <span class="gst-value" id="gstCgst">—</span>
+            </div>
+            <div class="gst-row">
+              <span class="gst-label">SGST</span>
+              <span class="gst-value" id="gstSgst">—</span>
+            </div>
+            <div class="gst-row">
+              <span class="gst-label">IGST</span>
+              <span class="gst-value" id="gstIgst">—</span>
+            </div>
+            <div class="gst-divider"></div>
+            <div class="gst-row gst-total">
+              <span class="gst-label">Total GST</span>
+              <span class="gst-value" id="gstTotal">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Recent Activity Feed ────────────────────────────── -->
+      <div class="dash-widget dash-activity" style="margin-bottom:24px;">
+        <div class="dash-widget-header">
+          <h3 class="dash-widget-title">Recent Activity</h3>
+          <span class="dash-widget-badge" id="activityCount">—</span>
+        </div>
+        <div class="activity-list" id="activityList">
+          <div class="activity-empty">Loading recent activity...</div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ======== INVOICE LIST VIEW ======== -->
