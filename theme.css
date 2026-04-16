@@ -648,3 +648,83 @@ legend {
 
 /* Graph overlay */
 #graphOverlay .overlay-box { max-height: 90vh; }
+
+/* ── 11. Button System ───────────────────────────────────── */
+
+/* Primary — indigo gradient */
+.btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  box-shadow: 0 4px 18px rgba(99,102,241,0.38), 0 1px 0 rgba(255,255,255,0.25) inset;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #6d28d9, #4f46e5);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(99,102,241,0.50), 0 1px 0 rgba(255,255,255,0.25) inset;
+}
+.btn-primary:active { transform: scale(0.97); }
+
+/* Secondary — glass */
+.btn-secondary {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #5b4a8a;
+  border: 1px solid rgba(255,255,255,0.80);
+  border-radius: 100px;
+  box-shadow: 0 2px 10px rgba(99,102,241,0.08), 0 1px 0 rgba(255,255,255,0.90) inset;
+  transition: all 0.25s ease;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.80);
+  color: #7c3aed;
+  border-color: rgba(124,58,237,0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.12);
+}
+
+/* Delete / danger button */
+.btn-delete {
+  background: none;
+  border: none;
+  color: #ef4444;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.btn-delete:hover { background: rgba(239,68,68,0.08); }
+
+/* Preset pills (date presets, reminder presets) */
+.preset-pill {
+  background: rgba(255,255,255,0.50);
+  border: 1px solid rgba(255,255,255,0.75);
+  color: #7c3aed;
+  border-radius: 100px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset;
+}
+.preset-pill:hover {
+  background: rgba(255,255,255,0.75);
+  border-color: rgba(124,58,237,0.30);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.12);
+}
+
+/* Active pill (date presets, days presets) */
+.preset-btn.active,
+.days-preset.active,
+.co-days-btn.active,
+.overlay-days-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.40) !important;
+}
+
+/* WhatsApp button — unchanged functionally, just rounded */
+.whatsapp-send-btn, .btn-whatsapp {
+  border-radius: 100px !important;
+  box-shadow: 0 4px 18px rgba(37,211,102,0.40) !important;
+}
