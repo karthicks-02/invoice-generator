@@ -13,14 +13,23 @@
   <meta name="apple-mobile-web-app-title" content="KI Invoice" />
   <link rel="apple-touch-icon" href="icons/icon-192.svg" />
 
-  <link rel="stylesheet" href="style.css?v=39" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=40" />
+  <link rel="stylesheet" href="theme.css?v=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <!-- Animated mesh background + grain texture -->
+  <div class="bg-mesh" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
   <header>
     <div class="header-inner">
-      <h1>Karthick Industries</h1>
-      <p class="subtitle">Business Management</p>
+      <div class="logo-group">
+        <div class="logo-gem">KI</div>
+        <div class="logo-text-group">
+          <span class="logo-name">Karthick <span class="logo-accent">Industries</span></span>
+          <span class="subtitle">Business Management</span>
+        </div>
+      </div>
       <div class="user-bar hidden" id="userBar">
         <span id="userEmail"></span>
         <button class="btn btn-sm btn-logout" id="logoutBtn">Logout</button>
@@ -55,6 +64,42 @@
 
     <!-- ======== HOME PANEL ======== -->
     <section id="homePanel" class="home-panel hidden">
+
+      <!-- Greeting banner -->
+      <div class="home-greeting">
+        <div class="home-greeting-tag">
+          <span class="greeting-pip"></span>
+          Live Dashboard
+        </div>
+        <h2 class="home-greeting-h1">Good Morning, <span>Karthick</span> 👋</h2>
+        <p class="home-greeting-sub" id="homeDate"></p>
+      </div>
+
+      <!-- KPI stats row -->
+      <div class="home-kpi-row">
+        <div class="home-kpi-card home-kpi-revenue">
+          <div class="home-kpi-label">Total Revenue</div>
+          <div class="home-kpi-value" id="kpiRevenue">—</div>
+          <div class="home-kpi-sub">FY 2025–26</div>
+        </div>
+        <div class="home-kpi-card">
+          <div class="home-kpi-label">Outstanding</div>
+          <div class="home-kpi-value" id="kpiOutstanding">—</div>
+          <div class="home-kpi-sub">Receivable balance</div>
+        </div>
+        <div class="home-kpi-card">
+          <div class="home-kpi-label">This Month</div>
+          <div class="home-kpi-value" id="kpiThisMonth">—</div>
+          <div class="home-kpi-sub" id="kpiMonthName">April 2026</div>
+        </div>
+        <div class="home-kpi-card">
+          <div class="home-kpi-label">Invoices</div>
+          <div class="home-kpi-value" id="kpiInvoiceCount">—</div>
+          <div class="home-kpi-sub">Total generated</div>
+        </div>
+      </div>
+
+      <!-- Module cards grid (unchanged — all data-view attrs preserved) -->
       <div class="home-cards">
         <div class="home-card" data-view="customerView">
           <div class="home-card-icon">C</div>
@@ -1187,6 +1232,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
   <script src="script.js?v=140"></script>
+  <script src="kpi-stats.js"></script>
   <!-- Update banner (hidden by default) -->
   <div id="updateBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a3a5c;color:#fff;padding:12px 16px;align-items:center;justify-content:space-between;z-index:9999;font-family:Inter,system-ui,sans-serif;font-size:14px;box-shadow:0 -2px 10px rgba(0,0,0,.15)">
     <span>Update available</span>
