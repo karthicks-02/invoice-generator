@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('homePanel').classList.add('hidden');
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     $(viewId).classList.remove('hidden');
+    window.scrollTo(0, 0);
   }
 
   function goHome() {
