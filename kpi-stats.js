@@ -191,6 +191,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: { top: 18, left: 0, right: 4, bottom: 0 } },
         animation: { duration: 900, easing: 'easeOutQuart' },
         interaction: { mode: 'index', intersect: false },
         plugins: {
@@ -230,6 +231,7 @@
             }
           },
           y: {
+            grace: '8%',
             grid: { color: 'rgba(124,58,237,0.055)', drawTicks: false },
             border: { display: false, dash: [4, 4] },
             ticks: {
