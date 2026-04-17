@@ -1445,72 +1445,237 @@ legend {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MODULE ACCORDION — collapsible Customer / Vendor groups
+   LUXURY NAV CARDS — exclusive accordion, theme-matched
    ═══════════════════════════════════════════════════════════ */
 
 .home-accordion-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
+/* ── Outer card shell (glow ring layer) ── */
 .home-accordion {
-  background: var(--surface, rgba(255,255,255,0.06));
-  border: 1px solid rgba(148,130,200,0.18);
-  border-radius: 16px;
+  position: relative;
+  border-radius: 24px;
+  transition: transform 0.3s cubic-bezier(.16,1,.3,1);
+}
+.home-accordion:hover { transform: translateY(-2px); }
+
+/* Animated glow ring */
+.home-accordion::before {
+  content: '';
+  position: absolute; inset: -1px;
+  border-radius: 25px;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 0;
+  pointer-events: none;
+}
+.home-accordion.hac-cust::before {
+  background: linear-gradient(135deg, rgba(99,102,241,0.55), rgba(59,130,246,0.3), transparent 55%);
+}
+.home-accordion.hac-vend::before {
+  background: linear-gradient(135deg, rgba(244,63,94,0.55), rgba(249,115,22,0.3), transparent 55%);
+}
+.home-accordion.is-open::before { opacity: 1; }
+
+/* ── Inner glass surface ── */
+.home-accordion-inner {
+  position: relative; z-index: 1;
+  border-radius: 24px;
   overflow: hidden;
-  transition: box-shadow 0.25s, border-color 0.25s;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(99,102,241,0.08);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.home-accordion.is-open .home-accordion-inner {
+  background: rgba(255,255,255,0.68);
+  border-color: rgba(255,255,255,0.9);
+  box-shadow: 0 8px 40px rgba(99,102,241,0.14);
 }
 
-.home-accordion.is-open {
-  border-color: rgba(148,130,200,0.32);
-  box-shadow: 0 4px 24px rgba(99,102,241,0.10);
-}
-
+/* ── Header ── */
 .home-accordion-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: 14px;
+  padding: 18px 22px;
   cursor: pointer;
   user-select: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.25s, background 0.2s;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.25s;
 }
 
-.home-accordion.is-open .home-accordion-header {
-  border-bottom-color: rgba(148,130,200,0.14);
+/* Gradient wash behind header on open */
+.home-accordion-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
 }
-
-.home-accordion-header:hover {
-  background: rgba(148,130,200,0.06);
+.home-accordion.hac-cust .home-accordion-header::before {
+  background: linear-gradient(90deg, rgba(99,102,241,0.08) 0%, rgba(59,130,246,0.04) 50%, transparent 100%);
 }
+.home-accordion.hac-vend .home-accordion-header::before {
+  background: linear-gradient(90deg, rgba(244,63,94,0.08) 0%, rgba(249,115,22,0.04) 50%, transparent 100%);
+}
+.home-accordion.is-open .home-accordion-header::before { opacity: 1; }
+.home-accordion-header:hover { background: rgba(148,130,200,0.06); }
 
-.home-accordion-chevron {
-  width: 18px;
-  height: 18px;
-  margin-left: 4px;
-  stroke: #9585bb;
+/* Icon blob */
+.home-accordion-icon {
+  width: 52px; height: 52px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.32s cubic-bezier(.16,1,.3,1);
+  transition: transform 0.35s cubic-bezier(.16,1,.3,1), box-shadow 0.35s;
+}
+.home-accordion.hac-cust .home-accordion-icon {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.3);
+}
+.home-accordion.hac-vend .home-accordion-icon {
+  background: linear-gradient(135deg, #f43f5e, #f97316);
+  box-shadow: 0 6px 20px rgba(244,63,94,0.3);
+}
+.home-accordion.is-open .home-accordion-icon { transform: scale(1.08); }
+.home-accordion.hac-cust.is-open .home-accordion-icon { box-shadow: 0 10px 28px rgba(99,102,241,0.45); }
+.home-accordion.hac-vend.is-open .home-accordion-icon { box-shadow: 0 10px 28px rgba(244,63,94,0.45); }
+.home-accordion-icon svg { width: 24px; height: 24px; fill: #fff; }
+
+/* Title group */
+.home-accordion-titles { flex: 1; }
+.home-accordion-title {
+  font-size: 16px; font-weight: 800;
+  color: #1e1040; letter-spacing: -0.3px; line-height: 1;
+  margin-bottom: 3px;
+}
+.home-accordion-sub {
+  font-size: 12px; font-weight: 500; color: #7a6a9a;
 }
 
-.home-accordion.is-open .home-accordion-chevron {
+/* Context pills */
+.home-accordion-pills { display: flex; gap: 6px; }
+.home-accordion-pill {
+  height: 26px; padding: 0 11px;
+  border-radius: 20px; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; letter-spacing: 0.3px;
+  transition: transform 0.25s;
+}
+.home-accordion.hac-cust .home-accordion-pill {
+  background: rgba(99,102,241,0.12);
+  color: #5b21b6;
+  border: 1px solid rgba(99,102,241,0.2);
+}
+.home-accordion.hac-vend .home-accordion-pill {
+  background: rgba(244,63,94,0.1);
+  color: #be123c;
+  border: 1px solid rgba(244,63,94,0.18);
+}
+.home-accordion.is-open .home-accordion-pill { transform: scale(1.04); }
+
+/* Chevron button */
+.home-accordion-chevron-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(148,130,200,0.1);
+  border: 1px solid rgba(148,130,200,0.2);
+  flex-shrink: 0; margin-left: 4px;
+  transition: transform 0.4s cubic-bezier(.16,1,.3,1), background 0.3s, border-color 0.3s;
+}
+.home-accordion-chevron-btn svg {
+  width: 15px; height: 15px;
+  stroke: #7a6a9a; stroke-width: 2.5; fill: none;
+  transition: stroke 0.3s;
+}
+.home-accordion.is-open .home-accordion-chevron-btn {
   transform: rotate(180deg);
+  background: rgba(148,130,200,0.18);
+  border-color: rgba(148,130,200,0.35);
 }
+.home-accordion.is-open .home-accordion-chevron-btn svg { stroke: #5b21b6; }
 
+/* Animated separator */
+.home-accordion-sep {
+  height: 1px;
+  margin: 0 22px;
+  background: linear-gradient(90deg, transparent, rgba(148,130,200,0.25) 30%, rgba(148,130,200,0.25) 70%, transparent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.4s cubic-bezier(.16,1,.3,1);
+}
+.home-accordion.is-open .home-accordion-sep { transform: scaleX(1); }
+
+/* ── Expandable body ── */
 .home-accordion-body {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.38s cubic-bezier(.16,1,.3,1), padding 0.38s cubic-bezier(.16,1,.3,1);
-  padding: 0 18px;
+  transition: max-height 0.5s cubic-bezier(.16,1,.3,1);
+}
+.home-accordion.is-open .home-accordion-body { max-height: 320px; }
+
+/* 5-column icon tile grid */
+.home-nav-items {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 18px 22px 22px;
 }
 
-.home-accordion.is-open .home-accordion-body {
-  max-height: 700px;
-  padding: 16px 18px 18px;
+.home-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 16px 8px 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.8);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s,
+              transform 0.3s cubic-bezier(.16,1,.3,1),
+              box-shadow 0.3s, opacity 0.35s, translate 0.35s;
+  opacity: 0;
+  translate: 0 14px;
 }
+/* Staggered entrance */
+.home-accordion.is-open .home-nav-item { opacity: 1; translate: 0 0; }
+.home-accordion.is-open .home-nav-item:nth-child(1) { transition-delay: .04s; }
+.home-accordion.is-open .home-nav-item:nth-child(2) { transition-delay: .09s; }
+.home-accordion.is-open .home-nav-item:nth-child(3) { transition-delay: .14s; }
+.home-accordion.is-open .home-nav-item:nth-child(4) { transition-delay: .19s; }
+.home-accordion.is-open .home-nav-item:nth-child(5) { transition-delay: .24s; }
+
+.home-nav-item:hover {
+  background: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,1);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(99,102,241,0.14);
+}
+
+/* Icon inside tile */
+.home-nav-item-icon {
+  width: 48px; height: 48px;
+  border-radius: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.28s cubic-bezier(.16,1,.3,1), box-shadow 0.28s;
+}
+.home-nav-item:hover .home-nav-item-icon { transform: scale(1.12); }
+.home-nav-item-icon svg { width: 22px; height: 22px; fill: #fff; }
+
+/* Label */
+.home-nav-item-label {
+  font-size: 10.5px; font-weight: 600;
+  color: #7a6a9a; text-align: center;
+  line-height: 1.3; letter-spacing: 0.1px;
+  transition: color 0.2s;
+}
+.home-nav-item:hover .home-nav-item-label { color: #1e1040; }
 
 /* ═══════════════════════════════════════════════════════════
    PREMIUM MODULE CARDS — full redesign v2

@@ -156,13 +156,31 @@ document.addEventListener('DOMContentLoaded', () => {
   $('payBackBtn').addEventListener('click', goHome);
   $('vpayBackBtn').addEventListener('click', goHome);
 
-  // Accordion toggle — only one section open at a time
-  document.querySelectorAll('.home-accordion-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const accordion = header.closest('.home-accordion');
-      const isOpen = accordion.classList.contains('is-open');
-      document.querySelectorAll('.home-accordion').forEach(a => a.classList.remove('is-open'));
-      if (!isOpen) accordion.classList.add('is-open');
+  // Luxury nav cards — exclusive accordion (one open closes the other)
+  window.luxToggle = function(openId, closeId) {
+    const openEl  = document.getElementById(openId);
+    const closeEl = document.getElementById(closeId);
+    const isAlreadyOpen = openEl.classList.contains('is-open');
+    if (closeEl) closeEl.classList.remove('is-open');
+    if (isAlreadyOpen) { openEl.classList.remove('is-open'); }
+    else               { openEl.classList.add('is-open'); }
+  };
+
+  // Nav item tiles click handler
+  document.querySelectorAll('.home-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const v = item.dataset.view;
+      if (!v) return;
+      showView(v);
+      if (v === 'invoiceListView')   renderInvoiceList();
+      if (v === 'invoiceView')       resetInvoiceForm();
+      if (v === 'paymentView')       renderPaymentView();
+      if (v === 'vendorPayView')     renderVendorPaymentView();
+      if (v === 'productView')       hideProdForm();
+      if (v === 'customerView')      hideCustForm();
+      if (v === 'vendorView')        hideVendForm();
+      if (v === 'poInvoiceView')     resetPoInvoiceForm();
+      if (v === 'poInvoiceListView') renderPoInvoiceList();
     });
   });
 
