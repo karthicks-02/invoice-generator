@@ -68,8 +68,8 @@ legend {
 .field label {
   display: block;
   font-size: .8rem;
-  font-weight: 500;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: #3d2d6b;
   margin-bottom: .3rem;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -95,20 +95,27 @@ input[aria-invalid="true"] {
 .field select {
   width: 100%;
   padding: .6rem .75rem;
-  border: 1px solid var(--border);
+  border: 1.5px solid rgba(124,58,237,0.2);
   border-radius: 8px;
   font-family: inherit;
-  font-size: .9rem;
-  color: var(--text);
-  background: #fafbfc;
+  font-size: .95rem;
+  font-weight: 500;
+  color: #1e1040;
+  background: #ffffff;
   transition: border-color .2s, box-shadow .2s;
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #9585bb;
+  font-weight: 400;
 }
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(26,58,92,.12);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+  background: #ffffff;
 }
 
 /* ===== Items Table (Form) ===== */
@@ -133,13 +140,15 @@ input[aria-invalid="true"] {
 .items-table input {
   width: 100%;
   padding: .5rem .6rem;
-  border: 1px solid var(--border);
+  border: 1.5px solid rgba(124,58,237,0.18);
   border-radius: 6px;
   font-family: inherit;
-  font-size: .85rem;
-  background: #fafbfc;
+  font-size: .88rem;
+  font-weight: 500;
+  color: #1e1040;
+  background: #ffffff;
 }
-.items-table input:focus { outline: none; border-color: var(--primary); }
+.items-table input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.10); }
 .items-table input.inv-qty-input { font-variant-numeric: tabular-nums; }
 input.inv-rate-input {
   min-width: 4.5rem;
@@ -483,9 +492,12 @@ input.inv-rate-input {
   flex: 1;
   min-width: 200px;
   padding: .55rem .75rem;
-  border: 1px solid var(--border);
+  border: 1.5px solid rgba(124,58,237,0.18);
   border-radius: var(--radius);
   font-size: .9rem;
+  font-weight: 500;
+  color: #1e1040;
+  background: #ffffff;
 }
 .filter-date {
   padding: .55rem .75rem;
