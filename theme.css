@@ -6,22 +6,22 @@
 
 /* ── 1. CSS Custom Property Overrides ────────────────────── */
 :root {
-  --bg:           #ede9ff;
-  --surface:      rgba(255,255,255,0.90);
-  --border:       rgba(124,58,237,0.15);
+  --bg:           #f2f0ff;
+  --surface:      #ffffff;
+  --border:       #e2ddf5;
   --text:         #1e1040;
-  --text-muted:   #7a6a9a;
+  --text-muted:   #6b5b95;
   --primary:      #7c3aed;
   --primary-hover:#6d28d9;
   --danger:       #ef4444;
   --radius:       16px;
-  --shadow:       0 4px 20px rgba(99,102,241,0.10);
-  --shadow-lg:    0 20px 60px rgba(99,102,241,0.16);
+  --shadow:       0 2px 12px rgba(99,102,241,0.08);
+  --shadow-lg:    0 12px 40px rgba(99,102,241,0.13);
 
   /* Glass recipe tokens */
-  --glass-bg:     rgba(255,255,255,0.38);
-  --glass-border: rgba(255,255,255,0.65);
-  --glass-blur:   blur(24px) saturate(200%);
+  --glass-bg:     rgba(255,255,255,0.75);
+  --glass-border: rgba(255,255,255,0.90);
+  --glass-blur:   blur(24px) saturate(180%);
 }
 
 /* ── 2. Body ──────────────────────────────────────────────── */
@@ -47,16 +47,9 @@ body > *:not(.bg-mesh):not(.grain) {
 .bg-mesh::before {
   content: '';
   position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 700px 600px at 80% -5%,  rgba(139,92,246,0.08) 0%, transparent 65%),
-    radial-gradient(ellipse 600px 500px at -10% 70%, rgba(99,102,241,0.06) 0%, transparent 60%);
+  background: radial-gradient(ellipse 900px 700px at 50% 0%, rgba(139,92,246,0.07) 0%, transparent 70%);
 }
-.bg-mesh::after {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 500px 400px at 90% 60%, rgba(167,139,250,0.05) 0%, transparent 60%);
-}
+.bg-mesh::after { display: none; }
 
 /* ── 4. Grain texture overlay ─────────────────────────────── */
 .grain {

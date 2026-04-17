@@ -43,19 +43,22 @@ header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: .02em; }
 
 /* ===== Form Panel ===== */
 fieldset {
-  border: 1.5px solid rgba(124,58,237,0.14);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.25rem .75rem;
+  border: 1.5px solid #e8e4f5;
+  border-radius: 14px;
+  padding: 1.4rem 1.4rem .9rem;
   margin-bottom: 1.25rem;
   background: #ffffff;
-  box-shadow: 0 2px 12px rgba(99,102,241,0.06);
+  box-shadow: 0 1px 8px rgba(99,102,241,0.07), 0 4px 16px rgba(99,102,241,0.04);
 }
 legend {
   font-weight: 700;
-  font-size: .85rem;
+  font-size: .78rem;
   padding: 0 .6rem;
   color: var(--primary);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #fff;
+  border-radius: 6px;
 }
 
 .row { display: flex; gap: 1rem; }
@@ -69,12 +72,12 @@ legend {
 }
 .field label {
   display: block;
-  font-size: .78rem;
+  font-size: .72rem;
   font-weight: 700;
-  color: #2d1b69;
-  margin-bottom: .35rem;
+  color: #4c3a8a;
+  margin-bottom: .38rem;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .07em;
 }
 .field-error {
   margin: .35rem 0 0;
@@ -96,28 +99,28 @@ input[aria-invalid="true"] {
 .field textarea,
 .field select {
   width: 100%;
-  padding: .6rem .75rem;
-  border: 1.5px solid rgba(124,58,237,0.2);
-  border-radius: 8px;
+  padding: .62rem .85rem;
+  border: 1.5px solid #ddd8f0;
+  border-radius: 10px;
   font-family: inherit;
   font-size: .95rem;
   font-weight: 500;
   color: #1e1040;
-  background: #ffffff;
-  transition: border-color .2s, box-shadow .2s;
+  background: #faf9ff;
+  transition: border-color .18s, box-shadow .18s, background .18s;
 }
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #9585bb;
+  color: #b0a3cc;
   font-weight: 400;
 }
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+  border-color: #7c3aed;
   background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.10);
 }
 
 /* ===== Items Table (Form) ===== */
@@ -141,16 +144,16 @@ input[aria-invalid="true"] {
 .items-table td { padding: .35rem .4rem; }
 .items-table input {
   width: 100%;
-  padding: .5rem .6rem;
-  border: 1.5px solid rgba(124,58,237,0.18);
-  border-radius: 6px;
+  padding: .48rem .6rem;
+  border: 1.5px solid #ddd8f0;
+  border-radius: 8px;
   font-family: inherit;
   font-size: .88rem;
   font-weight: 500;
   color: #1e1040;
-  background: #ffffff;
+  background: #faf9ff;
 }
-.items-table input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.10); }
+.items-table input:focus { outline: none; border-color: #7c3aed; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.10); }
 .items-table input.inv-qty-input { font-variant-numeric: tabular-nums; }
 input.inv-rate-input {
   min-width: 4.5rem;
@@ -493,13 +496,19 @@ input.inv-rate-input {
 .filter-input {
   flex: 1;
   min-width: 200px;
-  padding: .55rem .75rem;
-  border: 1.5px solid rgba(124,58,237,0.18);
+  padding: .58rem .85rem;
+  border: 1.5px solid #ddd8f0;
   border-radius: var(--radius);
   font-size: .9rem;
   font-weight: 500;
   color: #1e1040;
+  background: #faf9ff;
+}
+.filter-input:focus {
+  outline: none;
+  border-color: #7c3aed;
   background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.10);
 }
 .filter-date {
   padding: .55rem .75rem;
