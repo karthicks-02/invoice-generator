@@ -110,12 +110,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('homePanel').classList.add('hidden');
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     $(viewId).classList.remove('hidden');
+    document.body.classList.remove('home-active');
     window.scrollTo(0, 0);
   }
 
   function goHome() {
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     $('homePanel').classList.remove('hidden');
+    document.body.classList.add('home-active');
   }
 
   let cameFromInvoiceList = false;
