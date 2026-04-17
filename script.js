@@ -156,6 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
   $('payBackBtn').addEventListener('click', goHome);
   $('vpayBackBtn').addEventListener('click', goHome);
 
+  // Accordion toggle — only one section open at a time
+  document.querySelectorAll('.home-accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const accordion = header.closest('.home-accordion');
+      const isOpen = accordion.classList.contains('is-open');
+      document.querySelectorAll('.home-accordion').forEach(a => a.classList.remove('is-open'));
+      if (!isOpen) accordion.classList.add('is-open');
+    });
+  });
+
   document.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', () => {
       showView(card.dataset.view);
