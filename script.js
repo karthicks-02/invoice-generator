@@ -908,9 +908,11 @@ document.addEventListener('DOMContentLoaded', () => {
     items = (inv.items && inv.items.length)
       ? inv.items.map(it => {
           const row = { ...it };
+          delete row.qtyUnit;
           if (row.qty != null && row.qty !== '') {
-            const n = Math.round(Number(row.qty));
-            row.qty = Number.isFinite(n) ? n : null;
+            const n = Number(row.qty);
+            if (!Number.isFinite(n)) row.qty = null;
+            else row.qty = qtyUnitFromQty(n) === 'KGS' ? Math.round(n * 1000) / 1000 : Math.round(n);
           }
           const pk = Math.round(Number(row.packages));
           row.packages = Number.isFinite(pk) && pk >= 0 ? pk : 0;
@@ -991,7 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function computeGrandTotal(inv) {
     let subtotal = 0;
     (inv.items || []).forEach(it => {
-      const q = Math.round(Number(it.qty) || 0);
+      const q = numericQtyForLine(it);
       subtotal += q * (Number(it.rate) || 0);
     });
     const rate = inv.gstRate || 0;
@@ -3655,15 +3657,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let subtotal = 0;
     let lineNo = 0;
     (data.items || []).forEach(it => {
-      const qty = Math.round(Number(it.qty) || 0);
+      const qty = numericQtyForLine(it);
       const rate = Number(it.rate) || 0;
       const taxable = qty * rate;
       const hasLine = ((it.description || '').trim() || (it.hsn || '').trim()) || taxable > 0;
       if (!hasLine) return;
       subtotal += taxable;
       lineNo += 1;
-      const unit = (it.packages || 0) > 0 ? 'BAG' : 'NOS';
-      lines.push(`${lineNo}. ${(it.description || '').trim() || '—'} | HSN: ${(it.hsn || '').trim() || '—'} | Qty: ${qty} ${unit} | Taxable ₹: ${fmtNum(taxable)}`);
+      const uqc = normalizeItemQtyUnit(it) === 'KGS' ? 'KGS' : 'NOS';
+      const bagNote = (it.packages || 0) > 0 ? `, ${it.packages} bag(s)` : '';
+      lines.push(`${lineNo}. ${(it.description || '').trim() || '—'} | HSN: ${(it.hsn || '').trim() || '—'} | Qty: ${qty} ${uqc}${bagNote} | Taxable ₹: ${fmtNum(taxable)}`);
     });
     lines.push(`Subtotal (taxable): ₹${fmtNum(subtotal)}`);
     if (gstType === 'intra') {
@@ -3696,12 +3699,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Items management ──
   let items = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
 
-  /** Integer qty for NOS; avoids float noise (e.g. 1599.999…) and matches invoice display. */
+  /** Whole number → NOS; any fraction → KGS (auto, no manual UOM). */
+  function qtyUnitFromQty(q) {
+    const n = Number(q);
+    if (!Number.isFinite(n)) return 'NOS';
+    return Math.abs(n - Math.round(n)) > 1e-9 ? 'KGS' : 'NOS';
+  }
+
+  /** Printed table sub-header under "Total Qty IN": all whole → NOS; all fractional → KGS; mixed → NOS / KGS. */
+  function qtyTableHeaderSubline(itemList) {
+    const list = itemList || [];
+    let hasNos = false;
+    let hasKgs = false;
+    for (let k = 0; k < list.length; k++) {
+      const n = Number(list[k] && list[k].qty);
+      if (!Number.isFinite(n) || n === 0) continue;
+      if (qtyUnitFromQty(n) === 'KGS') hasKgs = true;
+      else hasNos = true;
+      if (hasKgs && hasNos) return 'NOS / KGS';
+    }
+    if (hasKgs && !hasNos) return 'KGS';
+    if (hasNos && !hasKgs) return 'NOS';
+    return 'NOS';
+  }
+
+  function normalizeItemQtyUnit(it) {
+    return qtyUnitFromQty(it && it.qty);
+  }
+
+  function numericQtyForLine(it) {
+    const n = Number(it.qty);
+    if (!Number.isFinite(n)) return 0;
+    if (qtyUnitFromQty(n) === 'KGS') return Math.round(n * 1000) / 1000;
+    return Math.round(n);
+  }
+
   function qtyInputDisplay(v) {
     if (v == null || v === '') return '';
-    const n = Math.round(Number(v));
+    const n = Number(v);
     if (!Number.isFinite(n) || n === 0) return '';
-    return String(n);
+    if (qtyUnitFromQty(n) === 'KGS') {
+      const r = Math.round(n * 1000) / 1000;
+      return String(r).replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.$/, '');
+    }
+    return String(Math.round(n));
   }
 
   function rateInputDisplay(v) {
@@ -3725,7 +3766,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const t = String(raw).trim().replace(/,/g, '');
     if (t === '') return null;
     const n = Number(t);
-    if (!Number.isFinite(n)) return null;
+    if (!Number.isFinite(n) || n < 0) return null;
+    if (n === 0) return 0;
+    if (qtyUnitFromQty(n) === 'KGS') return Math.round(n * 1000) / 1000;
     return Math.round(n);
   }
 
@@ -3752,13 +3795,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = $('itemsBody');
     tbody.innerHTML = '';
     items.forEach((item, i) => {
-      const amount = (Math.round(Number(item.qty) || 0)) * (Number(item.rate) || 0);
+      const amount = numericQtyForLine(item) * (Number(item.rate) || 0);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" value="${esc(item.description)}" data-i="${i}" data-f="description" /></td>
         <td><input type="text" value="${esc(item.hsn)}" data-i="${i}" data-f="hsn" /></td>
         <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(packagesInputDisplay(item.packages))}" data-i="${i}" data-f="packages" /></td>
-        <td><input type="text" class="inv-qty-input" inputmode="numeric" autocomplete="off" value="${esc(qtyInputDisplay(item.qty))}" data-i="${i}" data-f="qty" /></td>
+        <td><input type="text" class="inv-qty-input" inputmode="decimal" autocomplete="off" value="${esc(qtyInputDisplay(item.qty))}" data-i="${i}" data-f="qty" /></td>
         <td><input type="text" class="inv-qty-input inv-rate-input" inputmode="decimal" autocomplete="off" value="${esc(rateInputDisplay(item.rate))}" data-i="${i}" data-f="rate" /></td>
         <td><div class="amount-display">₹${fmtNum(amount)}</div></td>
         <td><button type="button" class="btn-delete" data-i="${i}" title="Remove">&times;</button></td>
@@ -3783,7 +3826,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (f === 'qty' || f === 'rate') {
       const amtDiv = inp.closest('tr').querySelector('.amount-display');
-      const q = Math.round(Number(items[i].qty) || 0);
+      const q = numericQtyForLine(items[i]);
       amtDiv.textContent = '₹' + fmtNum(q * (Number(items[i].rate) || 0));
     }
   });
@@ -3962,7 +4005,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let subtotal = 0;
     const itemRows = items.map((item, i) => {
-      const q = Math.round(Number(item.qty) || 0);
+      const q = numericQtyForLine(item);
+      const uom = normalizeItemQtyUnit(item);
       const r = Number(item.rate) || 0;
       const amt = q * r;
       subtotal += amt;
@@ -3971,7 +4015,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="l">${esc(item.description).toUpperCase() || '—'}</td>
         <td class="c">${esc(item.hsn)}</td>
         <td class="c">${formatBags(item.packages)}</td>
-        <td class="c">${q}</td>
+        <td class="c">${q}<br><span style="font-size:9px;font-weight:700">${uom}</span></td>
         <td class="c">${fmtNum(item.rate)}</td>
         <td class="r">${fmtNum(amt)}</td>
       </tr>`;
@@ -4071,9 +4115,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <col style="width:43%">
             <col style="width:10%">
             <col style="width:7%">
-            <col style="width:7%">
             <col style="width:8%">
-            <col style="width:21%">
+            <col style="width:8%">
+            <col style="width:20%">
           </colgroup>
         <thead>
           <tr>
@@ -4081,8 +4125,8 @@ document.addEventListener('DOMContentLoaded', () => {
               <th>NAME OF THE COMMODITY / SERVICE</th>
               <th>HSN CODE</th>
               <th>No.Of<br>Packages</th>
-              <th>Total Qty IN<br>NOS</th>
-              <th>Rate Per No.</th>
+              <th>Total Qty IN<br><span style="font-size:9px;font-weight:600">${qtyTableHeaderSubline(items)}</span></th>
+              <th>Rate</th>
               <th>GOODS VALUE<br>(in Rs.)</th>
           </tr>
         </thead>
@@ -4169,7 +4213,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let subtotal = 0;
     const itemRows = (inv.items || []).map((item, i) => {
-      const q = Math.round(Number(item.qty) || 0);
+      const q = numericQtyForLine(item);
+      const uom = normalizeItemQtyUnit(item);
       const r = Number(item.rate) || 0;
       const amt = q * r;
       subtotal += amt;
@@ -4178,7 +4223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="l">${esc(item.description).toUpperCase() || '—'}</td>
         <td class="c">${esc(item.hsn)}</td>
         <td class="c">${formatBags(item.packages)}</td>
-        <td class="c">${q}</td>
+        <td class="c">${q}<br><span style="font-size:9px;font-weight:700">${uom}</span></td>
         <td class="c">${fmtNum(item.rate || 0)}</td>
         <td class="r">${fmtNum(amt)}</td>
       </tr>`;
@@ -4245,10 +4290,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </tr>
         </table>
         <table class="inv-tbl inv-items">
-          <colgroup><col style="width:4%"><col style="width:43%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:21%"></colgroup>
+          <colgroup><col style="width:4%"><col style="width:43%"><col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:8%"><col style="width:20%"></colgroup>
           <thead><tr>
             <th>SL.No.</th><th>NAME OF THE COMMODITY / SERVICE</th><th>HSN CODE</th>
-            <th>No.Of<br>Packages</th><th>Total Qty IN<br>NOS</th><th>Rate Per No.</th><th>GOODS VALUE<br>(in Rs.)</th>
+            <th>No.Of<br>Packages</th><th>Total Qty IN<br><span style="font-size:9px;font-weight:600">${qtyTableHeaderSubline(inv.items)}</span></th><th>Rate</th><th>GOODS VALUE<br>(in Rs.)</th>
           </tr></thead>
           <tbody>${itemRows}</tbody>
         </table>
@@ -5936,7 +5981,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function computePoGrandTotal(inv) {
     let subtotal = 0;
     (inv.items || []).forEach(it => {
-      const q = Math.round(Number(it.qty) || 0);
+      const q = numericQtyForLine(it);
       subtotal += q * (Number(it.rate) || 0);
     });
     const rate = inv.gstRate || 0;
@@ -6038,9 +6083,11 @@ document.addEventListener('DOMContentLoaded', () => {
     poItems = (inv.items && inv.items.length)
       ? inv.items.map(it => {
           const row = { ...it };
+          delete row.qtyUnit;
           if (row.qty != null && row.qty !== '') {
-            const n = Math.round(Number(row.qty));
-            row.qty = Number.isFinite(n) ? n : null;
+            const n = Number(row.qty);
+            if (!Number.isFinite(n)) row.qty = null;
+            else row.qty = qtyUnitFromQty(n) === 'KGS' ? Math.round(n * 1000) / 1000 : Math.round(n);
           }
           const pk = Math.round(Number(row.packages));
           row.packages = Number.isFinite(pk) && pk >= 0 ? pk : 0;
@@ -6140,12 +6187,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const qtyTd = document.createElement('td');
       const qtyInp = document.createElement('input');
-      qtyInp.type = 'number';
+      qtyInp.type = 'text';
       qtyInp.className = 'inv-qty-input';
-      qtyInp.value = item.qty != null ? item.qty : '';
+      qtyInp.inputMode = 'decimal';
+      qtyInp.autocomplete = 'off';
+      qtyInp.value = qtyInputDisplay(item.qty);
+      qtyInp.dataset.i = String(i);
+      qtyInp.dataset.f = 'po-qty';
       qtyInp.addEventListener('input', () => {
-        const v = qtyInp.value.trim();
-        poItems[i].qty = v === '' ? null : Math.round(Number(v));
+        poItems[i].qty = parseQtyToStore(qtyInp.value);
         updatePoAmount(i);
       });
       qtyTd.appendChild(qtyInp);
@@ -6167,7 +6217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.appendChild(rateTd);
 
       const amtTd = document.createElement('td');
-      const q = Math.round(Number(item.qty) || 0);
+      const q = numericQtyForLine(item);
       const r = Number(item.rate) || 0;
       amtTd.className = 'amount-display';
       amtTd.textContent = fmtNum(q * r);
@@ -6194,7 +6244,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePoAmount(i) {
     const el = $('poItemsBody').querySelector('[data-amt-idx="' + i + '"]');
     if (el) {
-      const q = Math.round(Number(poItems[i].qty) || 0);
+      const q = numericQtyForLine(poItems[i]);
       const r = Number(poItems[i].rate) || 0;
       el.textContent = fmtNum(q * r);
     }
@@ -6348,7 +6398,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let subtotal = 0;
     const itemRows = poItems.map((item, i) => {
-      const q = Math.round(Number(item.qty) || 0);
+      const q = numericQtyForLine(item);
+      const uom = normalizeItemQtyUnit(item);
       const r = Number(item.rate) || 0;
       const amt = q * r;
       subtotal += amt;
@@ -6357,7 +6408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         + '<td class="l">' + (esc(item.description).toUpperCase() || '\u2014') + '</td>'
         + '<td class="c">' + esc(item.hsn) + '</td>'
         + '<td class="c">' + formatBags(item.packages) + '</td>'
-        + '<td class="c">' + q + '</td>'
+        + '<td class="c">' + q + '<br><span style="font-size:9px;font-weight:700">' + uom + '</span></td>'
         + '<td class="c">' + fmtNum(item.rate) + '</td>'
         + '<td class="r">' + fmtNum(amt) + '</td>'
         + '</tr>';
@@ -6419,7 +6470,7 @@ document.addEventListener('DOMContentLoaded', () => {
       + paymentRows
       + '</table></td></tr></table>'
       + '<table class="inv-tbl inv-items">'
-      + '<thead><tr><th style="width:6%">S.No</th><th style="width:28%">Description of Goods</th><th style="width:12%">HSN Code</th><th style="width:10%">No. of Bags</th><th style="width:10%">Quantity</th><th style="width:12%">Rate</th><th style="width:14%">Amount (\u20B9)</th></tr></thead>'
+      + '<thead><tr><th style="width:5%">S.No</th><th style="width:26%">Description of Goods</th><th style="width:11%">HSN Code</th><th style="width:9%">No. of Bags</th><th style="width:11%">Total Qty IN<br><span style="font-size:8px">' + qtyTableHeaderSubline(poItems) + '</span></th><th style="width:11%">Rate</th><th style="width:15%">Amount (\u20B9)</th></tr></thead>'
       + '<tbody>' + itemRows + '</tbody>'
       + '</table>'
       + '<table class="inv-totals-tbl">'

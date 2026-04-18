@@ -42,10 +42,17 @@
     if (e) { e.classList.remove('kpi-loading'); e.textContent = text; }
   }
 
+  function lineQtyForAmount(it) {
+    var n = Number(it.qty);
+    if (!isFinite(n)) return 0;
+    if (Math.abs(n - Math.round(n)) > 1e-9) return Math.round(n * 1000) / 1000;
+    return Math.round(n);
+  }
+
   /* ── Invoice total computation ───────────────────────────── */
   function calcTotal(inv) {
     var sub = (inv.items || []).reduce(function (s, it) {
-      return s + Math.round(Number(it.qty) || 0) * (Number(it.rate) || 0);
+      return s + lineQtyForAmount(it) * (Number(it.rate) || 0);
     }, 0);
     var r   = parseFloat(inv.gstRate) || 0;
     var tax = (inv.gstType === 'cgst') ? sub * (r / 100) * 2 : sub * (r / 100);
@@ -546,7 +553,7 @@
       var gstCgst = 0, gstSgst = 0, gstIgst = 0;
       monthInvs.forEach(function (inv) {
         var sub = (inv.items || []).reduce(function (s, it) {
-          return s + Math.round(Number(it.qty) || 0) * (Number(it.rate) || 0);
+          return s + lineQtyForAmount(it) * (Number(it.rate) || 0);
         }, 0);
         var r = parseFloat(inv.gstRate) || 0;
         var gType = inv.gstType || '';
