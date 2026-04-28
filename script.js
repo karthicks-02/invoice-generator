@@ -7100,18 +7100,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function getFilteredPoInvoices() {
+    const query = ($('poInvSearch').value || '').trim().toLowerCase();
     const from = $('poInvDateFrom').value;
     const to = $('poInvDateTo').value;
     const typeFilter = $('poInvTypeFilter') ? $('poInvTypeFilter').value : '';
-    let result = (!from || !to)
-      ? poInvoices.slice()
-      : poInvoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
-    if (typeFilter) {
-      result = result.filter(inv => {
+    let result = poInvoices.filter(inv => {
+      if (query) {
+        const productInfo = (inv.items || []).map(it => (it.description || '') + ' ' + (it.hsn || '')).join(' ');
+        const typeInfo = (Array.isArray(inv.billType) ? inv.billType : []).join(' ');
+        const haystack = [inv.invoiceNumber, inv.vendorName, productInfo, typeInfo].join(' ').toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (typeFilter) {
         const types = Array.isArray(inv.billType) ? inv.billType : [];
-        return types.includes(typeFilter);
-      });
-    }
+        if (!types.includes(typeFilter)) return false;
+      }
+      if (from && inv.invoiceDate < from) return false;
+      if (to && inv.invoiceDate > to) return false;
+      return true;
+    });
     const sortAsc = ($('poInvSortOrder').value === 'asc');
     return result.sort((a, b) => {
       const da = a.invoiceDate || a.createdAt || '';
@@ -7120,12 +7127,243 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function shouldIncludePoInvoicePagesInFilteredExport() {
+    const checkbox = $('includePoFilteredInvoices');
+    return !!(checkbox && checkbox.checked);
+  }
+
+  function buildFilteredPoListCanvases(selected, opts = {}) {
+    const width = 1240;
+    const height = 1754;
+    const canvases = [];
+
+    const includeInvoices = !!opts.includeInvoices;
+    const from = opts.from || $('poInvDateFrom').value || '-';
+    const to = opts.to || $('poInvDateTo').value || '-';
+    const periodLabel = opts.periodLabel || ($('poInvTotalSummaryPeriod')?.textContent || getPoInvoiceListSummaryPeriodLabel());
+    const query = ($('poInvSearch').value || '').trim() || 'None';
+    const total = selected.reduce((sum, inv) => sum + computePoGrandTotal(inv), 0);
+    const generatedAt = new Date().toLocaleString('en-IN');
+
+    const margin = 52;
+    const tableW = width - margin * 2;
+    const cols = [44, 148, 122, 308, 130, 124];
+    const rowH = 29;
+    const headers = ['#', 'PO Invoice No.', 'Date', 'Vendor', 'Type', 'Total'];
+
+    let page = 1;
+    let rowIndex = 0;
+    while (rowIndex < selected.length || (selected.length === 0 && page === 1)) {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) break;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      const trimToWidth = (text, maxW) => {
+        const src = String(text || '-');
+        if (ctx.measureText(src).width <= maxW) return src;
+        let s = src;
+        while (s.length > 3 && ctx.measureText(s + '...').width > maxW) s = s.slice(0, -1);
+        return s + '...';
+      };
+
+      let y = 72;
+      ctx.fillStyle = '#1e1b4b';
+      ctx.font = 'bold 42px Inter, Arial, sans-serif';
+      ctx.fillText(page === 1 ? 'Filtered PO Invoice List' : 'Filtered PO Invoice List (Continued)', margin, y);
+      y += 50;
+
+      ctx.fillStyle = '#6d28d9';
+      ctx.font = 'bold 22px Inter, Arial, sans-serif';
+      ctx.fillText(includeInvoices ? 'Mode: List page + all invoice pages' : 'Mode: List page only', margin, y);
+      y += 24;
+
+      if (page === 1) {
+        const metaH = 142;
+        ctx.fillStyle = '#f8f7ff';
+        ctx.strokeStyle = '#ddd6fe';
+        ctx.lineWidth = 2;
+        ctx.fillRect(margin, y, tableW, metaH);
+        ctx.strokeRect(margin, y, tableW, metaH);
+
+        ctx.fillStyle = '#2d1a5f';
+        ctx.font = '600 20px Inter, Arial, sans-serif';
+        const leftMeta = [`Period: ${periodLabel}`, `Date range: ${from} to ${to}`, `Search: ${query}`];
+        const rightMeta = [`Invoices: ${selected.length}`, `Total: Rs ${fmtNum(total)}`, `Generated: ${generatedAt}`];
+        leftMeta.forEach((line, i) => ctx.fillText(line, margin + 22, y + 40 + i * 35));
+        rightMeta.forEach((line, i) => ctx.fillText(trimToWidth(line, tableW / 2 - 30), margin + tableW / 2 + 10, y + 40 + i * 35));
+        y += metaH + 24;
+      } else {
+        y += 8;
+      }
+
+      let x = margin;
+      ctx.fillStyle = '#f5f3ff';
+      ctx.fillRect(margin, y, tableW, rowH);
+      ctx.fillStyle = '#4c1d95';
+      ctx.font = '700 18px Inter, Arial, sans-serif';
+      headers.forEach((h, i) => {
+        const tx = i === 5 ? x + cols[i] - 10 - ctx.measureText(h).width : x + 10;
+        ctx.fillText(h, tx, y + 21);
+        x += cols[i];
+      });
+      ctx.strokeStyle = '#c4b5fd';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(margin, y + rowH);
+      ctx.lineTo(margin + tableW, y + rowH);
+      ctx.stroke();
+      y += rowH;
+
+      ctx.font = '500 17px Inter, Arial, sans-serif';
+      const rowsThisPage = Math.max(1, Math.floor((height - y - 50) / rowH));
+      let drawn = 0;
+      while (drawn < rowsThisPage && rowIndex < selected.length) {
+        const inv = selected[rowIndex];
+        if (drawn % 2 === 1) {
+          ctx.fillStyle = '#faf9ff';
+          ctx.fillRect(margin, y, tableW, rowH);
+        }
+        const bt = Array.isArray(inv.billType) ? inv.billType : [];
+        const typeText = bt.length ? bt.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') : '—';
+        const vals = [
+          String(rowIndex + 1),
+          inv.invoiceNumber || '-',
+          inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '-',
+          inv.vendorName || '-',
+          typeText,
+          `Rs ${fmtNum(computePoGrandTotal(inv))}`
+        ];
+        x = margin;
+        ctx.fillStyle = '#1f2937';
+        vals.forEach((v, i) => {
+          const text = trimToWidth(v, cols[i] - 20);
+          if (i === 5) {
+            const tx = x + cols[i] - 10 - ctx.measureText(text).width;
+            ctx.fillText(text, tx, y + 21);
+          } else {
+            ctx.fillText(text, x + 10, y + 21);
+          }
+          x += cols[i];
+        });
+        ctx.strokeStyle = '#ede9fe';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin, y + rowH);
+        ctx.lineTo(margin + tableW, y + rowH);
+        ctx.stroke();
+        y += rowH;
+        drawn++;
+        rowIndex++;
+      }
+
+      if (selected.length === 0) {
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '600 18px Inter, Arial, sans-serif';
+        ctx.fillText('No PO invoices found for the selected filters.', margin + 10, y + 30);
+      }
+
+      canvases.push(canvas);
+      page++;
+      if (selected.length === 0) break;
+    }
+
+    return canvases;
+  }
+
+  async function downloadFilteredPoInvoicesPDF(selected, filename, opts = {}) {
+    if (!selected.length) return;
+    const includeInvoices = typeof opts.includeInvoices === 'boolean'
+      ? opts.includeInvoices
+      : shouldIncludePoInvoicePagesInFilteredExport();
+    const summaryCanvases = buildFilteredPoListCanvases(selected, { ...opts, includeInvoices });
+    if (!summaryCanvases.length) {
+      alert('Could not prepare PO summary page for PDF export.');
+      return;
+    }
+
+    const paper = $('poInvoicePaper');
+    let state = null;
+    let overlay = null;
+    let msg = null;
+    let fill = null;
+    try {
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      let pdf = await createPdfFromCanvases(summaryCanvases, filename);
+
+      if (includeInvoices) {
+        overlay = document.createElement('div');
+        overlay.id = 'pdfBulkOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+        msg = document.createElement('div');
+        msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+        msg.textContent = 'Preparing PO invoice pages...';
+        const bar = document.createElement('div');
+        bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+        fill = document.createElement('div');
+        fill.style.cssText = 'height:100%;width:12%;background:#fff;border-radius:3px;transition:width .3s;';
+        bar.appendChild(fill);
+        overlay.appendChild(msg);
+        overlay.appendChild(bar);
+        document.body.appendChild(overlay);
+
+        state = saveViewState();
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        $('homePanel').classList.add('hidden');
+        $('poInvoiceView').classList.remove('hidden');
+        $('poFormPanel').classList.add('hidden');
+        $('poPreviewPanel').classList.remove('hidden');
+        paper.style.overflow = 'visible';
+
+        for (let i = 0; i < selected.length; i++) {
+          msg.textContent = `Generating PO invoice ${i + 1} of ${selected.length}...`;
+          fill.style.width = Math.round(((i + 1) / (selected.length + 1)) * 100) + '%';
+          loadPoInvoiceIntoForm(selected[i]);
+          syncPoCopyChecks('poCopyType', 'poCopyTypePreview');
+          buildAllPoInvoices();
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
+          const imgData = canvas.toDataURL('image/jpeg', 0.98);
+          const pageW = pdf.internal.pageSize.getWidth();
+          const margin = 0.3;
+          const usableW = pageW - margin * 2;
+          const imgH = (canvas.height * usableW) / canvas.width;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+          const tmpContainer = document.getElementById('html2pdf__container');
+          if (tmpContainer) tmpContainer.remove();
+        }
+      }
+
+      if (msg) msg.textContent = 'Finalizing PDF...';
+      if (fill) fill.style.width = '100%';
+      pdf.save(filename);
+    } catch (err) {
+      console.error('downloadFilteredPoInvoicesPDF failed:', err);
+      const detail = err && err.message ? ` (${err.message})` : '';
+      alert(`Could not generate filtered PO PDF${detail}`);
+    } finally {
+      if (overlay) overlay.remove();
+      if (state) restoreViewState(state);
+    }
+  }
+
   $('poDownloadFilteredBtn').addEventListener('click', () => {
     const filtered = getFilteredPoInvoices();
     if (!filtered.length) { alert('No PO invoices in the current filter'); return; }
     const from = $('poInvDateFrom').value;
     const to = $('poInvDateTo').value;
-    downloadBulkPoPDF(filtered, `po-invoices-${from}-to-${to}.pdf`);
+    const filename = from && to
+      ? `po-invoices-${from}-to-${to}.pdf`
+      : `po-invoices-filtered-${formatDateYMDLocal(new Date())}.pdf`;
+    downloadFilteredPoInvoicesPDF(filtered, filename).catch(err => {
+      console.error('PO filtered PDF download failed:', err);
+      alert('Could not generate filtered PO PDF. Please try again.');
+    });
   });
 
   $('poBulkDownloadBtn').addEventListener('click', () => {

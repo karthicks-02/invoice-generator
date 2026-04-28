@@ -1292,7 +1292,14 @@
         </div>
       </div>
       <div class="download-toolbar">
-        <div class="download-toolbar-hint">Download PDFs for the current date range or selected rows.</div>
+        <div class="download-toolbar-copy">
+          <div class="download-toolbar-hint">Download PDFs for the current date range or selected rows.</div>
+          <div class="download-option-sub">Tip: keep unchecked to export only the summary list.</div>
+        </div>
+        <label class="download-option-check" for="includePoFilteredInvoices">
+          <input type="checkbox" id="includePoFilteredInvoices" />
+          <span>Include invoice pages</span>
+        </label>
         <div class="download-actions">
           <button class="btn btn-primary btn-sm" id="poDownloadFilteredBtn" style="display:none">⬇ Download Filtered</button>
           <button class="btn btn-primary btn-sm" id="poBulkDownloadBtn">⬇ Download Selected</button>
