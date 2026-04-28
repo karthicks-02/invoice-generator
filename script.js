@@ -4585,8 +4585,8 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.style.position = 'fixed';
     wrap.style.left = '0';
     wrap.style.top = '0';
-    wrap.style.zIndex = '-1';
-    wrap.style.opacity = '0.01';
+    wrap.style.zIndex = '1';
+    wrap.style.opacity = '1';
     wrap.style.pointerEvents = 'none';
     wrap.style.width = '794px';
     wrap.style.boxSizing = 'border-box';
@@ -4733,6 +4733,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let state = null;
     try {
+      // Ensure the list page is fully painted before html2pdf captures it.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(summaryPaper).toPdf().get('pdf');
       fill.style.width = includeInvoices ? '12%' : '100%';
       const firstTmp = document.getElementById('html2pdf__container');
