@@ -7491,6 +7491,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function showRatePopover(badge, productName, rateHistory) {
     var dialog = $('rateVariedDialog');
     var bd  = $('ratePopoverBackdrop');
+    var savedScrollX = window.scrollX || window.pageXOffset || 0;
+    var savedScrollY = window.scrollY || window.pageYOffset || 0;
 
     var rates = rateHistory.map(function(e) { return e.rate; });
     var minR  = Math.min.apply(null, rates);
@@ -7555,6 +7557,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dialog && typeof dialog.showModal === 'function') {
       if (dialog.open && typeof dialog.close === 'function') dialog.close();
       dialog.showModal();
+      // Prevent browser focus management from snapping page to top.
+      var closeBtn = $('ratePopoverClose');
+      if (closeBtn && typeof closeBtn.focus === 'function') {
+        try { closeBtn.focus({ preventScroll: true }); } catch (err) { closeBtn.focus(); }
+      }
+      window.scrollTo(savedScrollX, savedScrollY);
+      requestAnimationFrame(function() {
+        window.scrollTo(savedScrollX, savedScrollY);
+      });
       return;
     }
     if (bd) bd.style.display = 'flex';
@@ -7677,7 +7688,7 @@ document.addEventListener('DOMContentLoaded', () => {
         badge.textContent = '↕ varied';
         badge.title = 'Click to see rate breakdown';
         (function(rh, pname) {
-          badge.addEventListener('click', function(e) { e.stopPropagation(); showRatePopover(badge, pname, rh); });
+          badge.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); showRatePopover(badge, pname, rh); });
         }(r.rateHistory, r.name));
         tdRate.appendChild(badge);
       }
@@ -7902,7 +7913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         badge.textContent = '↕ varied';
         badge.title = 'Click to see rate breakdown';
         (function(rh, pname) {
-          badge.addEventListener('click', function(e) { e.stopPropagation(); showRatePopover(badge, pname, rh); });
+          badge.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); showRatePopover(badge, pname, rh); });
         }(r.rateHistory, r.name));
         tdRate.appendChild(badge);
       }
