@@ -2527,6 +2527,27 @@ input.inv-rate-input {
   background: rgba(255,255,255,0.72);
   border-color: rgba(99,102,241,0.18);
 }
+#invoiceListView.invoice-analytics-view .invoice-period-panel {
+  margin-bottom: 14px;
+}
+#invoiceListView.invoice-analytics-view .invoice-kpi-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+#invoiceListView.invoice-analytics-view .invoice-kpi-card {
+  min-height: 136px;
+  justify-content: center;
+}
+#invoiceListView.invoice-analytics-view .invoice-kpi-count-card .akpi-value {
+  font-size: clamp(24px, 2.3vw, 30px);
+}
+#invoiceListView.invoice-analytics-view .invoice-kpi-count-card .inv-total-panel-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8a79ad;
+}
 #invoiceListView.invoice-analytics-view .invoice-total-card {
   margin-bottom: 16px;
   padding: 18px 20px;
@@ -2584,6 +2605,9 @@ input.inv-rate-input {
   #invoiceListView.invoice-analytics-view .invoice-filter-control {
     min-width: 100%;
     width: 100%;
+  }
+  #invoiceListView.invoice-analytics-view .invoice-kpi-row {
+    grid-template-columns: 1fr;
   }
 }
 

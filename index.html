@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="KI Invoice" />
   <link rel="apple-touch-icon" href="icons/icon-192.svg" />
 
-  <link rel="stylesheet" href="style.css?v=48" />
+  <link rel="stylesheet" href="style.css?v=49" />
   <link rel="stylesheet" href="theme.css?v=12" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -624,8 +624,11 @@
           <option value="asc">Date: Oldest first</option>
         </select>
       </div>
-      <div class="inv-total-panel analytics-kpi-card invoice-total-card" id="invTotalPanel">
-        <div class="inv-total-panel-title">Total invoice value</div>
+      <div class="analytics-filter-panel invoice-period-panel">
+        <span class="analytics-filter-label">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+          PERIOD
+        </span>
         <div class="inv-total-period-tabs download-presets" role="tablist" aria-label="Filter total by period">
           <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetToday">Today</button>
           <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetYesterday">Yesterday</button>
@@ -638,11 +641,19 @@
           <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetCustom">Custom</button>
           <button type="button" class="btn btn-sm btn-secondary preset-btn apill apill-clear" id="invPresetClear" style="display:none">Clear dates</button>
         </div>
-        <div class="inv-total-panel-stats">
-          <p class="inv-total-panel-period" id="invTotalSummaryPeriod">All dates</p>
-          <div class="inv-total-panel-value" id="invTotalSummaryValue">₹0.00</div>
-          <p class="inv-total-panel-count" id="invTotalSummaryCount">0 invoices</p>
-          <p class="inv-total-panel-hint">Uses the same filters as the table below (search + date range). Adjust From/To dates for a custom range.</p>
+      </div>
+      <div class="invoice-kpi-row" id="invTotalPanel">
+        <div class="analytics-kpi-card invoice-kpi-card">
+          <div class="akpi-label">Total Amount</div>
+          <div class="inv-total-panel-period" id="invTotalSummaryPeriod">All dates</div>
+          <div class="akpi-value" id="invTotalSummaryValue">₹0.00</div>
+          <div class="akpi-sub">filtered invoice value</div>
+        </div>
+        <div class="analytics-kpi-card invoice-kpi-card invoice-kpi-count-card">
+          <div class="akpi-label">Total Invoices</div>
+          <div class="akpi-value" id="invTotalSummaryCount">0 invoices</div>
+          <div class="akpi-sub">matching current filters</div>
+          <div class="inv-total-panel-hint">Uses search + date range filters.</div>
         </div>
       </div>
       <div class="download-toolbar analytics-filter-panel invoice-download-toolbar">
