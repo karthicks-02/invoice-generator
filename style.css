@@ -2500,6 +2500,92 @@ input.inv-rate-input {
   .analytics-filter-panel { border-radius: 14px; }
 }
 
+/* ── Invoice List: analytics-style skin ───────────────────── */
+#invoiceListView.invoice-analytics-view .invoice-analytics-header .analytics-header-center {
+  flex: 1;
+  justify-content: center;
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-header #invListBackBtn,
+#invoiceListView.invoice-analytics-view .invoice-analytics-header #openGraphBtn {
+  flex-shrink: 0;
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-filters {
+  gap: 10px;
+}
+#invoiceListView.invoice-analytics-view .invoice-filter-label {
+  margin-right: 2px;
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-input {
+  flex: 1 1 320px;
+  min-width: 240px;
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(99,102,241,0.18);
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-date,
+#invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-select {
+  min-width: 150px;
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(99,102,241,0.18);
+}
+#invoiceListView.invoice-analytics-view .invoice-total-card {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+#invoiceListView.invoice-analytics-view .invoice-total-card .download-presets {
+  gap: 6px;
+}
+#invoiceListView.invoice-analytics-view .preset-btn.apill {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(99,102,241,0.18);
+  background: rgba(255,255,255,0.72);
+  color: #4b4b7a;
+}
+#invoiceListView.invoice-analytics-view .preset-btn.apill.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+}
+#invoiceListView.invoice-analytics-view .invoice-download-toolbar {
+  margin-bottom: 16px;
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-table-wrap {
+  border-radius: 18px;
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-table-wrap .analytics-table thead th:last-child {
+  background: rgba(238,242,255,0.92);
+}
+#invoiceListView.invoice-analytics-view .invoice-analytics-table-wrap .analytics-table td.actions {
+  background: rgba(255,255,255,0.88);
+}
+#invoiceListView.invoice-analytics-view #invListEmpty {
+  margin: 0;
+  padding: 18px;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  #invoiceListView.invoice-analytics-view .invoice-analytics-header {
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  #invoiceListView.invoice-analytics-view .invoice-analytics-header .analytics-header-center {
+    justify-content: flex-start;
+  }
+  #invoiceListView.invoice-analytics-view .analytics-header-sub {
+    display: none;
+  }
+  #invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-input,
+  #invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-date,
+  #invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-select {
+    min-width: 100%;
+    width: 100%;
+  }
+}
+
 /* ── Rate Variation Popover ─────────────────────────────── */
 .rate-varied-clickable {
   cursor: pointer;

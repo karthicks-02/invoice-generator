@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="KI Invoice" />
   <link rel="apple-touch-icon" href="icons/icon-192.svg" />
 
-  <link rel="stylesheet" href="style.css?v=46" />
+  <link rel="stylesheet" href="style.css?v=47" />
   <link rel="stylesheet" href="theme.css?v=12" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -594,13 +594,25 @@
     </div>
 
     <!-- ======== INVOICE LIST VIEW ======== -->
-    <div id="invoiceListView" class="view hidden">
-      <div class="view-header">
+    <div id="invoiceListView" class="view hidden invoice-analytics-view">
+      <div class="view-header analytics-view-header invoice-analytics-header">
         <button class="btn btn-secondary" id="invListBackBtn">← Back</button>
-        <h2>All Invoices</h2>
-        <button class="btn btn-sm btn-secondary" id="openGraphBtn">Show Graph</button>
+        <div class="analytics-header-center">
+          <div class="analytics-header-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H6v-2h5v2zm7-4H6v-2h12v2zm0-4H6V7h12v2z"/></svg>
+          </div>
+          <div>
+            <h2>All Invoices</h2>
+            <p class="analytics-header-sub">Invoice registry, filters and exports</p>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary analytics-dl-btn" id="openGraphBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M3 17h2v2H3v-2zm4-5h2v7H7v-7zm4-4h2v11h-2V8zm4 7h2v4h-2v-4zm4-12v16H1V3h18m0-2H1C-.1 1-1 1.9-1 3v16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2z"/></svg>
+          Show Graph
+        </button>
       </div>
-      <div class="filter-row">
+      <div class="filter-row analytics-filter-panel invoice-analytics-filters">
+        <span class="analytics-filter-label">Filters</span>
         <input type="text" id="invSearch" class="filter-input" placeholder="Search by invoice no, customer, or product..." />
         <input type="date" id="invDateFrom" class="filter-date" title="From date" />
         <input type="date" id="invDateTo" class="filter-date" title="To date" />
@@ -609,19 +621,19 @@
           <option value="asc">Date: Oldest first</option>
         </select>
       </div>
-      <div class="inv-total-panel" id="invTotalPanel">
+      <div class="inv-total-panel analytics-kpi-card invoice-total-card" id="invTotalPanel">
         <div class="inv-total-panel-title">Total invoice value</div>
         <div class="inv-total-period-tabs download-presets" role="tablist" aria-label="Filter total by period">
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetToday">Today</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetYesterday">Yesterday</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetThisWeek">This week</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetLastWeek">Last week</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetThisMonth">This month</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetLastMonth">Last month</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetThisYear">This year</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetLastYear">Last year</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetCustom">Custom</button>
-          <button type="button" class="btn btn-sm btn-secondary preset-btn" id="invPresetClear" style="display:none">Clear dates</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetToday">Today</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetYesterday">Yesterday</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetThisWeek">This week</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetLastWeek">Last week</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetThisMonth">This month</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetLastMonth">Last month</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetThisYear">This year</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetLastYear">Last year</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="invPresetCustom">Custom</button>
+          <button type="button" class="btn btn-sm btn-secondary preset-btn apill apill-clear" id="invPresetClear" style="display:none">Clear dates</button>
         </div>
         <div class="inv-total-panel-stats">
           <p class="inv-total-panel-period" id="invTotalSummaryPeriod">All dates</p>
@@ -630,7 +642,7 @@
           <p class="inv-total-panel-hint">Uses the same filters as the table below (search + date range). Adjust From/To dates for a custom range.</p>
         </div>
       </div>
-      <div class="download-toolbar">
+      <div class="download-toolbar analytics-filter-panel invoice-download-toolbar">
         <div class="download-toolbar-copy">
           <div class="download-toolbar-hint">Download PDFs for the current date range or selected rows.</div>
           <div class="download-option-sub">Tip: keep unchecked to export only the summary list.</div>
@@ -644,8 +656,8 @@
           <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">⬇ Download Selected</button>
         </div>
       </div>
-      <div class="data-table-wrap">
-        <table class="data-table" id="invListTable">
+      <div class="data-table-wrap analytics-table-wrap invoice-analytics-table-wrap">
+        <table class="data-table analytics-table" id="invListTable">
           <thead>
             <tr>
               <th style="width:36px"><input type="checkbox" id="invSelectAll" /></th>
