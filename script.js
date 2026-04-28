@@ -157,6 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('payBackBtn').addEventListener('click', goHome);
   $('vpayBackBtn').addEventListener('click', goHome);
+  $('psBackBtn').addEventListener('click', goHome);
+  $('paBackBtn').addEventListener('click', goHome);
 
   // Luxury nav cards — exclusive accordion (one open closes the other)
   window.luxToggle = function(openId, closeId) {
@@ -182,7 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (v === 'customerView')      hideCustForm();
       if (v === 'vendorView')        hideVendForm();
       if (v === 'poInvoiceView')     resetPoInvoiceForm();
-      if (v === 'poInvoiceListView') renderPoInvoiceList();
+      if (v === 'poInvoiceListView')    renderPoInvoiceList();
+      if (v === 'productSalesView')      renderProductSales();
+      if (v === 'purchaseAnalyticsView') renderPurchaseAnalytics();
     });
   });
 
