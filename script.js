@@ -7551,18 +7551,18 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Show centred in viewport — reliable on all scroll positions and zoom levels
-    pop.style.display = 'block';
-    bd.style.display  = 'block';
+    // Backdrop is the flex container — just show it
+    bd.style.display = 'flex';
   }
 
   function hideRatePopover() {
-    $('rateVariedPopover').style.display = 'none';
     $('ratePopoverBackdrop').style.display = 'none';
   }
 
   $('ratePopoverClose').addEventListener('click', hideRatePopover);
-  $('ratePopoverBackdrop').addEventListener('click', hideRatePopover);
+  $('ratePopoverBackdrop').addEventListener('click', function(e) {
+    if (e.target === this) hideRatePopover();
+  });
 
   // ── Product Sales Analytics ──────────────────────────────────
   var psActivePreset = null;
