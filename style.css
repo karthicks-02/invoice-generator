@@ -2554,6 +2554,22 @@ input.inv-rate-input {
   padding: 20px;
 }
 
+/* Hard lock: always center popover in viewport */
+#ratePopoverBackdrop.rate-popover-backdrop {
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+#rateVariedPopover.rate-popover {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
 /* Popover card — no positioning, flexbox parent centres it */
 .rate-popover {
   width: min(380px, 100%);
@@ -2574,6 +2590,11 @@ input.inv-rate-input {
 
 /* Mobile: keep centered, just reduce width/height */
 @media (max-width: 520px) {
+  #ratePopoverBackdrop.rate-popover-backdrop {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px !important;
+  }
   .rate-popover {
     width: min(380px, calc(100vw - 16px));
     max-height: 75vh;
