@@ -4582,11 +4582,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildFilteredListExportPaper(selected, opts = {}) {
     const wrap = document.createElement('div');
-    wrap.style.position = 'fixed';
+    wrap.style.position = 'absolute';
     wrap.style.left = '0';
     wrap.style.top = '0';
-    wrap.style.zIndex = '1';
-    wrap.style.opacity = '1';
+    wrap.style.zIndex = '0';
     wrap.style.pointerEvents = 'none';
     wrap.style.width = '794px';
     wrap.style.boxSizing = 'border-box';
@@ -4715,22 +4714,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const paper = $('invoicePaper');
     const summaryPaper = buildFilteredListExportPaper(selected, { ...opts, includeInvoices });
     document.body.appendChild(summaryPaper);
-    const overlay = document.createElement('div');
-    overlay.id = 'pdfBulkOverlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
-    const msg = document.createElement('div');
-    msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
-    msg.textContent = 'Generating list page...';
-    const bar = document.createElement('div');
-    bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
-    const fill = document.createElement('div');
-    fill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width .3s;';
-    bar.appendChild(fill);
-    overlay.appendChild(msg);
-    overlay.appendChild(bar);
-    document.body.appendChild(overlay);
 
     let state = null;
+    let overlay = null;
+    let msg = null;
+    let fill = null;
     try {
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const summaryOpt = {
@@ -4746,9 +4734,24 @@ document.addEventListener('DOMContentLoaded', () => {
       let pdf = await html2pdf().set({ ...summaryOpt, filename }).from(summaryPaper).toPdf().get('pdf');
       const firstTmp = document.getElementById('html2pdf__container');
       if (firstTmp) firstTmp.remove();
-      fill.style.width = includeInvoices ? '12%' : '100%';
+      summaryPaper.remove();
 
       if (includeInvoices) {
+        overlay = document.createElement('div');
+        overlay.id = 'pdfBulkOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+        msg = document.createElement('div');
+        msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+        msg.textContent = 'Preparing invoice pages...';
+        const bar = document.createElement('div');
+        bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+        fill = document.createElement('div');
+        fill.style.cssText = 'height:100%;width:12%;background:#fff;border-radius:3px;transition:width .3s;';
+        bar.appendChild(fill);
+        overlay.appendChild(msg);
+        overlay.appendChild(bar);
+        document.body.appendChild(overlay);
+
         state = saveViewState();
         document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
         $('homePanel').classList.add('hidden');
@@ -4775,12 +4778,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      msg.textContent = 'Finalizing PDF...';
-      fill.style.width = '100%';
+      if (msg) msg.textContent = 'Finalizing PDF...';
+      if (fill) fill.style.width = '100%';
       pdf.save(filename);
     } finally {
-      summaryPaper.remove();
-      overlay.remove();
+      if (summaryPaper.parentNode) summaryPaper.remove();
+      if (overlay) overlay.remove();
       if (state) restoreViewState(state);
     }
   }
