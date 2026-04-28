@@ -4705,6 +4705,126 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrap;
   }
 
+  function buildFilteredListCanvas(selected, opts = {}) {
+    const width = 1240;
+    const height = 1754;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const includeInvoices = !!opts.includeInvoices;
+    const from = opts.from || $('invDateFrom').value || '-';
+    const to = opts.to || $('invDateTo').value || '-';
+    const periodLabel = opts.periodLabel || ($('invTotalSummaryPeriod')?.textContent || getInvoiceListSummaryPeriodLabel());
+    const query = ($('invSearch').value || '').trim() || 'None';
+    const total = selected.reduce((sum, inv) => sum + computeGrandTotal(inv), 0);
+    const generatedAt = new Date().toLocaleString('en-IN');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    const margin = 52;
+    let y = 72;
+    const tableW = width - margin * 2;
+    const cols = [54, 210, 140, tableW - (54 + 210 + 140 + 170), 170];
+    const rowH = 29;
+
+    const trimToWidth = (text, maxW) => {
+      const src = String(text || '-');
+      if (ctx.measureText(src).width <= maxW) return src;
+      let s = src;
+      while (s.length > 3 && ctx.measureText(s + '...').width > maxW) s = s.slice(0, -1);
+      return s + '...';
+    };
+
+    ctx.fillStyle = '#1e1b4b';
+    ctx.font = 'bold 42px Inter, Arial, sans-serif';
+    ctx.fillText('Filtered Invoice List', margin, y);
+    y += 50;
+
+    ctx.fillStyle = '#6d28d9';
+    ctx.font = 'bold 22px Inter, Arial, sans-serif';
+    ctx.fillText(includeInvoices ? 'Mode: List page + all invoice pages' : 'Mode: List page only', margin, y);
+    y += 24;
+
+    const metaH = 142;
+    ctx.fillStyle = '#f8f7ff';
+    ctx.strokeStyle = '#ddd6fe';
+    ctx.lineWidth = 2;
+    ctx.fillRect(margin, y, tableW, metaH);
+    ctx.strokeRect(margin, y, tableW, metaH);
+
+    ctx.fillStyle = '#2d1a5f';
+    ctx.font = '600 20px Inter, Arial, sans-serif';
+    const leftMeta = [`Period: ${periodLabel}`, `Date range: ${from} to ${to}`, `Search: ${query}`];
+    const rightMeta = [`Invoices: ${selected.length}`, `Total: Rs ${fmtNum(total)}`, `Generated: ${generatedAt}`];
+    leftMeta.forEach((line, i) => ctx.fillText(line, margin + 22, y + 40 + i * 35));
+    rightMeta.forEach((line, i) => ctx.fillText(line, margin + tableW / 2 + 10, y + 40 + i * 35));
+    y += metaH + 24;
+
+    const headers = ['#', 'Invoice No.', 'Date', 'Customer', 'Total'];
+    let x = margin;
+    ctx.fillStyle = '#f5f3ff';
+    ctx.fillRect(margin, y, tableW, rowH);
+    ctx.fillStyle = '#4c1d95';
+    ctx.font = '700 19px Inter, Arial, sans-serif';
+    headers.forEach((h, i) => {
+      const tx = i === 4
+        ? x + cols[i] - 10 - ctx.measureText(h).width
+        : x + 10;
+      ctx.fillText(h, tx, y + 21);
+      x += cols[i];
+    });
+    ctx.strokeStyle = '#c4b5fd';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(margin, y + rowH);
+    ctx.lineTo(margin + tableW, y + rowH);
+    ctx.stroke();
+    y += rowH;
+
+    ctx.font = '500 18px Inter, Arial, sans-serif';
+    const maxRows = Math.floor((height - y - 46) / rowH);
+    const list = selected.slice(0, maxRows);
+
+    list.forEach((inv, idx) => {
+      if (idx % 2 === 1) {
+        ctx.fillStyle = '#faf9ff';
+        ctx.fillRect(margin, y, tableW, rowH);
+      }
+      const vals = [
+        String(idx + 1),
+        inv.invoiceNumber || '-',
+        inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '-',
+        inv.buyerName || '-',
+        `Rs ${fmtNum(computeGrandTotal(inv))}`
+      ];
+      x = margin;
+      ctx.fillStyle = '#1f2937';
+      vals.forEach((v, i) => {
+        const text = trimToWidth(v, cols[i] - 20);
+        if (i === 4) {
+          const tx = x + cols[i] - 10 - ctx.measureText(text).width;
+          ctx.fillText(text, tx, y + 21);
+        } else {
+          ctx.fillText(text, x + 10, y + 21);
+        }
+        x += cols[i];
+      });
+      ctx.strokeStyle = '#ede9fe';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin, y + rowH);
+      ctx.lineTo(margin + tableW, y + rowH);
+      ctx.stroke();
+      y += rowH;
+    });
+
+    return canvas;
+  }
+
   async function downloadFilteredInvoicesPDF(selected, filename, opts = {}) {
     if (!selected.length) return;
 
@@ -4712,8 +4832,11 @@ document.addEventListener('DOMContentLoaded', () => {
       ? opts.includeInvoices
       : shouldIncludeInvoicePagesInFilteredExport();
     const paper = $('invoicePaper');
-    const summaryPaper = buildFilteredListExportPaper(selected, { ...opts, includeInvoices });
-    document.body.appendChild(summaryPaper);
+    const summaryCanvas = buildFilteredListCanvas(selected, { ...opts, includeInvoices });
+    if (!summaryCanvas) {
+      alert('Could not prepare list page for PDF export.');
+      return;
+    }
 
     let state = null;
     let overlay = null;
@@ -4721,20 +4844,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let fill = null;
     try {
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      const summaryOpt = {
-        ...PDF_OPT,
-        html2canvas: {
-          ...PDF_OPT.html2canvas,
-          scale: 2,
-          backgroundColor: '#ffffff',
-          scrollX: 0,
-          scrollY: 0
-        }
-      };
-      let pdf = await html2pdf().set({ ...summaryOpt, filename }).from(summaryPaper).toPdf().get('pdf');
+      let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(summaryCanvas).toPdf().get('pdf');
       const firstTmp = document.getElementById('html2pdf__container');
       if (firstTmp) firstTmp.remove();
-      summaryPaper.remove();
 
       if (includeInvoices) {
         overlay = document.createElement('div');
@@ -4782,7 +4894,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fill) fill.style.width = '100%';
       pdf.save(filename);
     } finally {
-      if (summaryPaper.parentNode) summaryPaper.remove();
       if (overlay) overlay.remove();
       if (state) restoreViewState(state);
     }
