@@ -7538,23 +7538,48 @@ document.addEventListener('DOMContentLoaded', () => {
       var ratesEl = document.createElement('span'); ratesEl.className = 'rp-month-rates';
       ratesEl.textContent = rowRates.map(function(r) { return '₹' + fmtNum(r); }).join(', ');
       var cnt = document.createElement('span'); cnt.className = 'rp-month-cnt';
-      cnt.textContent = invCount + (invCount === 1 ? ' inv' : ' invs');
+      cnt.textContent = invCount + (invCount === 1 ? ' invoice' : ' invoices');
       row.appendChild(lbl); row.appendChild(ratesEl); row.appendChild(cnt);
       body.appendChild(row);
     });
 
-    // Show and position
+    // Add spread % to summary
+    if (minR > 0) {
+      var spreadPct = Math.round((maxR - minR) / minR * 100);
+      var spEl = document.createElement('span'); spEl.className = 'rp-spread';
+      spEl.textContent = '↑ +' + spreadPct + '% spread';
+      sumEl.appendChild(spEl);
+    }
+
+    // Show and position using fixed coords (viewport-relative, no scroll offset needed)
     pop.style.display = 'block';
     bd.style.display  = 'block';
+    pop.classList.remove('rp-bottom-sheet');
     requestAnimationFrame(function() {
       var rect = badge.getBoundingClientRect();
       var pw   = pop.offsetWidth;
       var ph   = pop.offsetHeight;
-      var left = rect.left + window.scrollX;
-      var top  = rect.bottom + window.scrollY + 10;
-      if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+      var vw   = window.innerWidth;
+      var vh   = window.innerHeight;
+
+      if (vw <= 520) {
+        // Mobile: bottom sheet — CSS handles positioning
+        pop.classList.add('rp-bottom-sheet');
+        pop.style.left = '';
+        pop.style.top  = '';
+        return;
+      }
+
+      // Center popover on the badge horizontally
+      var left = rect.left + rect.width / 2 - pw / 2;
+      var top  = rect.bottom + 10;
+
+      if (left + pw > vw - 8) left = vw - pw - 8;
       if (left < 8) left = 8;
-      if (top + ph > window.scrollY + window.innerHeight - 8) top = rect.top + window.scrollY - ph - 10;
+      // Flip above badge if not enough room below
+      if (top + ph > vh - 8) top = rect.top - ph - 10;
+      if (top < 8) top = 8;
+
       pop.style.left = left + 'px';
       pop.style.top  = top  + 'px';
     });
