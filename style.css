@@ -2508,8 +2508,13 @@ input.inv-rate-input {
 .rate-varied-clickable:hover { filter: brightness(0.90); }
 
 .rate-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
   padding: 0;
-  margin: auto;
+  margin: 0;
   width: min(380px, calc(100vw - 24px));
   max-height: 85vh;
   overflow: hidden;
@@ -2521,14 +2526,17 @@ input.inv-rate-input {
 
 .rate-dialog::backdrop {
   background: rgba(15,10,40,0.38);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 @media (max-width: 520px) {
   .rate-dialog {
     width: min(380px, calc(100vw - 16px));
     max-height: 75vh;
+    top: auto;
+    bottom: 8px;
+    transform: translateX(-50%);
   }
 }
 
