@@ -55,7 +55,9 @@
       return s + lineQtyForAmount(it) * (Number(it.rate) || 0);
     }, 0);
     var r   = parseFloat(inv.gstRate) || 0;
-    var tax = (inv.gstType === 'cgst') ? sub * (r / 100) * 2 : sub * (r / 100);
+    var gType = inv.gstType || '';
+    var isIntra = (gType === 'intra' || gType === 'cgst');
+    var tax = isIntra ? sub * (r / 100) * 2 : sub * (r / 100);
     return Math.round(sub + tax);
   }
 
@@ -291,9 +293,12 @@
 
       var now = new Date();
       var mo0 = new Date(now.getFullYear(), now.getMonth(), 1);
+      var mo1 = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       var monthInvs = invoices.filter(function (inv) {
         var d = inv.invoiceDate || inv.date || '';
-        return d && new Date(d) >= mo0;
+        if (!d) return false;
+        var parsed = new Date(d);
+        return !isNaN(parsed) && parsed >= mo0 && parsed < mo1;
       });
       var month = monthInvs.reduce(function (s, inv) { return s + calcTotal(inv); }, 0);
 

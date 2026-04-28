@@ -1,9 +1,10 @@
-const CACHE_NAME = 'ki-invoice-v5';
+const CACHE_NAME = 'ki-invoice-v6';
 
 const APP_SHELL_NAMES = [
   'index.html',
   'style.css',
   'script.js',
+  'kpi-stats.js',
   'db.js',
   'firebase-config.js',
   'emailjs-config.js',
