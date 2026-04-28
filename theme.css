@@ -650,26 +650,20 @@ legend {
   border-radius: 14px;
   box-shadow: 0 2px 12px rgba(99,102,241,0.06), 0 1px 0 rgba(255,255,255,0.90) inset;
 }
-.download-toolbar-options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
 .download-option-check {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 7px;
+  padding: 6px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(124,58,237,0.18);
-  background: rgba(124,58,237,0.08);
-  color: #2d1a5f;
+  border: 1px solid rgba(124,58,237,0.2);
+  background: rgba(255,255,255,0.75);
+  color: #3b246b;
   font-weight: 600;
   font-size: 0.78rem;
   cursor: pointer;
   user-select: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset;
 }
 .download-option-check input {
   width: 15px;
@@ -677,9 +671,10 @@ legend {
   accent-color: #7c3aed;
 }
 .download-option-sub {
-  color: #7a6a9a;
-  font-size: 0.76rem;
+  color: #8a79ad;
+  font-size: 0.74rem;
   font-weight: 500;
+  margin: 0;
 }
 
 /* Filter bar (days aging, etc.) */
