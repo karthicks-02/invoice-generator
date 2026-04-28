@@ -35,7 +35,7 @@ body.home-active {
 }
 
 /* All content above the mesh */
-body > *:not(.bg-mesh):not(.grain) {
+body > *:not(.bg-mesh):not(.grain):not(#ratePopoverBackdrop) {
   position: relative;
   z-index: 2;
 }

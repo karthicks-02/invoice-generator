@@ -2556,6 +2556,10 @@ input.inv-rate-input {
 
 /* Hard lock: always center popover in viewport */
 #ratePopoverBackdrop.rate-popover-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 20px !important;
