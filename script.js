@@ -4590,7 +4590,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.style.top = '0';
     wrap.style.zIndex = '0';
     wrap.style.pointerEvents = 'none';
-    wrap.style.width = '794px';
+    wrap.style.width = '720px';
     wrap.style.boxSizing = 'border-box';
     wrap.style.padding = '26px 30px';
     wrap.style.background = '#ffffff';
@@ -4663,7 +4663,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const table = document.createElement('table');
     table.style.width = '100%';
     table.style.borderCollapse = 'collapse';
+    table.style.tableLayout = 'fixed';
     table.style.fontSize = '12px';
+
+    const colgroup = document.createElement('colgroup');
+    [36, 122, 82, 356, 94].forEach(w => {
+      const col = document.createElement('col');
+      col.style.width = `${w}px`;
+      colgroup.appendChild(col);
+    });
+    table.appendChild(colgroup);
 
     const thead = document.createElement('thead');
     const trh = document.createElement('tr');
@@ -4697,6 +4706,9 @@ document.addEventListener('DOMContentLoaded', () => {
         td.textContent = value;
         td.style.padding = '7px 6px';
         td.style.borderBottom = '1px solid #ede9fe';
+        td.style.whiteSpace = 'nowrap';
+        td.style.overflow = 'hidden';
+        td.style.textOverflow = 'ellipsis';
         if (ci === 4) td.style.textAlign = 'right';
         tr.appendChild(td);
       });
@@ -4903,9 +4915,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const includeInvoices = typeof opts.includeInvoices === 'boolean'
       ? opts.includeInvoices
       : shouldIncludeInvoicePagesInFilteredExport();
+    const summaryPaper = buildFilteredListExportPaper(selected, { ...opts, includeInvoices });
+    document.body.appendChild(summaryPaper);
+
+    // Fast, stable path for list-only export.
+    if (!includeInvoices) {
+      try {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const listOnlyOpt = {
+          ...PDF_OPT,
+          filename,
+          pagebreak: { mode: ['css', 'legacy'] },
+          html2canvas: {
+            ...PDF_OPT.html2canvas,
+            scale: 2,
+            backgroundColor: '#ffffff',
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: 1280
+          }
+        };
+        await html2pdf().set(listOnlyOpt).from(summaryPaper).save();
+      } finally {
+        if (summaryPaper.parentNode) summaryPaper.remove();
+      }
+      return;
+    }
+
     const paper = $('invoicePaper');
     const summaryCanvases = buildFilteredListCanvases(selected, { ...opts, includeInvoices });
     if (!summaryCanvases.length) {
+      if (summaryPaper.parentNode) summaryPaper.remove();
       alert('Could not prepare list page for PDF export.');
       return;
     }
@@ -4967,6 +5007,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('downloadFilteredInvoicesPDF failed:', err);
       alert('Could not generate filtered PDF. Please try again.');
     } finally {
+      if (summaryPaper.parentNode) summaryPaper.remove();
       if (overlay) overlay.remove();
       if (state) restoreViewState(state);
     }
