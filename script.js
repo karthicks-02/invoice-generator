@@ -1285,7 +1285,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const filename = from && to
       ? `invoices-${from}-to-${to}.pdf`
       : `invoices-filtered-${formatDateYMDLocal(new Date())}.pdf`;
-    downloadFilteredInvoicesPDF(filtered, filename);
+    downloadFilteredInvoicesPDF(filtered, filename).catch(err => {
+      console.error('Filtered PDF download failed:', err);
+      alert('Could not generate filtered PDF. Please try again.');
+    });
   });
 
   $('invPresetCustom').addEventListener('click', () => {
@@ -4861,7 +4864,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tmp) tmp.remove();
     seed.remove();
 
-    if (typeof pdf.deletePage === 'function') {
+    const canDeleteFirstPage = typeof pdf.deletePage === 'function';
+    if (canDeleteFirstPage) {
       pdf.deletePage(1);
     }
 
@@ -4875,11 +4879,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const imgW = usableW;
       const imgH = (c.height * imgW) / c.width;
 
-      if (idx === 0 && !(typeof pdf.deletePage === 'function')) {
+      if (idx === 0 && !canDeleteFirstPage) {
         pdf.setPage(1);
       } else {
         pdf.addPage();
-        pdf.setPage(pdf.getNumberOfPages());
       }
 
       if (imgH <= usableH) {
@@ -4960,6 +4963,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (msg) msg.textContent = 'Finalizing PDF...';
       if (fill) fill.style.width = '100%';
       pdf.save(filename);
+    } catch (err) {
+      console.error('downloadFilteredInvoicesPDF failed:', err);
+      alert('Could not generate filtered PDF. Please try again.');
     } finally {
       if (overlay) overlay.remove();
       if (state) restoreViewState(state);
