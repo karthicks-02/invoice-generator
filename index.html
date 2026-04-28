@@ -421,6 +421,124 @@
 
     </section>
 
+    <!-- ======== PRODUCT SALES ANALYTICS VIEW ======== -->
+    <div id="productSalesView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="psBackBtn">&#8592; Back</button>
+        <h2>Sales Analytics</h2>
+        <button class="btn btn-primary btn-sm" id="psDownloadPdfBtn">&#8595; Download PDF</button>
+      </div>
+      <div class="analytics-filter-bar">
+        <span class="analytics-filter-label">PERIOD</span>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetToday">Today</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetYesterday">Yesterday</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetThisWeek">This week</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetLastWeek">Last week</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetThisMonth">This month</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetLastMonth">Last month</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetThisYear">This year</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetLastYear">Last year</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="psPresetClear" style="display:none">Clear</button>
+      </div>
+      <div class="analytics-kpi-strip">
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Products Invoiced</div>
+          <div class="analytics-kpi-value" id="psKpiProducts">&#8212;</div>
+        </div>
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Total Invoices</div>
+          <div class="analytics-kpi-value" id="psKpiInvoices">&#8212;</div>
+        </div>
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Total Qty</div>
+          <div class="analytics-kpi-value" id="psKpiQty">&#8212;</div>
+        </div>
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Total Revenue</div>
+          <div class="analytics-kpi-value analytics-kpi-revenue" id="psKpiRevenue">&#8212;</div>
+        </div>
+      </div>
+      <div class="analytics-search-bar">
+        <input type="text" id="psSearch" class="filter-input" placeholder="Search product..." />
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table" id="psTable">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Product Name</th>
+              <th class="r">Invoice Count</th>
+              <th class="r">Total Qty</th>
+              <th class="r">Avg Rate</th>
+              <th class="r">Total Revenue</th>
+            </tr>
+          </thead>
+          <tbody id="psTableBody"></tbody>
+        </table>
+        <div class="inv-empty" id="psEmpty">No data for the selected period.</div>
+      </div>
+      <div id="psAnalyticsPdf" style="display:none"></div>
+    </div>
+
+    <!-- ======== PURCHASE ANALYTICS VIEW ======== -->
+    <div id="purchaseAnalyticsView" class="view hidden">
+      <div class="view-header">
+        <button class="btn btn-secondary" id="paBackBtn">&#8592; Back</button>
+        <h2>Purchase Analytics</h2>
+        <button class="btn btn-primary btn-sm" id="paDownloadPdfBtn">&#8595; Download PDF</button>
+      </div>
+      <div class="analytics-filter-bar">
+        <span class="analytics-filter-label">PERIOD</span>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetToday">Today</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetYesterday">Yesterday</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetThisWeek">This week</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetLastWeek">Last week</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetThisMonth">This month</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetLastMonth">Last month</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetThisYear">This year</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetLastYear">Last year</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn" id="paPresetClear" style="display:none">Clear</button>
+      </div>
+      <div class="analytics-kpi-strip">
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Products Purchased</div>
+          <div class="analytics-kpi-value" id="paKpiProducts">&#8212;</div>
+        </div>
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Total PO Invoices</div>
+          <div class="analytics-kpi-value" id="paKpiInvoices">&#8212;</div>
+        </div>
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Total Qty</div>
+          <div class="analytics-kpi-value" id="paKpiQty">&#8212;</div>
+        </div>
+        <div class="analytics-kpi-tile">
+          <div class="analytics-kpi-label">Total Spend</div>
+          <div class="analytics-kpi-value analytics-kpi-revenue" id="paKpiRevenue">&#8212;</div>
+        </div>
+      </div>
+      <div class="analytics-search-bar">
+        <input type="text" id="paSearch" class="filter-input" placeholder="Search product..." />
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table" id="paTable">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Product Name</th>
+              <th class="r">PO Count</th>
+              <th class="r">Total Qty</th>
+              <th class="r">Avg Rate</th>
+              <th class="r">Total Spend</th>
+            </tr>
+          </thead>
+          <tbody id="paTableBody"></tbody>
+        </table>
+        <div class="inv-empty" id="paEmpty">No data for the selected period.</div>
+      </div>
+      <div id="paAnalyticsPdf" style="display:none"></div>
+    </div>
+
     <!-- ======== INVOICE LIST VIEW ======== -->
     <div id="invoiceListView" class="view hidden">
       <div class="view-header">
