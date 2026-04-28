@@ -452,6 +452,13 @@
       </div>
       <div class="download-toolbar">
         <div class="download-toolbar-hint">Download PDFs for the current date range or selected rows.</div>
+        <div class="download-toolbar-options" id="filteredExportOptions">
+          <label class="download-option-check" for="includeFilteredInvoices">
+            <input type="checkbox" id="includeFilteredInvoices" />
+            <span>Include invoice pages</span>
+          </label>
+          <span class="download-option-sub">Unchecked = list page only (faster)</span>
+        </div>
         <div class="download-actions">
           <button class="btn btn-primary btn-sm" id="downloadFilteredBtn" style="display:none">⬇ Download Filtered</button>
           <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">⬇ Download Selected</button>

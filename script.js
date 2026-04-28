@@ -1261,11 +1261,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getFilteredInvoices() {
+    const query = ($('invSearch').value || '').trim().toLowerCase();
     const from = $('invDateFrom').value;
     const to = $('invDateTo').value;
-    const result = (!from || !to)
-      ? invoices.slice()
-      : invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    const result = invoices.filter(inv => {
+      if (query) {
+        const productInfo = (inv.items || []).map(it => (it.description || '') + ' ' + (it.hsn || '')).join(' ');
+        const haystack = [inv.invoiceNumber, inv.buyerName, productInfo].join(' ').toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (from && inv.invoiceDate < from) return false;
+      if (to && inv.invoiceDate > to) return false;
+      return true;
+    });
     return applySortOrder(result);
   }
 
@@ -1274,7 +1282,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!filtered.length) { alert('No invoices in the current filter'); return; }
     const from = $('invDateFrom').value;
     const to = $('invDateTo').value;
-    downloadBulkPDF(filtered, `invoices-${from}-to-${to}.pdf`);
+    const filename = from && to
+      ? `invoices-${from}-to-${to}.pdf`
+      : `invoices-filtered-${formatDateYMDLocal(new Date())}.pdf`;
+    downloadFilteredInvoicesPDF(filtered, filename);
   });
 
   $('invPresetCustom').addEventListener('click', () => {
@@ -1350,10 +1361,16 @@ document.addEventListener('DOMContentLoaded', () => {
       poCustomRangeOpen = false;
       downloadBulkPoPDF(selected, `po-invoices-${from}-to-${to}.pdf`);
     } else {
+      const from = $('customFrom').value;
+      const to = $('customTo').value;
       const selected = getCustomFilteredInvoices();
       if (!selected.length) { alert('No invoices found in this date range'); return; }
       $('customRangeOverlay').classList.add('hidden');
-      downloadBulkPDF(selected, `invoices-${$('customFrom').value}-to-${$('customTo').value}.pdf`);
+      downloadFilteredInvoicesPDF(
+        selected,
+        `invoices-${from}-to-${to}.pdf`,
+        { from, to, periodLabel: `${formatShortDate(from)} – ${formatShortDate(to)}` }
+      );
     }
   });
 
@@ -4556,6 +4573,203 @@ document.addEventListener('DOMContentLoaded', () => {
     await html2pdf().set({ ...PDF_OPT, filename: `${inv.invoiceNumber || 'invoice'}.pdf` }).from($('invoicePaper')).save();
     shield.remove();
     restoreViewState(state);
+  }
+
+  function shouldIncludeInvoicePagesInFilteredExport() {
+    const checkbox = $('includeFilteredInvoices');
+    return !!(checkbox && checkbox.checked);
+  }
+
+  function buildFilteredListExportPaper(selected, opts = {}) {
+    const wrap = document.createElement('div');
+    wrap.style.position = 'fixed';
+    wrap.style.left = '-10000px';
+    wrap.style.top = '0';
+    wrap.style.width = '794px';
+    wrap.style.boxSizing = 'border-box';
+    wrap.style.padding = '26px 30px';
+    wrap.style.background = '#ffffff';
+    wrap.style.color = '#1e1b4b';
+    wrap.style.fontFamily = "'Inter', Arial, sans-serif";
+
+    const heading = document.createElement('h2');
+    heading.textContent = 'Filtered Invoice List';
+    heading.style.margin = '0 0 6px 0';
+    heading.style.fontSize = '24px';
+    heading.style.fontWeight = '800';
+    wrap.appendChild(heading);
+
+    const includeInvoices = !!opts.includeInvoices;
+    const exportMode = document.createElement('p');
+    exportMode.textContent = includeInvoices
+      ? 'Mode: List page + all invoice pages'
+      : 'Mode: List page only';
+    exportMode.style.margin = '0 0 12px 0';
+    exportMode.style.fontSize = '12px';
+    exportMode.style.fontWeight = '600';
+    exportMode.style.color = '#6d28d9';
+    wrap.appendChild(exportMode);
+
+    const meta = document.createElement('div');
+    meta.style.display = 'grid';
+    meta.style.gridTemplateColumns = '1fr 1fr';
+    meta.style.gap = '8px 14px';
+    meta.style.marginBottom = '14px';
+    meta.style.padding = '10px 12px';
+    meta.style.border = '1px solid #ddd6fe';
+    meta.style.borderRadius = '10px';
+    meta.style.background = '#f8f7ff';
+
+    const from = opts.from || $('invDateFrom').value || '-';
+    const to = opts.to || $('invDateTo').value || '-';
+    const periodLabel = opts.periodLabel || ($('invTotalSummaryPeriod')?.textContent || getInvoiceListSummaryPeriodLabel());
+    const query = ($('invSearch').value || '').trim() || 'None';
+    const total = selected.reduce((sum, inv) => sum + computeGrandTotal(inv), 0);
+    const generatedAt = new Date().toLocaleString('en-IN');
+
+    const fields = [
+      ['Period', periodLabel],
+      ['Date range', `${from} to ${to}`],
+      ['Search', query],
+      ['Invoices', String(selected.length)],
+      ['Total', `₹${fmtNum(total)}`],
+      ['Generated', generatedAt]
+    ];
+    fields.forEach(([label, value]) => {
+      const item = document.createElement('div');
+      const l = document.createElement('div');
+      l.textContent = label;
+      l.style.fontSize = '11px';
+      l.style.fontWeight = '700';
+      l.style.letterSpacing = '0.04em';
+      l.style.textTransform = 'uppercase';
+      l.style.color = '#7c3aed';
+      const v = document.createElement('div');
+      v.textContent = value;
+      v.style.fontSize = '13px';
+      v.style.fontWeight = '600';
+      v.style.marginTop = '2px';
+      item.appendChild(l);
+      item.appendChild(v);
+      meta.appendChild(item);
+    });
+    wrap.appendChild(meta);
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontSize = '12px';
+
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    ['#', 'Invoice No.', 'Date', 'Customer', 'Total'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      th.style.textAlign = (label === 'Total') ? 'right' : 'left';
+      th.style.padding = '8px 6px';
+      th.style.borderBottom = '2px solid #c4b5fd';
+      th.style.background = '#f5f3ff';
+      th.style.color = '#4c1d95';
+      th.style.fontWeight = '700';
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    selected.forEach((inv, idx) => {
+      const tr = document.createElement('tr');
+      if (idx % 2 === 1) tr.style.background = '#faf9ff';
+      const cells = [
+        String(idx + 1),
+        inv.invoiceNumber || '-',
+        inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '-',
+        inv.buyerName || '-',
+        `₹${fmtNum(computeGrandTotal(inv))}`
+      ];
+      cells.forEach((value, ci) => {
+        const td = document.createElement('td');
+        td.textContent = value;
+        td.style.padding = '7px 6px';
+        td.style.borderBottom = '1px solid #ede9fe';
+        if (ci === 4) td.style.textAlign = 'right';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    return wrap;
+  }
+
+  async function downloadFilteredInvoicesPDF(selected, filename, opts = {}) {
+    if (!selected.length) return;
+
+    const includeInvoices = typeof opts.includeInvoices === 'boolean'
+      ? opts.includeInvoices
+      : shouldIncludeInvoicePagesInFilteredExport();
+    const paper = $('invoicePaper');
+    const summaryPaper = buildFilteredListExportPaper(selected, { ...opts, includeInvoices });
+    document.body.appendChild(summaryPaper);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pdfBulkOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#fff;font-size:1.1rem;font-weight:600;font-family:Inter,system-ui,sans-serif;';
+    msg.textContent = 'Generating list page...';
+    const bar = document.createElement('div');
+    bar.style.cssText = 'width:220px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width .3s;';
+    bar.appendChild(fill);
+    overlay.appendChild(msg);
+    overlay.appendChild(bar);
+    document.body.appendChild(overlay);
+
+    let state = null;
+    try {
+      let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(summaryPaper).toPdf().get('pdf');
+      fill.style.width = includeInvoices ? '12%' : '100%';
+      const firstTmp = document.getElementById('html2pdf__container');
+      if (firstTmp) firstTmp.remove();
+
+      if (includeInvoices) {
+        state = saveViewState();
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        $('homePanel').classList.add('hidden');
+        $('invoiceView').classList.remove('hidden');
+        $('formPanel').classList.add('hidden');
+        $('previewPanel').classList.remove('hidden');
+        paper.style.overflow = 'visible';
+
+        for (let i = 0; i < selected.length; i++) {
+          msg.textContent = `Generating invoice ${i + 1} of ${selected.length}...`;
+          fill.style.width = Math.round(((i + 1) / (selected.length + 1)) * 100) + '%';
+          prepareInvoiceForCapture(selected[i]);
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
+          const imgData = canvas.toDataURL('image/jpeg', 0.98);
+          const pageW = pdf.internal.pageSize.getWidth();
+          const margin = 0.3;
+          const usableW = pageW - margin * 2;
+          const imgH = (canvas.height * usableW) / canvas.width;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+          const tmpContainer = document.getElementById('html2pdf__container');
+          if (tmpContainer) tmpContainer.remove();
+        }
+      }
+
+      msg.textContent = 'Finalizing PDF...';
+      fill.style.width = '100%';
+      pdf.save(filename);
+    } finally {
+      summaryPaper.remove();
+      overlay.remove();
+      if (state) restoreViewState(state);
+    }
   }
 
   async function downloadBulkPDF(selected, filename) {
