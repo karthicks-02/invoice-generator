@@ -7552,14 +7552,38 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Use pure overlay centering to keep popup in current viewport middle.
-    pop.style.position = '';
-    pop.style.left = '';
-    pop.style.top = '';
-    pop.style.bottom = '';
-    pop.style.transform = '';
+    // Force true viewport modal behavior at runtime to avoid any inherited layout.
+    // This guarantees center placement even if external theme rules change.
+    if (bd.parentNode !== document.body) {
+      document.body.appendChild(bd);
+    } else {
+      // Move to end of body so it paints above late-mounted views.
+      document.body.appendChild(bd);
+    }
+
+    bd.style.setProperty('position', 'fixed', 'important');
+    bd.style.setProperty('inset', '0', 'important');
+    bd.style.setProperty('top', '0', 'important');
+    bd.style.setProperty('left', '0', 'important');
+    bd.style.setProperty('width', '100vw', 'important');
+    bd.style.setProperty('height', '100vh', 'important');
+    bd.style.setProperty('display', 'flex', 'important');
+    bd.style.setProperty('align-items', 'center', 'important');
+    bd.style.setProperty('justify-content', 'center', 'important');
+    bd.style.setProperty('padding', '20px', 'important');
+    bd.style.setProperty('z-index', '2147483647', 'important');
+
+    // Keep card layout simple so backdrop flex centering always wins.
+    pop.style.setProperty('position', 'relative', 'important');
+    pop.style.setProperty('left', 'auto', 'important');
+    pop.style.setProperty('top', 'auto', 'important');
+    pop.style.setProperty('bottom', 'auto', 'important');
+    pop.style.setProperty('right', 'auto', 'important');
+    pop.style.setProperty('transform', 'none', 'important');
+    pop.style.setProperty('margin', '0', 'important');
+    pop.style.setProperty('max-width', 'min(380px, calc(100vw - 16px))', 'important');
+    pop.style.setProperty('max-height', '75vh', 'important');
     pop.style.visibility = '';
-    bd.style.display = 'flex';
   }
 
   function hideRatePopover() {
