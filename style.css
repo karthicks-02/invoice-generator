@@ -2512,24 +2512,26 @@ input.inv-rate-input {
 #invoiceListView.invoice-analytics-view .invoice-analytics-filters {
   gap: 10px;
 }
-#invoiceListView.invoice-analytics-view .invoice-filter-label {
-  margin-right: 2px;
+#invoiceListView.invoice-analytics-view .invoice-search-box {
+  flex: 1 1 360px;
+  min-width: 260px;
+  max-width: none;
 }
-#invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-input {
-  flex: 1 1 320px;
-  min-width: 240px;
-  background: rgba(255,255,255,0.72);
-  border-color: rgba(99,102,241,0.18);
+#invoiceListView.invoice-analytics-view .invoice-search-box .analytics-search-input {
+  min-height: 40px;
 }
-#invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-date,
-#invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-select {
+#invoiceListView.invoice-analytics-view .invoice-filter-control {
   min-width: 150px;
+  height: 40px;
+  border-radius: 12px;
   background: rgba(255,255,255,0.72);
   border-color: rgba(99,102,241,0.18);
 }
 #invoiceListView.invoice-analytics-view .invoice-total-card {
   margin-bottom: 16px;
-  padding: 16px 18px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.10), rgba(139,92,246,0.08), rgba(255,255,255,0.62));
+  border-color: rgba(99,102,241,0.18);
 }
 #invoiceListView.invoice-analytics-view .invoice-total-card .download-presets {
   gap: 6px;
@@ -2578,9 +2580,8 @@ input.inv-rate-input {
   #invoiceListView.invoice-analytics-view .analytics-header-sub {
     display: none;
   }
-  #invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-input,
-  #invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-date,
-  #invoiceListView.invoice-analytics-view .invoice-analytics-filters .filter-select {
+  #invoiceListView.invoice-analytics-view .invoice-search-box,
+  #invoiceListView.invoice-analytics-view .invoice-filter-control {
     min-width: 100%;
     width: 100%;
   }

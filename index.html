@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="KI Invoice" />
   <link rel="apple-touch-icon" href="icons/icon-192.svg" />
 
-  <link rel="stylesheet" href="style.css?v=47" />
+  <link rel="stylesheet" href="style.css?v=48" />
   <link rel="stylesheet" href="theme.css?v=12" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -613,10 +613,13 @@
       </div>
       <div class="filter-row analytics-filter-panel invoice-analytics-filters">
         <span class="analytics-filter-label">Filters</span>
-        <input type="text" id="invSearch" class="filter-input" placeholder="Search by invoice no, customer, or product..." />
-        <input type="date" id="invDateFrom" class="filter-date" title="From date" />
-        <input type="date" id="invDateTo" class="filter-date" title="To date" />
-        <select id="invSortOrder" class="filter-select" title="Sort order">
+        <div class="analytics-search-box invoice-search-box">
+          <svg class="analytics-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="invSearch" class="filter-input analytics-search-input" placeholder="Search by invoice no, customer, or product..." />
+        </div>
+        <input type="date" id="invDateFrom" class="filter-date invoice-filter-control" title="From date" />
+        <input type="date" id="invDateTo" class="filter-date invoice-filter-control" title="To date" />
+        <select id="invSortOrder" class="filter-select invoice-filter-control" title="Sort order">
           <option value="desc">Date: Newest first</option>
           <option value="asc">Date: Oldest first</option>
         </select>
