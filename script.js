@@ -7551,38 +7551,9 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Show and position using fixed coords (viewport-relative, no scroll offset needed)
+    // Show centred in viewport — reliable on all scroll positions and zoom levels
     pop.style.display = 'block';
     bd.style.display  = 'block';
-    pop.classList.remove('rp-bottom-sheet');
-    requestAnimationFrame(function() {
-      var rect = badge.getBoundingClientRect();
-      var pw   = pop.offsetWidth;
-      var ph   = pop.offsetHeight;
-      var vw   = window.innerWidth;
-      var vh   = window.innerHeight;
-
-      if (vw <= 520) {
-        // Mobile: bottom sheet — CSS handles positioning
-        pop.classList.add('rp-bottom-sheet');
-        pop.style.left = '';
-        pop.style.top  = '';
-        return;
-      }
-
-      // Center popover on the badge horizontally
-      var left = rect.left + rect.width / 2 - pw / 2;
-      var top  = rect.bottom + 10;
-
-      if (left + pw > vw - 8) left = vw - pw - 8;
-      if (left < 8) left = 8;
-      // Flip above badge if not enough room below
-      if (top + ph > vh - 8) top = rect.top - ph - 10;
-      if (top < 8) top = 8;
-
-      pop.style.left = left + 'px';
-      pop.style.top  = top  + 'px';
-    });
   }
 
   function hideRatePopover() {
