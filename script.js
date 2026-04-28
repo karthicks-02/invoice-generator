@@ -7552,35 +7552,13 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Show backdrop first, then position the popover near clicked badge.
-    pop.style.visibility = 'hidden';
+    // Keep popup centered in the current viewport (no scroll jump).
     pop.style.position = 'fixed';
+    pop.style.left = '50%';
+    pop.style.top = '50%';
+    pop.style.transform = 'translate(-50%, -50%)';
+    pop.style.visibility = '';
     bd.style.display = 'flex';
-
-    requestAnimationFrame(function() {
-      var margin = 10;
-      var rect = badge && typeof badge.getBoundingClientRect === 'function' ? badge.getBoundingClientRect() : null;
-      var popRect = pop.getBoundingClientRect();
-
-      var left = rect
-        ? (rect.left + (rect.width / 2) - (popRect.width / 2))
-        : ((window.innerWidth - popRect.width) / 2);
-      left = Math.max(margin, Math.min(left, window.innerWidth - popRect.width - margin));
-
-      var top;
-      if (rect) {
-        var belowTop = rect.bottom + 8;
-        var aboveTop = rect.top - popRect.height - 8;
-        top = (belowTop + popRect.height <= window.innerHeight - margin) ? belowTop : aboveTop;
-      } else {
-        top = (window.innerHeight - popRect.height) / 2;
-      }
-      top = Math.max(margin, Math.min(top, window.innerHeight - popRect.height - margin));
-
-      pop.style.left = left + 'px';
-      pop.style.top = top + 'px';
-      pop.style.visibility = '';
-    });
   }
 
   function hideRatePopover() {
@@ -7692,7 +7670,11 @@ document.addEventListener('DOMContentLoaded', () => {
         badge.textContent = '↕ varied';
         badge.title = 'Click to see rate breakdown';
         (function(rh, pname) {
-          badge.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); showRatePopover(badge, pname, rh); });
+          badge.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showRatePopover(e.currentTarget || badge, pname, rh);
+          });
         }(r.rateHistory, r.name));
         tdRate.appendChild(badge);
       }
@@ -7917,7 +7899,11 @@ document.addEventListener('DOMContentLoaded', () => {
         badge.textContent = '↕ varied';
         badge.title = 'Click to see rate breakdown';
         (function(rh, pname) {
-          badge.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); showRatePopover(badge, pname, rh); });
+          badge.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showRatePopover(e.currentTarget || badge, pname, rh);
+          });
         }(r.rateHistory, r.name));
         tdRate.appendChild(badge);
       }
