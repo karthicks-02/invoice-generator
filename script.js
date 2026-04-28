@@ -4866,34 +4866,37 @@ document.addEventListener('DOMContentLoaded', () => {
       throw new Error('No summary canvases generated');
     }
 
-    let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(canvases[0]).toPdf().get('pdf');
+    const seed = document.createElement('div');
+    seed.style.width = '2px';
+    seed.style.height = '2px';
+    seed.style.background = '#fff';
+    seed.style.position = 'fixed';
+    seed.style.left = '-10000px';
+    seed.style.top = '0';
+    document.body.appendChild(seed);
+
+    let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(seed).toPdf().get('pdf');
     let tmp = document.getElementById('html2pdf__container');
     if (tmp) tmp.remove();
+    seed.remove();
 
-    canvases.forEach((c, idx) => {
-      if (idx === 0) return;
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 0.3;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+
+    for (let i = 0; i < canvases.length; i++) {
+      const c = canvases[i];
       const imgData = c.toDataURL('image/jpeg', 0.98);
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 0.3;
-      const usableW = pageW - margin * 2;
-      const usableH = pageH - margin * 2;
-      const imgW = usableW;
-      const imgH = (c.height * imgW) / c.width;
-
-      pdf.addPage();
-
-      if (imgH <= usableH) {
-        pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH);
+      if (i === 0) {
+        pdf.setPage(1);
       } else {
-        // Safety fallback: fit full canvas inside page without cropping.
-        const fitW = (usableH * c.width) / c.height;
-        pdf.addImage(imgData, 'JPEG', margin, margin, fitW, usableH);
+        pdf.addPage();
       }
-
-      tmp = document.getElementById('html2pdf__container');
-      if (tmp) tmp.remove();
-    });
+      // Fill full printable page area to avoid right-edge clipping.
+      pdf.addImage(imgData, 'JPEG', margin, margin, usableW, usableH);
+    }
 
     return pdf;
   }
