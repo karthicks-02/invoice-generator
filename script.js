@@ -7492,6 +7492,10 @@ document.addEventListener('DOMContentLoaded', () => {
     var pop = $('rateVariedPopover');
     var bd  = $('ratePopoverBackdrop');
     if (!pop || !bd) return;
+    if (!Array.isArray(rateHistory) || rateHistory.length === 0) {
+      hideRatePopover();
+      return;
+    }
 
     var rates = rateHistory.map(function(e) { return e.rate; });
     var minR  = Math.min.apply(null, rates);
@@ -7588,7 +7592,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function hideRatePopover() {
     if ($('ratePopoverBackdrop')) {
-      $('ratePopoverBackdrop').style.display = 'none';
+      $('ratePopoverBackdrop').style.setProperty('display', 'none', 'important');
     }
   }
 
@@ -7600,6 +7604,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === this) hideRatePopover();
     });
   }
+  // Safety: always start hidden even after any prior runtime style overrides.
+  hideRatePopover();
 
   // ── Product Sales Analytics ──────────────────────────────────
   var psActivePreset = null;
