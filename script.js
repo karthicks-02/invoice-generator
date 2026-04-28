@@ -7479,6 +7479,95 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/"/g, '&quot;');
   }
 
+  // ── Rate Variation Popover ──────────────────────────────────
+  var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function fmtMonthYear(ym) {
+    if (!ym) return 'Unknown';
+    var p = ym.split('-');
+    return (MONTH_NAMES[parseInt(p[1], 10) - 1] || ym) + ' ' + p[0];
+  }
+
+  function showRatePopover(badge, productName, rateHistory) {
+    var pop = $('rateVariedPopover');
+    var bd  = $('ratePopoverBackdrop');
+
+    var rates = rateHistory.map(function(e) { return e.rate; });
+    var minR  = Math.min.apply(null, rates);
+    var maxR  = Math.max.apply(null, rates);
+    var distinctRates = rates.filter(function(v, i, a) { return a.indexOf(v) === i; }).sort(function(a,b){return a-b;});
+
+    // Title
+    $('ratePopoverTitle').textContent = productName;
+
+    // Summary line
+    var sumEl = $('ratePopoverSummary');
+    sumEl.textContent = '';
+    var rangeSpan = document.createElement('span'); rangeSpan.className = 'rp-range';
+    rangeSpan.textContent = '₹' + fmtNum(minR) + ' – ₹' + fmtNum(maxR);
+    var dotSpan = document.createElement('span'); dotSpan.className = 'rp-dot'; dotSpan.textContent = '·';
+    var cntSpan = document.createElement('span'); cntSpan.className = 'rp-distinct';
+    cntSpan.textContent = distinctRates.length + ' distinct rate' + (distinctRates.length === 1 ? '' : 's');
+    sumEl.appendChild(rangeSpan); sumEl.appendChild(dotSpan); sumEl.appendChild(cntSpan);
+
+    // Month breakdown
+    var monthMap = {};
+    rateHistory.forEach(function(e) {
+      var m = e.month || 'Unknown';
+      if (!monthMap[m]) monthMap[m] = { rateSet: {}, invSet: {} };
+      monthMap[m].rateSet[e.rate] = true;
+      if (e.invId) monthMap[m].invSet[e.invId] = true;
+    });
+    var months = Object.keys(monthMap).filter(function(m) { return m !== 'Unknown'; }).sort().reverse();
+    if (monthMap['Unknown']) months.push('Unknown');
+
+    var body = $('ratePopoverBody');
+    body.textContent = '';
+    var hdr = document.createElement('div'); hdr.className = 'rp-section-hdr';
+    hdr.textContent = 'Month-by-month';
+    body.appendChild(hdr);
+
+    months.forEach(function(m) {
+      var entry = monthMap[m];
+      var rowRates = Object.keys(entry.rateSet).map(Number).sort(function(a,b){return a-b;});
+      var invCount = Object.keys(entry.invSet).length || rateHistory.filter(function(e){return e.month===m;}).length;
+
+      var row = document.createElement('div'); row.className = 'rp-month-row';
+      var lbl = document.createElement('span'); lbl.className = 'rp-month-lbl';
+      lbl.textContent = fmtMonthYear(m);
+      var ratesEl = document.createElement('span'); ratesEl.className = 'rp-month-rates';
+      ratesEl.textContent = rowRates.map(function(r) { return '₹' + fmtNum(r); }).join(', ');
+      var cnt = document.createElement('span'); cnt.className = 'rp-month-cnt';
+      cnt.textContent = invCount + (invCount === 1 ? ' inv' : ' invs');
+      row.appendChild(lbl); row.appendChild(ratesEl); row.appendChild(cnt);
+      body.appendChild(row);
+    });
+
+    // Show and position
+    pop.style.display = 'block';
+    bd.style.display  = 'block';
+    requestAnimationFrame(function() {
+      var rect = badge.getBoundingClientRect();
+      var pw   = pop.offsetWidth;
+      var ph   = pop.offsetHeight;
+      var left = rect.left + window.scrollX;
+      var top  = rect.bottom + window.scrollY + 10;
+      if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+      if (left < 8) left = 8;
+      if (top + ph > window.scrollY + window.innerHeight - 8) top = rect.top + window.scrollY - ph - 10;
+      pop.style.left = left + 'px';
+      pop.style.top  = top  + 'px';
+    });
+  }
+
+  function hideRatePopover() {
+    $('rateVariedPopover').style.display = 'none';
+    $('ratePopoverBackdrop').style.display = 'none';
+  }
+
+  $('ratePopoverClose').addEventListener('click', hideRatePopover);
+  $('ratePopoverBackdrop').addEventListener('click', hideRatePopover);
+
   // ── Product Sales Analytics ──────────────────────────────────
   var psActivePreset = null;
   var psCurrentFrom  = '';
@@ -7496,27 +7585,29 @@ document.addEventListener('DOMContentLoaded', () => {
         var raw = (it.description || '').trim();
         if (!raw) return;
         var key = raw.toLowerCase();
-        if (!map[key]) map[key] = { name: raw, hsn: '', invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        if (!map[key]) map[key] = { name: raw, hsn: '', invoiceSet: {}, totalQty: 0, rateHistory: [], totalRevenue: 0 };
         if (!map[key].hsn && it.hsn) map[key].hsn = (it.hsn || '').trim();
         var invId = inv.invoiceNumber || inv.id || inv._rowIndex || '';
         if (!seen[key]) { map[key].invoiceSet[invId] = true; seen[key] = true; }
         var qty  = numericQtyForLine(it);
         var rate = Number(it.rate) || 0;
         map[key].totalQty     += qty;
-        map[key].rates.push(rate);
+        map[key].rateHistory.push({ rate: rate, month: (inv.invoiceDate || '').substring(0, 7), invId: invId });
         map[key].totalRevenue += qty * rate;
       });
     });
 
     return Object.keys(map).map(function(key) {
-      var r = map[key];
+      var r    = map[key];
+      var rArr = r.rateHistory.map(function(e) { return e.rate; });
       return {
         name:         r.name,
         hsn:          r.hsn,
         invoiceCount: Object.keys(r.invoiceSet).length,
         totalQty:     r.totalQty,
         avgRate:      r.totalQty > 0 ? r.totalRevenue / r.totalQty : 0,
-        rateVaried:   r.rates.length > 1 && Math.max.apply(null, r.rates) !== Math.min.apply(null, r.rates),
+        rateVaried:   rArr.length > 1 && Math.max.apply(null, rArr) !== Math.min.apply(null, rArr),
+        rateHistory:  r.rateHistory,
         totalRevenue: r.totalRevenue
       };
     }).sort(function(a, b) { return b.totalRevenue - a.totalRevenue; });
@@ -7567,8 +7658,12 @@ document.addEventListener('DOMContentLoaded', () => {
       tdRate.textContent = '₹' + fmtNum(r.avgRate);
       if (r.rateVaried) {
         var badge = document.createElement('span');
-        badge.className   = 'rate-varied-badge';
+        badge.className   = 'rate-varied-badge rate-varied-clickable';
         badge.textContent = '↕ varied';
+        badge.title = 'Click to see rate breakdown';
+        (function(rh, pname) {
+          badge.addEventListener('click', function(e) { e.stopPropagation(); showRatePopover(badge, pname, rh); });
+        }(r.rateHistory, r.name));
         tdRate.appendChild(badge);
       }
       tr.appendChild(tdRate);
@@ -7715,27 +7810,29 @@ document.addEventListener('DOMContentLoaded', () => {
         var raw = (it.description || '').trim();
         if (!raw) return;
         var key = raw.toLowerCase();
-        if (!map[key]) map[key] = { name: raw, hsn: '', invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        if (!map[key]) map[key] = { name: raw, hsn: '', invoiceSet: {}, totalQty: 0, rateHistory: [], totalRevenue: 0 };
         if (!map[key].hsn && it.hsn) map[key].hsn = (it.hsn || '').trim();
         var invId = inv.invoiceNumber || inv.id || inv._rowIndex || '';
         if (!seen[key]) { map[key].invoiceSet[invId] = true; seen[key] = true; }
         var qty  = numericQtyForLine(it);
         var rate = Number(it.rate) || 0;
         map[key].totalQty     += qty;
-        map[key].rates.push(rate);
+        map[key].rateHistory.push({ rate: rate, month: (inv.invoiceDate || '').substring(0, 7), invId: invId });
         map[key].totalRevenue += qty * rate;
       });
     });
 
     return Object.keys(map).map(function(key) {
-      var r = map[key];
+      var r    = map[key];
+      var rArr = r.rateHistory.map(function(e) { return e.rate; });
       return {
         name:         r.name,
         hsn:          r.hsn,
         invoiceCount: Object.keys(r.invoiceSet).length,
         totalQty:     r.totalQty,
         avgRate:      r.totalQty > 0 ? r.totalRevenue / r.totalQty : 0,
-        rateVaried:   r.rates.length > 1 && Math.max.apply(null, r.rates) !== Math.min.apply(null, r.rates),
+        rateVaried:   rArr.length > 1 && Math.max.apply(null, rArr) !== Math.min.apply(null, rArr),
+        rateHistory:  r.rateHistory,
         totalRevenue: r.totalRevenue
       };
     }).sort(function(a, b) { return b.totalRevenue - a.totalRevenue; });
@@ -7786,8 +7883,12 @@ document.addEventListener('DOMContentLoaded', () => {
       tdRate.textContent = '₹' + fmtNum(r.avgRate);
       if (r.rateVaried) {
         var badge = document.createElement('span');
-        badge.className   = 'rate-varied-badge';
+        badge.className   = 'rate-varied-badge rate-varied-clickable';
         badge.textContent = '↕ varied';
+        badge.title = 'Click to see rate breakdown';
+        (function(rh, pname) {
+          badge.addEventListener('click', function(e) { e.stopPropagation(); showRatePopover(badge, pname, rh); });
+        }(r.rateHistory, r.name));
         tdRate.appendChild(badge);
       }
       tr.appendChild(tdRate);

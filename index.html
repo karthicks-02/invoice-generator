@@ -1701,5 +1701,16 @@
       }).catch(function() {});
     }
   </script>
+
+  <!-- Rate Variation Popover -->
+  <div id="rateVariedPopover" class="rate-popover" style="display:none">
+    <div class="rate-popover-header">
+      <span class="rate-popover-title" id="ratePopoverTitle"></span>
+      <button class="rate-popover-close" id="ratePopoverClose" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="rate-popover-summary" id="ratePopoverSummary"></div>
+    <div class="rate-popover-body" id="ratePopoverBody"></div>
+  </div>
+  <div id="ratePopoverBackdrop" style="display:none;position:fixed;inset:0;z-index:999"></div>
 </body>
 </html>
