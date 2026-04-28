@@ -4915,37 +4915,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const includeInvoices = typeof opts.includeInvoices === 'boolean'
       ? opts.includeInvoices
       : shouldIncludeInvoicePagesInFilteredExport();
-    const summaryPaper = buildFilteredListExportPaper(selected, { ...opts, includeInvoices });
-    document.body.appendChild(summaryPaper);
-
-    // Fast, stable path for list-only export.
-    if (!includeInvoices) {
-      try {
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-        const listOnlyOpt = {
-          ...PDF_OPT,
-          filename,
-          pagebreak: { mode: ['css', 'legacy'] },
-          html2canvas: {
-            ...PDF_OPT.html2canvas,
-            scale: 2,
-            backgroundColor: '#ffffff',
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: 1280
-          }
-        };
-        await html2pdf().set(listOnlyOpt).from(summaryPaper).save();
-      } finally {
-        if (summaryPaper.parentNode) summaryPaper.remove();
-      }
-      return;
-    }
-
     const paper = $('invoicePaper');
     const summaryCanvases = buildFilteredListCanvases(selected, { ...opts, includeInvoices });
     if (!summaryCanvases.length) {
-      if (summaryPaper.parentNode) summaryPaper.remove();
       alert('Could not prepare list page for PDF export.');
       return;
     }
@@ -5005,9 +4977,9 @@ document.addEventListener('DOMContentLoaded', () => {
       pdf.save(filename);
     } catch (err) {
       console.error('downloadFilteredInvoicesPDF failed:', err);
-      alert('Could not generate filtered PDF. Please try again.');
+      const detail = err && err.message ? ` (${err.message})` : '';
+      alert(`Could not generate filtered PDF${detail}`);
     } finally {
-      if (summaryPaper.parentNode) summaryPaper.remove();
       if (overlay) overlay.remove();
       if (state) restoreViewState(state);
     }
