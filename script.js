@@ -7552,11 +7552,12 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Keep popup centered in the current viewport (no scroll jump).
-    pop.style.position = 'fixed';
-    pop.style.left = '50%';
-    pop.style.top = '50%';
-    pop.style.transform = 'translate(-50%, -50%)';
+    // Use pure overlay centering to keep popup in current viewport middle.
+    pop.style.position = '';
+    pop.style.left = '';
+    pop.style.top = '';
+    pop.style.bottom = '';
+    pop.style.transform = '';
     pop.style.visibility = '';
     bd.style.display = 'flex';
   }

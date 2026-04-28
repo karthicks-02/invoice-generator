@@ -2572,22 +2572,14 @@ input.inv-rate-input {
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Mobile: align bottom, full width */
+/* Mobile: keep centered, just reduce width/height */
 @media (max-width: 520px) {
-  .rate-popover-backdrop {
-    align-items: flex-end;
-    padding: 0;
-  }
   .rate-popover {
-    width: 100%;
+    width: min(380px, calc(100vw - 16px));
     max-height: 75vh;
-    border-radius: 20px 20px 0 0;
-    animation: rp-slide-up .22s cubic-bezier(.16,1,.3,1) both;
+    border-radius: 20px;
+    animation: rp-pop .20s cubic-bezier(.16,1,.3,1) both;
   }
-}
-@keyframes rp-slide-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
 }
 .rate-popover-header {
   display: flex; align-items: center; justify-content: space-between;
