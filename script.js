@@ -7489,7 +7489,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showRatePopover(badge, productName, rateHistory) {
-    var pop = $('rateVariedPopover');
+    var dialog = $('rateVariedDialog');
     var bd  = $('ratePopoverBackdrop');
 
     var rates = rateHistory.map(function(e) { return e.rate; });
@@ -7551,18 +7551,37 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Backdrop is the flex container — just show it
-    bd.style.display = 'flex';
+    // Prefer native dialog centering. Fallback to legacy backdrop if present.
+    if (dialog && typeof dialog.showModal === 'function') {
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      dialog.showModal();
+      return;
+    }
+    if (bd) bd.style.display = 'flex';
   }
 
   function hideRatePopover() {
-    $('ratePopoverBackdrop').style.display = 'none';
+    var dialog = $('rateVariedDialog');
+    if (dialog && dialog.open && typeof dialog.close === 'function') {
+      dialog.close();
+      return;
+    }
+    if ($('ratePopoverBackdrop')) $('ratePopoverBackdrop').style.display = 'none';
   }
 
-  $('ratePopoverClose').addEventListener('click', hideRatePopover);
-  $('ratePopoverBackdrop').addEventListener('click', function(e) {
-    if (e.target === this) hideRatePopover();
-  });
+  if ($('ratePopoverClose')) {
+    $('ratePopoverClose').addEventListener('click', hideRatePopover);
+  }
+  if ($('ratePopoverBackdrop')) {
+    $('ratePopoverBackdrop').addEventListener('click', function(e) {
+      if (e.target === this) hideRatePopover();
+    });
+  }
+  if ($('rateVariedDialog')) {
+    $('rateVariedDialog').addEventListener('click', function(e) {
+      if (e.target === this) hideRatePopover();
+    });
+  }
 
   // ── Product Sales Analytics ──────────────────────────────────
   var psActivePreset = null;
