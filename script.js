@@ -7147,7 +7147,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const margin = 52;
     const tableW = width - margin * 2;
-    const cols = [44, 148, 122, 308, 130, 124];
+    const cols = [46, 160, 128, tableW - (46 + 160 + 128 + 128 + 178), 128, 178];
     const rowH = 29;
     const headers = ['#', 'PO Invoice No.', 'Date', 'Vendor', 'Type', 'Total'];
 
@@ -7219,7 +7219,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.stroke();
       y += rowH;
 
-      ctx.font = '500 17px Inter, Arial, sans-serif';
+      ctx.font = '500 16px Inter, Arial, sans-serif';
       const rowsThisPage = Math.max(1, Math.floor((height - y - 50) / rowH));
       let drawn = 0;
       while (drawn < rowsThisPage && rowIndex < selected.length) {
@@ -7241,7 +7241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         x = margin;
         ctx.fillStyle = '#1f2937';
         vals.forEach((v, i) => {
-          const text = trimToWidth(v, cols[i] - 20);
+          const text = i === 5 ? String(v || '-') : trimToWidth(v, cols[i] - 14);
           if (i === 5) {
             const tx = x + cols[i] - 10 - ctx.measureText(text).width;
             ctx.fillText(text, tx, y + 21);
