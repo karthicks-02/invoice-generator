@@ -4862,26 +4862,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function createPdfFromCanvases(canvases, filename) {
-    const seed = document.createElement('div');
-    seed.style.width = '2px';
-    seed.style.height = '2px';
-    seed.style.background = '#fff';
-    seed.style.position = 'fixed';
-    seed.style.left = '-10000px';
-    seed.style.top = '0';
-    document.body.appendChild(seed);
-
-    let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(seed).toPdf().get('pdf');
-    const tmp = document.getElementById('html2pdf__container');
-    if (tmp) tmp.remove();
-    seed.remove();
-
-    const canDeleteFirstPage = typeof pdf.deletePage === 'function';
-    if (canDeleteFirstPage) {
-      pdf.deletePage(1);
+    if (!canvases || !canvases.length) {
+      throw new Error('No summary canvases generated');
     }
 
+    let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(canvases[0]).toPdf().get('pdf');
+    let tmp = document.getElementById('html2pdf__container');
+    if (tmp) tmp.remove();
+
     canvases.forEach((c, idx) => {
+      if (idx === 0) return;
       const imgData = c.toDataURL('image/jpeg', 0.98);
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
@@ -4891,11 +4881,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const imgW = usableW;
       const imgH = (c.height * imgW) / c.width;
 
-      if (idx === 0 && !canDeleteFirstPage) {
-        pdf.setPage(1);
-      } else {
-        pdf.addPage();
-      }
+      pdf.addPage();
 
       if (imgH <= usableH) {
         pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH);
@@ -4904,6 +4890,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const fitW = (usableH * c.width) / c.height;
         pdf.addImage(imgData, 'JPEG', margin, margin, fitW, usableH);
       }
+
+      tmp = document.getElementById('html2pdf__container');
+      if (tmp) tmp.remove();
     });
 
     return pdf;
