@@ -4846,6 +4846,54 @@ document.addEventListener('DOMContentLoaded', () => {
     return canvases;
   }
 
+  async function createPdfFromCanvases(canvases, filename) {
+    const seed = document.createElement('div');
+    seed.style.width = '2px';
+    seed.style.height = '2px';
+    seed.style.background = '#fff';
+    seed.style.position = 'fixed';
+    seed.style.left = '-10000px';
+    seed.style.top = '0';
+    document.body.appendChild(seed);
+
+    let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(seed).toPdf().get('pdf');
+    const tmp = document.getElementById('html2pdf__container');
+    if (tmp) tmp.remove();
+    seed.remove();
+
+    if (typeof pdf.deletePage === 'function') {
+      pdf.deletePage(1);
+    }
+
+    canvases.forEach((c, idx) => {
+      const imgData = c.toDataURL('image/jpeg', 0.98);
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 0.3;
+      const usableW = pageW - margin * 2;
+      const usableH = pageH - margin * 2;
+      const imgW = usableW;
+      const imgH = (c.height * imgW) / c.width;
+
+      if (idx === 0 && !(typeof pdf.deletePage === 'function')) {
+        pdf.setPage(1);
+      } else {
+        pdf.addPage();
+        pdf.setPage(pdf.getNumberOfPages());
+      }
+
+      if (imgH <= usableH) {
+        pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH);
+      } else {
+        // Safety fallback: fit full canvas inside page without cropping.
+        const fitW = (usableH * c.width) / c.height;
+        pdf.addImage(imgData, 'JPEG', margin, margin, fitW, usableH);
+      }
+    });
+
+    return pdf;
+  }
+
   async function downloadFilteredInvoicesPDF(selected, filename, opts = {}) {
     if (!selected.length) return;
 
@@ -4865,20 +4913,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let fill = null;
     try {
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      let pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(summaryCanvases[0]).toPdf().get('pdf');
-      const firstTmp = document.getElementById('html2pdf__container');
-      if (firstTmp) firstTmp.remove();
-
-      for (let p = 1; p < summaryCanvases.length; p++) {
-        const pageCanvas = summaryCanvases[p];
-        const imgData = pageCanvas.toDataURL('image/jpeg', 0.98);
-        const pageW = pdf.internal.pageSize.getWidth();
-        const margin = 0.3;
-        const usableW = pageW - margin * 2;
-        const imgH = (pageCanvas.height * usableW) / pageCanvas.width;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
-      }
+      let pdf = await createPdfFromCanvases(summaryCanvases, filename);
 
       if (includeInvoices) {
         overlay = document.createElement('div');
