@@ -7594,7 +7594,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function clearPsPreset() {
-    document.querySelectorAll('#productSalesView .preset-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('#productSalesView .apill').forEach(function(b) { b.classList.remove('active'); });
     psActivePreset = null;
     $('psPresetClear').style.display = 'none';
   }
@@ -7813,7 +7813,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function clearPaPreset() {
-    document.querySelectorAll('#purchaseAnalyticsView .preset-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('#purchaseAnalyticsView .apill').forEach(function(b) { b.classList.remove('active'); });
     paActivePreset = null;
     $('paPresetClear').style.display = 'none';
   }
