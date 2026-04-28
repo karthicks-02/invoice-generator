@@ -7489,10 +7489,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showRatePopover(badge, productName, rateHistory) {
-    var dialog = $('rateVariedDialog');
+    var pop = $('rateVariedPopover');
     var bd  = $('ratePopoverBackdrop');
-    var savedScrollX = window.scrollX || window.pageXOffset || 0;
-    var savedScrollY = window.scrollY || window.pageYOffset || 0;
+    if (!pop || !bd) return;
 
     var rates = rateHistory.map(function(e) { return e.rate; });
     var minR  = Math.min.apply(null, rates);
@@ -7553,31 +7552,41 @@ document.addEventListener('DOMContentLoaded', () => {
       sumEl.appendChild(spEl);
     }
 
-    // Prefer native dialog centering. Fallback to legacy backdrop if present.
-    if (dialog && typeof dialog.showModal === 'function') {
-      if (dialog.open && typeof dialog.close === 'function') dialog.close();
-      dialog.showModal();
-      // Prevent browser focus management from snapping page to top.
-      var closeBtn = $('ratePopoverClose');
-      if (closeBtn && typeof closeBtn.focus === 'function') {
-        try { closeBtn.focus({ preventScroll: true }); } catch (err) { closeBtn.focus(); }
+    // Show backdrop first, then position the popover near clicked badge.
+    pop.style.visibility = 'hidden';
+    pop.style.position = 'fixed';
+    bd.style.display = 'flex';
+
+    requestAnimationFrame(function() {
+      var margin = 10;
+      var rect = badge && typeof badge.getBoundingClientRect === 'function' ? badge.getBoundingClientRect() : null;
+      var popRect = pop.getBoundingClientRect();
+
+      var left = rect
+        ? (rect.left + (rect.width / 2) - (popRect.width / 2))
+        : ((window.innerWidth - popRect.width) / 2);
+      left = Math.max(margin, Math.min(left, window.innerWidth - popRect.width - margin));
+
+      var top;
+      if (rect) {
+        var belowTop = rect.bottom + 8;
+        var aboveTop = rect.top - popRect.height - 8;
+        top = (belowTop + popRect.height <= window.innerHeight - margin) ? belowTop : aboveTop;
+      } else {
+        top = (window.innerHeight - popRect.height) / 2;
       }
-      window.scrollTo(savedScrollX, savedScrollY);
-      requestAnimationFrame(function() {
-        window.scrollTo(savedScrollX, savedScrollY);
-      });
-      return;
-    }
-    if (bd) bd.style.display = 'flex';
+      top = Math.max(margin, Math.min(top, window.innerHeight - popRect.height - margin));
+
+      pop.style.left = left + 'px';
+      pop.style.top = top + 'px';
+      pop.style.visibility = '';
+    });
   }
 
   function hideRatePopover() {
-    var dialog = $('rateVariedDialog');
-    if (dialog && dialog.open && typeof dialog.close === 'function') {
-      dialog.close();
-      return;
+    if ($('ratePopoverBackdrop')) {
+      $('ratePopoverBackdrop').style.display = 'none';
     }
-    if ($('ratePopoverBackdrop')) $('ratePopoverBackdrop').style.display = 'none';
   }
 
   if ($('ratePopoverClose')) {
@@ -7585,11 +7594,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if ($('ratePopoverBackdrop')) {
     $('ratePopoverBackdrop').addEventListener('click', function(e) {
-      if (e.target === this) hideRatePopover();
-    });
-  }
-  if ($('rateVariedDialog')) {
-    $('rateVariedDialog').addEventListener('click', function(e) {
       if (e.target === this) hideRatePopover();
     });
   }

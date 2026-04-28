@@ -1671,7 +1671,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script src="script.js?v=142"></script>
+  <script src="script.js?v=143"></script>
   <script src="kpi-stats.js?v=12"></script>
   <script src="table-enhance.js?v=1"></script>
   <!-- Update banner (hidden by default) -->
@@ -1702,14 +1702,16 @@
     }
   </script>
 
-  <!-- Rate Variation Dialog — browser handles centering via showModal() -->
-  <dialog id="rateVariedDialog" class="rate-dialog">
-    <div class="rate-popover-header">
-      <span class="rate-popover-title" id="ratePopoverTitle"></span>
-      <button class="rate-popover-close" id="ratePopoverClose" aria-label="Close">&#10005;</button>
+  <!-- Rate Variation Popover -->
+  <div id="ratePopoverBackdrop" class="rate-popover-backdrop" style="display:none">
+    <div id="rateVariedPopover" class="rate-popover">
+      <div class="rate-popover-header">
+        <span class="rate-popover-title" id="ratePopoverTitle"></span>
+        <button class="rate-popover-close" id="ratePopoverClose" aria-label="Close">&#10005;</button>
+      </div>
+      <div class="rate-popover-summary" id="ratePopoverSummary"></div>
+      <div class="rate-popover-body" id="ratePopoverBody"></div>
     </div>
-    <div class="rate-popover-summary" id="ratePopoverSummary"></div>
-    <div class="rate-popover-body" id="ratePopoverBody"></div>
-  </dialog>
+  </div>
 </body>
 </html>
