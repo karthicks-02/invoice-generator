@@ -7469,4 +7469,448 @@ document.addEventListener('DOMContentLoaded', () => {
     paper.style.overflow = '';
     restoreViewState(state);
   }
+
+  // ── Shared: safe HTML escaping for analytics PDF content ──
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── Product Sales Analytics ──────────────────────────────────
+  var psActivePreset = null;
+  var psCurrentFrom  = '';
+  var psCurrentTo    = '';
+
+  function computeProductSalesStats(from, to) {
+    var src = (from && to)
+      ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
+      : invoices;
+
+    var map = {};
+    src.forEach(function(inv) {
+      var seen = {};
+      (inv.items || []).forEach(function(it) {
+        var raw = (it.description || '').trim();
+        if (!raw) return;
+        var key = raw.toLowerCase();
+        if (!map[key]) map[key] = { name: raw, invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        var invId = inv.invoiceNumber || inv.id || inv._rowIndex || '';
+        if (!seen[key]) { map[key].invoiceSet[invId] = true; seen[key] = true; }
+        var qty  = numericQtyForLine(it);
+        var rate = Number(it.rate) || 0;
+        map[key].totalQty     += qty;
+        map[key].rates.push(rate);
+        map[key].totalRevenue += qty * rate;
+      });
+    });
+
+    return Object.keys(map).map(function(key) {
+      var r = map[key];
+      return {
+        name:         r.name,
+        invoiceCount: Object.keys(r.invoiceSet).length,
+        totalQty:     r.totalQty,
+        avgRate:      r.totalQty > 0 ? r.totalRevenue / r.totalQty : 0,
+        rateVaried:   r.rates.length > 1 && Math.max.apply(null, r.rates) !== Math.min.apply(null, r.rates),
+        totalRevenue: r.totalRevenue
+      };
+    }).sort(function(a, b) { return b.totalRevenue - a.totalRevenue; });
+  }
+
+  function renderProductSales(from, to) {
+    from = (from !== undefined) ? from : psCurrentFrom;
+    to   = (to   !== undefined) ? to   : psCurrentTo;
+    psCurrentFrom = from;
+    psCurrentTo   = to;
+
+    var rows    = computeProductSalesStats(from, to);
+    var query   = ($('psSearch').value || '').toLowerCase();
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+
+    var totalInvoiceCount = (from && to
+      ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
+      : invoices).length;
+
+    $('psKpiProducts').textContent = visible.length;
+    $('psKpiInvoices').textContent = totalInvoiceCount;
+    $('psKpiQty').textContent      = fmtNum(visible.reduce(function(s, r) { return s + r.totalQty; }, 0));
+    $('psKpiRevenue').textContent  = '₹' + fmtNum(visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0));
+
+    var tbody = $('psTableBody');
+    if (!visible.length) {
+      tbody.textContent = '';
+      $('psEmpty').style.display = 'block';
+      return;
+    }
+    $('psEmpty').style.display = 'none';
+
+    var totalQtyAll     = visible.reduce(function(s, r) { return s + r.totalQty; }, 0);
+    var totalRevenueAll = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
+    var totalCountAll   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+
+    var fragment = document.createDocumentFragment();
+
+    visible.forEach(function(r, i) {
+      var tr = document.createElement('tr');
+
+      var tdNum  = document.createElement('td'); tdNum.textContent  = i + 1; tr.appendChild(tdNum);
+      var tdName = document.createElement('td'); tdName.textContent = r.name; tr.appendChild(tdName);
+      var tdCnt  = document.createElement('td'); tdCnt.className    = 'r'; tdCnt.textContent = r.invoiceCount; tr.appendChild(tdCnt);
+      var tdQty  = document.createElement('td'); tdQty.className    = 'r'; tdQty.textContent = fmtNum(r.totalQty); tr.appendChild(tdQty);
+
+      var tdRate = document.createElement('td'); tdRate.className = 'r';
+      tdRate.textContent = '₹' + fmtNum(r.avgRate);
+      if (r.rateVaried) {
+        var badge = document.createElement('span');
+        badge.className   = 'rate-varied-badge';
+        badge.textContent = '↕ varied';
+        tdRate.appendChild(badge);
+      }
+      tr.appendChild(tdRate);
+
+      var tdRev = document.createElement('td'); tdRev.className = 'r';
+      tdRev.style.cssText = 'font-weight:600;color:#6d28d9';
+      tdRev.textContent = '₹' + fmtNum(r.totalRevenue);
+      tr.appendChild(tdRev);
+
+      fragment.appendChild(tr);
+    });
+
+    var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
+    var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
+    var tt2 = document.createElement('td'); tt2.className = 'r'; tt2.textContent = totalCountAll; totRow.appendChild(tt2);
+    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = fmtNum(totalQtyAll); totRow.appendChild(tt3);
+    var tt4 = document.createElement('td'); tt4.className = 'r'; tt4.textContent = '—'; totRow.appendChild(tt4);
+    var tt5 = document.createElement('td'); tt5.className = 'r'; tt5.textContent = '₹' + fmtNum(totalRevenueAll); totRow.appendChild(tt5);
+    fragment.appendChild(totRow);
+
+    tbody.textContent = '';
+    tbody.appendChild(fragment);
+  }
+
+  function clearPsPreset() {
+    document.querySelectorAll('#productSalesView .preset-btn').forEach(function(b) { b.classList.remove('active'); });
+    psActivePreset = null;
+    $('psPresetClear').style.display = 'none';
+  }
+
+  function applyPsPreset(range, btnId) {
+    if (psActivePreset === btnId) { clearPsPreset(); renderProductSales('', ''); return; }
+    clearPsPreset();
+    psActivePreset = btnId;
+    $(btnId).classList.add('active');
+    $('psPresetClear').style.display = 'inline-flex';
+    renderProductSales(range.from, range.to);
+  }
+
+  $('psPresetToday').addEventListener('click',     function() { applyPsPreset(getDayRange(0),    'psPresetToday'); });
+  $('psPresetYesterday').addEventListener('click', function() { applyPsPreset(getDayRange(-1),   'psPresetYesterday'); });
+  $('psPresetThisWeek').addEventListener('click',  function() { applyPsPreset(getWeekRange(0),   'psPresetThisWeek'); });
+  $('psPresetLastWeek').addEventListener('click',  function() { applyPsPreset(getWeekRange(-1),  'psPresetLastWeek'); });
+  $('psPresetThisMonth').addEventListener('click', function() { applyPsPreset(getMonthRange(0),  'psPresetThisMonth'); });
+  $('psPresetLastMonth').addEventListener('click', function() { applyPsPreset(getMonthRange(-1), 'psPresetLastMonth'); });
+  $('psPresetThisYear').addEventListener('click',  function() { applyPsPreset(getYearRange(0),   'psPresetThisYear'); });
+  $('psPresetLastYear').addEventListener('click',  function() { applyPsPreset(getYearRange(-1),  'psPresetLastYear'); });
+  $('psPresetClear').addEventListener('click',     function() { clearPsPreset(); renderProductSales('', ''); });
+
+  $('psSearch').addEventListener('input', function() { renderProductSales(); });
+
+  $('psDownloadPdfBtn').addEventListener('click', async function() {
+    var rows    = computeProductSalesStats(psCurrentFrom, psCurrentTo);
+    var query   = ($('psSearch').value || '').toLowerCase();
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+    if (!visible.length) { alert('No data to download.'); return; }
+
+    var presetNames = { psPresetToday:'Today', psPresetYesterday:'Yesterday', psPresetThisWeek:'This week',
+      psPresetLastWeek:'Last week', psPresetThisMonth:'This month', psPresetLastMonth:'Last month',
+      psPresetThisYear:'This year', psPresetLastYear:'Last year' };
+    var periodLabel = (psActivePreset && presetNames[psActivePreset])
+      ? presetNames[psActivePreset]
+      : (psCurrentFrom && psCurrentTo ? formatShortDate(psCurrentFrom) + ' – ' + formatShortDate(psCurrentTo) : 'All dates');
+
+    var totalQty     = visible.reduce(function(s, r) { return s + r.totalQty; }, 0);
+    var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
+    var totalCount   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+
+    var td  = 'padding:5px 8px;font-size:11px;border:1px solid #e2e8f0;vertical-align:top;';
+    var thr = td + 'font-weight:700;background:#f8fafc;text-align:right;';
+    var thl = td + 'font-weight:700;background:#f8fafc;text-align:left;';
+    var tdr = td + 'text-align:right;';
+
+    var container = $('psAnalyticsPdf');
+    container.textContent = '';
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'font-family:sans-serif;padding:24px;max-width:700px;margin:0 auto';
+    container.appendChild(wrapper);
+
+    var titleDiv = document.createElement('div'); titleDiv.style.marginBottom = '16px';
+    var titleEl  = document.createElement('div'); titleEl.style.cssText = 'font-size:18px;font-weight:700;color:#1e293b'; titleEl.textContent = 'Sales Analytics';
+    var periodEl = document.createElement('div'); periodEl.style.cssText = 'font-size:13px;color:#64748b;margin-top:2px'; periodEl.textContent = 'Period: ' + periodLabel;
+    titleDiv.appendChild(titleEl); titleDiv.appendChild(periodEl); wrapper.appendChild(titleDiv);
+
+    var table = document.createElement('table'); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:11px';
+    table.insertAdjacentHTML('afterbegin',
+      '<thead><tr>'
+      + '<th style="' + thl + 'width:32px">#</th>'
+      + '<th style="' + thl + '">Product Name</th>'
+      + '<th style="' + thr + '">Invoice Count</th>'
+      + '<th style="' + thr + '">Total Qty</th>'
+      + '<th style="' + thr + '">Avg Rate</th>'
+      + '<th style="' + thr + '">Total Revenue</th>'
+      + '</tr></thead>');
+    var tb = document.createElement('tbody');
+    visible.forEach(function(r, i) {
+      var row = document.createElement('tr');
+      [i + 1, r.name, r.invoiceCount, fmtNum(r.totalQty),
+       '₹' + fmtNum(r.avgRate) + (r.rateVaried ? ' (varied)' : ''),
+       '₹' + fmtNum(r.totalRevenue)].forEach(function(val, ci) {
+        var cell = document.createElement('td');
+        cell.style.cssText = ci >= 2 ? tdr : td;
+        if (ci === 5) { cell.style.fontWeight = '600'; cell.style.color = '#6d28d9'; }
+        cell.textContent = val;
+        row.appendChild(cell);
+      });
+      tb.appendChild(row);
+    });
+    var totRow2 = document.createElement('tr'); totRow2.style.background = '#eef2ff';
+    var tc1 = document.createElement('td'); tc1.colSpan = 2; tc1.style.cssText = td + 'font-weight:700;color:#4338ca'; tc1.textContent = 'Totals'; totRow2.appendChild(tc1);
+    [totalCount, fmtNum(totalQty), '—', '₹' + fmtNum(totalRevenue)].forEach(function(val, ci) {
+      var c = document.createElement('td'); c.style.cssText = tdr + 'font-weight:700;color:' + (ci === 2 ? '#94a3b8' : '#4338ca');
+      c.textContent = val; totRow2.appendChild(c);
+    });
+    tb.appendChild(totRow2);
+    table.appendChild(tb); wrapper.appendChild(table);
+
+    container.style.display = 'block';
+    var fname = 'sales-analytics-' + (psCurrentFrom || 'all') + '.pdf';
+    var opt = Object.assign({}, PDF_OPT, { margin: [0.35, 0.42, 0.35, 0.42], html2canvas: Object.assign({}, PDF_OPT.html2canvas, { scale: 1.65, scrollX: 0, scrollY: 0 }), filename: fname });
+    try {
+      await html2pdf().set(opt).from(container).save();
+    } finally {
+      container.style.display = 'none';
+      container.textContent = '';
+    }
+  });
+
+  // ── Purchase Analytics ────────────────────────────────────
+  var paActivePreset = null;
+  var paCurrentFrom  = '';
+  var paCurrentTo    = '';
+
+  function computePurchaseAnalyticsStats(from, to) {
+    var src = (from && to)
+      ? poInvoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
+      : poInvoices;
+
+    var map = {};
+    src.forEach(function(inv) {
+      var seen = {};
+      (inv.items || []).forEach(function(it) {
+        var raw = (it.description || '').trim();
+        if (!raw) return;
+        var key = raw.toLowerCase();
+        if (!map[key]) map[key] = { name: raw, invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        var invId = inv.invoiceNumber || inv.id || inv._rowIndex || '';
+        if (!seen[key]) { map[key].invoiceSet[invId] = true; seen[key] = true; }
+        var qty  = numericQtyForLine(it);
+        var rate = Number(it.rate) || 0;
+        map[key].totalQty     += qty;
+        map[key].rates.push(rate);
+        map[key].totalRevenue += qty * rate;
+      });
+    });
+
+    return Object.keys(map).map(function(key) {
+      var r = map[key];
+      return {
+        name:         r.name,
+        invoiceCount: Object.keys(r.invoiceSet).length,
+        totalQty:     r.totalQty,
+        avgRate:      r.totalQty > 0 ? r.totalRevenue / r.totalQty : 0,
+        rateVaried:   r.rates.length > 1 && Math.max.apply(null, r.rates) !== Math.min.apply(null, r.rates),
+        totalRevenue: r.totalRevenue
+      };
+    }).sort(function(a, b) { return b.totalRevenue - a.totalRevenue; });
+  }
+
+  function renderPurchaseAnalytics(from, to) {
+    from = (from !== undefined) ? from : paCurrentFrom;
+    to   = (to   !== undefined) ? to   : paCurrentTo;
+    paCurrentFrom = from;
+    paCurrentTo   = to;
+
+    var rows    = computePurchaseAnalyticsStats(from, to);
+    var query   = ($('paSearch').value || '').toLowerCase();
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+
+    var totalInvoiceCount = (from && to
+      ? poInvoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
+      : poInvoices).length;
+
+    $('paKpiProducts').textContent = visible.length;
+    $('paKpiInvoices').textContent = totalInvoiceCount;
+    $('paKpiQty').textContent      = fmtNum(visible.reduce(function(s, r) { return s + r.totalQty; }, 0));
+    $('paKpiRevenue').textContent  = '₹' + fmtNum(visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0));
+
+    var tbody = $('paTableBody');
+    if (!visible.length) {
+      tbody.textContent = '';
+      $('paEmpty').style.display = 'block';
+      return;
+    }
+    $('paEmpty').style.display = 'none';
+
+    var totalQtyAll     = visible.reduce(function(s, r) { return s + r.totalQty; }, 0);
+    var totalRevenueAll = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
+    var totalCountAll   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+
+    var fragment = document.createDocumentFragment();
+
+    visible.forEach(function(r, i) {
+      var tr = document.createElement('tr');
+
+      var tdNum  = document.createElement('td'); tdNum.textContent  = i + 1; tr.appendChild(tdNum);
+      var tdName = document.createElement('td'); tdName.textContent = r.name; tr.appendChild(tdName);
+      var tdCnt  = document.createElement('td'); tdCnt.className    = 'r'; tdCnt.textContent = r.invoiceCount; tr.appendChild(tdCnt);
+      var tdQty  = document.createElement('td'); tdQty.className    = 'r'; tdQty.textContent = fmtNum(r.totalQty); tr.appendChild(tdQty);
+
+      var tdRate = document.createElement('td'); tdRate.className = 'r';
+      tdRate.textContent = '₹' + fmtNum(r.avgRate);
+      if (r.rateVaried) {
+        var badge = document.createElement('span');
+        badge.className   = 'rate-varied-badge';
+        badge.textContent = '↕ varied';
+        tdRate.appendChild(badge);
+      }
+      tr.appendChild(tdRate);
+
+      var tdRev = document.createElement('td'); tdRev.className = 'r';
+      tdRev.style.cssText = 'font-weight:600;color:#0284c7';
+      tdRev.textContent = '₹' + fmtNum(r.totalRevenue);
+      tr.appendChild(tdRev);
+
+      fragment.appendChild(tr);
+    });
+
+    var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
+    var pt1 = document.createElement('td'); pt1.colSpan = 2; pt1.textContent = 'Totals'; totRow.appendChild(pt1);
+    var pt2 = document.createElement('td'); pt2.className = 'r'; pt2.textContent = totalCountAll; totRow.appendChild(pt2);
+    var pt3 = document.createElement('td'); pt3.className = 'r'; pt3.textContent = fmtNum(totalQtyAll); totRow.appendChild(pt3);
+    var pt4 = document.createElement('td'); pt4.className = 'r'; pt4.textContent = '—'; totRow.appendChild(pt4);
+    var pt5 = document.createElement('td'); pt5.className = 'r'; pt5.textContent = '₹' + fmtNum(totalRevenueAll); totRow.appendChild(pt5);
+    fragment.appendChild(totRow);
+
+    tbody.textContent = '';
+    tbody.appendChild(fragment);
+  }
+
+  function clearPaPreset() {
+    document.querySelectorAll('#purchaseAnalyticsView .preset-btn').forEach(function(b) { b.classList.remove('active'); });
+    paActivePreset = null;
+    $('paPresetClear').style.display = 'none';
+  }
+
+  function applyPaPreset(range, btnId) {
+    if (paActivePreset === btnId) { clearPaPreset(); renderPurchaseAnalytics('', ''); return; }
+    clearPaPreset();
+    paActivePreset = btnId;
+    $(btnId).classList.add('active');
+    $('paPresetClear').style.display = 'inline-flex';
+    renderPurchaseAnalytics(range.from, range.to);
+  }
+
+  $('paPresetToday').addEventListener('click',     function() { applyPaPreset(getDayRange(0),    'paPresetToday'); });
+  $('paPresetYesterday').addEventListener('click', function() { applyPaPreset(getDayRange(-1),   'paPresetYesterday'); });
+  $('paPresetThisWeek').addEventListener('click',  function() { applyPaPreset(getWeekRange(0),   'paPresetThisWeek'); });
+  $('paPresetLastWeek').addEventListener('click',  function() { applyPaPreset(getWeekRange(-1),  'paPresetLastWeek'); });
+  $('paPresetThisMonth').addEventListener('click', function() { applyPaPreset(getMonthRange(0),  'paPresetThisMonth'); });
+  $('paPresetLastMonth').addEventListener('click', function() { applyPaPreset(getMonthRange(-1), 'paPresetLastMonth'); });
+  $('paPresetThisYear').addEventListener('click',  function() { applyPaPreset(getYearRange(0),   'paPresetThisYear'); });
+  $('paPresetLastYear').addEventListener('click',  function() { applyPaPreset(getYearRange(-1),  'paPresetLastYear'); });
+  $('paPresetClear').addEventListener('click',     function() { clearPaPreset(); renderPurchaseAnalytics('', ''); });
+
+  $('paSearch').addEventListener('input', function() { renderPurchaseAnalytics(); });
+
+  $('paDownloadPdfBtn').addEventListener('click', async function() {
+    var rows    = computePurchaseAnalyticsStats(paCurrentFrom, paCurrentTo);
+    var query   = ($('paSearch').value || '').toLowerCase();
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+    if (!visible.length) { alert('No data to download.'); return; }
+
+    var presetNames = { paPresetToday:'Today', paPresetYesterday:'Yesterday', paPresetThisWeek:'This week',
+      paPresetLastWeek:'Last week', paPresetThisMonth:'This month', paPresetLastMonth:'Last month',
+      paPresetThisYear:'This year', paPresetLastYear:'Last year' };
+    var periodLabel = (paActivePreset && presetNames[paActivePreset])
+      ? presetNames[paActivePreset]
+      : (paCurrentFrom && paCurrentTo ? formatShortDate(paCurrentFrom) + ' – ' + formatShortDate(paCurrentTo) : 'All dates');
+
+    var totalQty     = visible.reduce(function(s, r) { return s + r.totalQty; }, 0);
+    var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
+    var totalCount   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+
+    var td  = 'padding:5px 8px;font-size:11px;border:1px solid #e2e8f0;vertical-align:top;';
+    var thr = td + 'font-weight:700;background:#f8fafc;text-align:right;';
+    var thl = td + 'font-weight:700;background:#f8fafc;text-align:left;';
+    var tdr = td + 'text-align:right;';
+
+    var container = $('paAnalyticsPdf');
+    container.textContent = '';
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'font-family:sans-serif;padding:24px;max-width:700px;margin:0 auto';
+    container.appendChild(wrapper);
+
+    var titleDiv = document.createElement('div'); titleDiv.style.marginBottom = '16px';
+    var titleEl  = document.createElement('div'); titleEl.style.cssText = 'font-size:18px;font-weight:700;color:#1e293b'; titleEl.textContent = 'Purchase Analytics';
+    var periodEl = document.createElement('div'); periodEl.style.cssText = 'font-size:13px;color:#64748b;margin-top:2px'; periodEl.textContent = 'Period: ' + periodLabel;
+    titleDiv.appendChild(titleEl); titleDiv.appendChild(periodEl); wrapper.appendChild(titleDiv);
+
+    var table = document.createElement('table'); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:11px';
+    table.insertAdjacentHTML('afterbegin',
+      '<thead><tr>'
+      + '<th style="' + thl + 'width:32px">#</th>'
+      + '<th style="' + thl + '">Product Name</th>'
+      + '<th style="' + thr + '">PO Count</th>'
+      + '<th style="' + thr + '">Total Qty</th>'
+      + '<th style="' + thr + '">Avg Rate</th>'
+      + '<th style="' + thr + '">Total Spend</th>'
+      + '</tr></thead>');
+    var tb = document.createElement('tbody');
+    visible.forEach(function(r, i) {
+      var row = document.createElement('tr');
+      [i + 1, r.name, r.invoiceCount, fmtNum(r.totalQty),
+       '₹' + fmtNum(r.avgRate) + (r.rateVaried ? ' (varied)' : ''),
+       '₹' + fmtNum(r.totalRevenue)].forEach(function(val, ci) {
+        var cell = document.createElement('td');
+        cell.style.cssText = ci >= 2 ? tdr : td;
+        if (ci === 5) { cell.style.fontWeight = '600'; cell.style.color = '#0284c7'; }
+        cell.textContent = val;
+        row.appendChild(cell);
+      });
+      tb.appendChild(row);
+    });
+    var paTotal = document.createElement('tr'); paTotal.style.background = '#e0f2fe';
+    var pc1 = document.createElement('td'); pc1.colSpan = 2; pc1.style.cssText = td + 'font-weight:700;color:#0369a1'; pc1.textContent = 'Totals'; paTotal.appendChild(pc1);
+    [totalCount, fmtNum(totalQty), '—', '₹' + fmtNum(totalRevenue)].forEach(function(val, ci) {
+      var c = document.createElement('td'); c.style.cssText = tdr + 'font-weight:700;color:' + (ci === 2 ? '#94a3b8' : '#0369a1');
+      c.textContent = val; paTotal.appendChild(c);
+    });
+    tb.appendChild(paTotal);
+    table.appendChild(tb); wrapper.appendChild(table);
+
+    container.style.display = 'block';
+    var fname = 'purchase-analytics-' + (paCurrentFrom || 'all') + '.pdf';
+    var opt = Object.assign({}, PDF_OPT, { margin: [0.35, 0.42, 0.35, 0.42], html2canvas: Object.assign({}, PDF_OPT.html2canvas, { scale: 1.65, scrollX: 0, scrollY: 0 }), filename: fname });
+    try {
+      await html2pdf().set(opt).from(container).save();
+    } finally {
+      container.style.display = 'none';
+      container.textContent = '';
+    }
+  });
+
 });
