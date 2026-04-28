@@ -7496,7 +7496,8 @@ document.addEventListener('DOMContentLoaded', () => {
         var raw = (it.description || '').trim();
         if (!raw) return;
         var key = raw.toLowerCase();
-        if (!map[key]) map[key] = { name: raw, invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        if (!map[key]) map[key] = { name: raw, hsn: '', invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        if (!map[key].hsn && it.hsn) map[key].hsn = (it.hsn || '').trim();
         var invId = inv.invoiceNumber || inv.id || inv._rowIndex || '';
         if (!seen[key]) { map[key].invoiceSet[invId] = true; seen[key] = true; }
         var qty  = numericQtyForLine(it);
@@ -7511,6 +7512,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var r = map[key];
       return {
         name:         r.name,
+        hsn:          r.hsn,
         invoiceCount: Object.keys(r.invoiceSet).length,
         totalQty:     r.totalQty,
         avgRate:      r.totalQty > 0 ? r.totalRevenue / r.totalQty : 0,
@@ -7528,7 +7530,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var rows    = computeProductSalesStats(from, to);
     var query   = ($('psSearch').value || '').toLowerCase();
-    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1 || r.hsn.toLowerCase().indexOf(query) !== -1; }) : rows;
 
     var totalInvoiceCount = (from && to
       ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
@@ -7621,7 +7623,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('psDownloadPdfBtn').addEventListener('click', async function() {
     var rows    = computeProductSalesStats(psCurrentFrom, psCurrentTo);
     var query   = ($('psSearch').value || '').toLowerCase();
-    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1 || r.hsn.toLowerCase().indexOf(query) !== -1; }) : rows;
     if (!visible.length) { alert('No data to download.'); return; }
 
     var presetNames = { psPresetToday:'Today', psPresetYesterday:'Yesterday', psPresetThisWeek:'This week',
@@ -7713,7 +7715,8 @@ document.addEventListener('DOMContentLoaded', () => {
         var raw = (it.description || '').trim();
         if (!raw) return;
         var key = raw.toLowerCase();
-        if (!map[key]) map[key] = { name: raw, invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        if (!map[key]) map[key] = { name: raw, hsn: '', invoiceSet: {}, totalQty: 0, rates: [], totalRevenue: 0 };
+        if (!map[key].hsn && it.hsn) map[key].hsn = (it.hsn || '').trim();
         var invId = inv.invoiceNumber || inv.id || inv._rowIndex || '';
         if (!seen[key]) { map[key].invoiceSet[invId] = true; seen[key] = true; }
         var qty  = numericQtyForLine(it);
@@ -7728,6 +7731,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var r = map[key];
       return {
         name:         r.name,
+        hsn:          r.hsn,
         invoiceCount: Object.keys(r.invoiceSet).length,
         totalQty:     r.totalQty,
         avgRate:      r.totalQty > 0 ? r.totalRevenue / r.totalQty : 0,
@@ -7745,7 +7749,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var rows    = computePurchaseAnalyticsStats(from, to);
     var query   = ($('paSearch').value || '').toLowerCase();
-    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1 || r.hsn.toLowerCase().indexOf(query) !== -1; }) : rows;
 
     var totalInvoiceCount = (from && to
       ? poInvoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
@@ -7838,7 +7842,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('paDownloadPdfBtn').addEventListener('click', async function() {
     var rows    = computePurchaseAnalyticsStats(paCurrentFrom, paCurrentTo);
     var query   = ($('paSearch').value || '').toLowerCase();
-    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
+    var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1 || r.hsn.toLowerCase().indexOf(query) !== -1; }) : rows;
     if (!visible.length) { alert('No data to download.'); return; }
 
     var presetNames = { paPresetToday:'Today', paPresetYesterday:'Yesterday', paPresetThisWeek:'This week',
