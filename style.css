@@ -2561,12 +2561,13 @@ input.inv-rate-input {
   padding: 20px !important;
 }
 #rateVariedPopover.rate-popover {
-  position: relative !important;
-  left: auto !important;
-  top: auto !important;
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: calc(100vw - 20px) !important;
   right: auto !important;
   bottom: auto !important;
-  transform: none !important;
   margin: 0 !important;
 }
 
@@ -2594,6 +2595,12 @@ input.inv-rate-input {
     align-items: center !important;
     justify-content: center !important;
     padding: 10px !important;
+  }
+  #rateVariedPopover.rate-popover {
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-width: calc(100vw - 12px) !important;
   }
   .rate-popover {
     width: min(380px, calc(100vw - 16px));
