@@ -4706,134 +4706,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrap;
   }
 
-  function createFilteredListPdf(selected, opts = {}) {
-    const JsPdf = window.jspdf && window.jspdf.jsPDF;
-    if (!JsPdf) return null;
-
-    const pdf = new JsPdf({ orientation: 'p', unit: 'pt', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 34;
-    const usableW = pageW - margin * 2;
-    const colW = [34, 118, 78, usableW - (34 + 118 + 78 + 96), 96];
-    const rowH = 18;
-
-    const includeInvoices = !!opts.includeInvoices;
-    const from = opts.from || $('invDateFrom').value || '-';
-    const to = opts.to || $('invDateTo').value || '-';
-    const periodLabel = opts.periodLabel || ($('invTotalSummaryPeriod')?.textContent || getInvoiceListSummaryPeriodLabel());
-    const query = ($('invSearch').value || '').trim() || 'None';
-    const total = selected.reduce((sum, inv) => sum + computeGrandTotal(inv), 0);
-    const generatedAt = new Date().toLocaleString('en-IN');
-
-    function trimText(txt, maxW) {
-      const src = String(txt || '-');
-      if (pdf.getTextWidth(src) <= maxW) return src;
-      let s = src;
-      while (s.length > 3 && pdf.getTextWidth(s + '...') > maxW) s = s.slice(0, -1);
-      return s + '...';
-    }
-
-    function drawTableHeader(y) {
-      const labels = ['#', 'Invoice No.', 'Date', 'Customer', 'Total'];
-      let x = margin;
-      pdf.setFillColor(245, 243, 255);
-      pdf.rect(margin, y, usableW, rowH, 'F');
-      pdf.setTextColor(76, 29, 149);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10);
-      labels.forEach((label, i) => {
-        const isRight = i === 4;
-        const tx = isRight ? x + colW[i] - 6 : x + 6;
-        pdf.text(label, tx, y + 12, { align: isRight ? 'right' : 'left' });
-        x += colW[i];
-      });
-      pdf.setDrawColor(196, 181, 253);
-      pdf.line(margin, y + rowH, margin + usableW, y + rowH);
-      return y + rowH;
-    }
-
-    let y = margin;
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(18);
-    pdf.setTextColor(30, 27, 75);
-    pdf.text('Filtered Invoice List', margin, y);
-    y += 18;
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(10);
-    pdf.setTextColor(109, 40, 217);
-    pdf.text(
-      includeInvoices ? 'Mode: List page + all invoice pages' : 'Mode: List page only',
-      margin,
-      y
-    );
-    y += 14;
-
-    pdf.setDrawColor(221, 214, 254);
-    pdf.setFillColor(248, 247, 255);
-    const metaH = 64;
-    pdf.roundedRect(margin, y, usableW, metaH, 8, 8, 'FD');
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(45, 26, 95);
-    const leftMeta = [
-      `Period: ${periodLabel}`,
-      `Date range: ${from} to ${to}`,
-      `Search: ${query}`
-    ];
-    const rightMeta = [
-      `Invoices: ${selected.length}`,
-      `Total: Rs ${fmtNum(total)}`,
-      `Generated: ${generatedAt}`
-    ];
-    leftMeta.forEach((line, i) => pdf.text(line, margin + 10, y + 16 + i * 16));
-    rightMeta.forEach((line, i) => pdf.text(line, margin + usableW / 2 + 8, y + 16 + i * 16));
-    y += metaH + 12;
-
-    y = drawTableHeader(y);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
-    pdf.setTextColor(31, 41, 55);
-
-    selected.forEach((inv, idx) => {
-      if (y + rowH > pageH - margin) {
-        pdf.addPage();
-        y = margin;
-        y = drawTableHeader(y);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9.5);
-        pdf.setTextColor(31, 41, 55);
-      }
-      if (idx % 2 === 1) {
-        pdf.setFillColor(250, 249, 255);
-        pdf.rect(margin, y, usableW, rowH, 'F');
-      }
-
-      const values = [
-        String(idx + 1),
-        inv.invoiceNumber || '-',
-        inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '-',
-        inv.buyerName || '-',
-        `Rs ${fmtNum(computeGrandTotal(inv))}`
-      ];
-      let x = margin;
-      values.forEach((v, i) => {
-        const isRight = i === 4;
-        const innerW = colW[i] - 12;
-        const text = trimText(v, innerW);
-        const tx = isRight ? x + colW[i] - 6 : x + 6;
-        pdf.text(text, tx, y + 12, { align: isRight ? 'right' : 'left' });
-        x += colW[i];
-      });
-      pdf.setDrawColor(237, 233, 254);
-      pdf.line(margin, y + rowH, margin + usableW, y + rowH);
-      y += rowH;
-    });
-
-    return pdf;
-  }
-
   async function downloadFilteredInvoicesPDF(selected, filename, opts = {}) {
     if (!selected.length) return;
 
@@ -4841,6 +4713,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ? opts.includeInvoices
       : shouldIncludeInvoicePagesInFilteredExport();
     const paper = $('invoicePaper');
+    const summaryPaper = buildFilteredListExportPaper(selected, { ...opts, includeInvoices });
+    document.body.appendChild(summaryPaper);
     const overlay = document.createElement('div');
     overlay.id = 'pdfBulkOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
@@ -4858,11 +4732,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let state = null;
     try {
-      let pdf = createFilteredListPdf(selected, { ...opts, includeInvoices });
-      if (!pdf) {
-        alert('Could not initialize PDF engine. Please refresh and try again.');
-        return;
-      }
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const summaryOpt = {
+        ...PDF_OPT,
+        html2canvas: {
+          ...PDF_OPT.html2canvas,
+          scale: 2,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0
+        }
+      };
+      let pdf = await html2pdf().set({ ...summaryOpt, filename }).from(summaryPaper).toPdf().get('pdf');
+      const firstTmp = document.getElementById('html2pdf__container');
+      if (firstTmp) firstTmp.remove();
       fill.style.width = includeInvoices ? '12%' : '100%';
 
       if (includeInvoices) {
@@ -4896,6 +4779,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fill.style.width = '100%';
       pdf.save(filename);
     } finally {
+      summaryPaper.remove();
       overlay.remove();
       if (state) restoreViewState(state);
     }
