@@ -8068,9 +8068,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Customer Report ───────────────────────────────────────
-  var crActivePreset = null;
-  var crCurrentFrom  = '';
-  var crCurrentTo    = '';
+  var crActivePreset  = null;
+  var crCurrentFrom   = '';
+  var crCurrentTo     = '';
+  var _crDefaultCmp  = getMonthRange(-1);
+  var crCompareFrom  = _crDefaultCmp.from;
+  var crCompareTo    = _crDefaultCmp.to;
+  var crCompareLabel = 'Last Month';
+
+  var CR_COMPARE_MAP = {
+    crPresetToday:     { fn: function() { return getDayRange(-1);    }, label: 'Yesterday' },
+    crPresetYesterday: { fn: function() { return getDayRange(-2);    }, label: 'Prev Day' },
+    crPresetThisWeek:  { fn: function() { return getWeekRange(-1);   }, label: 'Last Week' },
+    crPresetLastWeek:  { fn: function() { return getWeekRange(-2);   }, label: 'Prev Week' },
+    crPresetThisMonth: { fn: function() { return getMonthRange(-1);  }, label: 'Last Month' },
+    crPresetLastMonth: { fn: function() { return getMonthRange(-2);  }, label: 'Prev Month' },
+    crPresetThisYear:  { fn: function() { return getYearRange(-1);   }, label: 'Last Year' },
+    crPresetLastYear:  { fn: function() { return getYearRange(-2);   }, label: 'Prev Year' }
+  };
 
   function crInvTaxable(inv) {
     var sub = 0;
@@ -8083,19 +8098,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function crInvGrandTotal(inv) { return crInvTaxable(inv) + crInvGst(inv); }
 
-  function computeCustomerReportStats(from, to) {
+  function computeCustomerReportStats(from, to, cmpFrom, cmpTo) {
     var src = (from && to)
       ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
       : invoices;
-
-    var lm = getMonthRange(-1);
 
     var map = {};
     src.forEach(function(inv) {
       var name = (inv.buyerName || '').trim();
       if (!name) return;
       var key = name.toLowerCase();
-      if (!map[key]) map[key] = { name: name, gstin: '', invoiceCount: 0, taxable: 0, gstAmount: 0, grandTotal: 0, lastMonthGrandTotal: 0, lastDate: '', invList: [] };
+      if (!map[key]) map[key] = { name: name, gstin: '', invoiceCount: 0, taxable: 0, gstAmount: 0, grandTotal: 0, compareGrandTotal: 0, lastDate: '', invList: [] };
       if (!map[key].gstin && inv.buyerGstin) map[key].gstin = inv.buyerGstin;
       map[key].invoiceCount += 1;
       var date = inv.invoiceDate || '';
@@ -8107,12 +8120,14 @@ document.addEventListener('DOMContentLoaded', () => {
       map[key].invList.push(inv);
     });
 
-    invoices.forEach(function(inv) {
-      var key = (inv.buyerName || '').trim().toLowerCase();
-      if (!map[key]) return;
-      var date = inv.invoiceDate || '';
-      if (date >= lm.from && date <= lm.to) map[key].lastMonthGrandTotal += crInvGrandTotal(inv);
-    });
+    if (cmpFrom && cmpTo) {
+      invoices.forEach(function(inv) {
+        var key = (inv.buyerName || '').trim().toLowerCase();
+        if (!map[key]) return;
+        var date = inv.invoiceDate || '';
+        if (date >= cmpFrom && date <= cmpTo) map[key].compareGrandTotal += crInvGrandTotal(inv);
+      });
+    }
 
     return Object.keys(map).map(function(k) { return map[k]; })
       .sort(function(a, b) { return b.grandTotal - a.grandTotal; });
@@ -8179,18 +8194,21 @@ document.addEventListener('DOMContentLoaded', () => {
     crCurrentFrom = from;
     crCurrentTo   = to;
 
-    var rows    = computeCustomerReportStats(from, to);
+    var rows    = computeCustomerReportStats(from, to, crCompareFrom, crCompareTo);
     var query   = ($('crSearch').value || '').toLowerCase();
     var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
 
     var totalGrand    = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
-    var totalLmKpi    = visible.reduce(function(s, r) { return s + r.lastMonthGrandTotal; }, 0);
+    var totalCmp      = visible.reduce(function(s, r) { return s + r.compareGrandTotal; }, 0);
     var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
 
-    $('crKpiCustomers').textContent = visible.length;
-    $('crKpiInvoices').textContent  = totalInvoices;
-    $('crKpiRevenue').textContent   = '₹' + fmtNum(totalGrand);
-    $('crKpiAvg').textContent       = totalLmKpi ? '₹' + fmtNum(totalLmKpi) : '—';
+    $('crKpiCustomers').textContent  = visible.length;
+    $('crKpiInvoices').textContent   = totalInvoices;
+    $('crKpiRevenue').textContent    = '₹' + fmtNum(totalGrand);
+    $('crKpiAvg').textContent        = (crCompareFrom && totalCmp) ? '₹' + fmtNum(totalCmp) : '—';
+    $('crKpiAvgLabel').textContent   = crCompareLabel + ' Revenue';
+    $('crKpiAvgSub').textContent     = crCompareFrom ? 'vs ' + crCompareLabel.toLowerCase() : 'no comparison set';
+    $('crCompareColHeader').textContent = crCompareLabel;
 
     var tbody = $('crTableBody');
     if (!visible.length) {
@@ -8218,7 +8236,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tdName.appendChild(nameSpan); tdName.appendChild(arrow); tr.appendChild(tdName);
 
       var tdCnt  = document.createElement('td'); tdCnt.className = 'r'; tdCnt.textContent = r.invoiceCount; tr.appendChild(tdCnt);
-      var tdLm   = document.createElement('td'); tdLm.className  = 'r'; tdLm.textContent  = r.lastMonthGrandTotal ? '₹' + fmtNum(r.lastMonthGrandTotal) : '—'; tr.appendChild(tdLm);
+      var tdLm   = document.createElement('td'); tdLm.className  = 'r'; tdLm.textContent  = r.compareGrandTotal ? '₹' + fmtNum(r.compareGrandTotal) : '—'; tr.appendChild(tdLm);
       var tdDate = document.createElement('td'); tdDate.className = 'r'; tdDate.textContent = r.lastDate ? formatShortDate(r.lastDate) : '—'; tr.appendChild(tdDate);
       var tdRev  = document.createElement('td'); tdRev.className  = 'r cr-grand-cell'; tdRev.textContent = '₹' + fmtNum(r.grandTotal); tr.appendChild(tdRev);
 
@@ -8229,7 +8247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
     var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
     var tt2 = document.createElement('td'); tt2.className = 'r'; tt2.textContent = totalInvoices; totRow.appendChild(tt2);
-    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = totalLmKpi ? '₹' + fmtNum(totalLmKpi) : '—'; totRow.appendChild(tt3);
+    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = totalCmp ? '₹' + fmtNum(totalCmp) : '—'; totRow.appendChild(tt3);
     var tt4 = document.createElement('td'); tt4.className = 'r'; tt4.textContent = '—'; totRow.appendChild(tt4);
     var tt5 = document.createElement('td'); tt5.className = 'r cr-grand-cell'; tt5.textContent = '₹' + fmtNum(totalGrand); totRow.appendChild(tt5);
     fragment.appendChild(totRow);
@@ -8245,6 +8263,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function clearCrPreset() {
     document.querySelectorAll('#customerReportView .apill').forEach(function(b) { b.classList.remove('active'); });
     crActivePreset = null;
+    var lm = getMonthRange(-1);
+    crCompareFrom  = lm.from;
+    crCompareTo    = lm.to;
+    crCompareLabel = 'Last Month';
     $('crPresetClear').style.display = 'none';
   }
 
@@ -8254,6 +8276,13 @@ document.addEventListener('DOMContentLoaded', () => {
     crActivePreset = btnId;
     $(btnId).classList.add('active');
     $('crPresetClear').style.display = 'inline-flex';
+    var cmp = CR_COMPARE_MAP[btnId];
+    if (cmp) {
+      var cmpRange   = cmp.fn();
+      crCompareFrom  = cmpRange.from;
+      crCompareTo    = cmpRange.to;
+      crCompareLabel = cmp.label;
+    }
     renderCustomerReport(range.from, range.to);
   }
 
@@ -8286,7 +8315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var totalTax    = visible.reduce(function(s, r) { return s + r.taxable; }, 0);
     var totalGst    = visible.reduce(function(s, r) { return s + r.gstAmount; }, 0);
     var totalCount  = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
-    var totalLmRev  = visible.reduce(function(s, r) { return s + r.lastMonthGrandTotal; }, 0);
+    var totalLmRev  = visible.reduce(function(s, r) { return s + r.compareGrandTotal; }, 0);
 
     var td  = 'padding:5px 8px;font-size:11px;border:1px solid #e2e8f0;vertical-align:top;';
     var thr = td + 'font-weight:700;background:#f8fafc;text-align:right;';
@@ -8318,7 +8347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     visible.forEach(function(r, i) {
       var row = document.createElement('tr');
       var vals = [i + 1, r.name, r.invoiceCount,
-        r.lastMonthGrandTotal ? '₹' + fmtNum(r.lastMonthGrandTotal) : '—',
+        r.compareGrandTotal ? '₹' + fmtNum(r.compareGrandTotal) : '—',
         r.lastDate ? formatShortDate(r.lastDate) : '—',
         '₹' + fmtNum(r.taxable), '₹' + fmtNum(r.gstAmount), '₹' + fmtNum(r.grandTotal)];
       vals.forEach(function(val, ci) {
