@@ -7739,6 +7739,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#productSalesView .apill').forEach(function(b) { b.classList.remove('active'); });
     psActivePreset = null;
     $('psPresetClear').style.display = 'none';
+    $('psCustomRange').style.display = 'none';
   }
 
   function applyPsPreset(range, btnId) {
@@ -7758,7 +7759,24 @@ document.addEventListener('DOMContentLoaded', () => {
   $('psPresetLastMonth').addEventListener('click', function() { applyPsPreset(getMonthRange(-1), 'psPresetLastMonth'); });
   $('psPresetThisYear').addEventListener('click',  function() { applyPsPreset(getYearRange(0),   'psPresetThisYear'); });
   $('psPresetLastYear').addEventListener('click',  function() { applyPsPreset(getYearRange(-1),  'psPresetLastYear'); });
-  $('psPresetClear').addEventListener('click',     function() { clearPsPreset(); renderProductSales('', ''); });
+  $('psPresetClear').addEventListener('click',     function() { clearPsPreset(); $('psCustomRange').style.display = 'none'; renderProductSales('', ''); });
+
+  $('psPresetCustom').addEventListener('click', function() {
+    var panel = $('psCustomRange');
+    var showing = panel.style.display !== 'none';
+    clearPsPreset();
+    if (!showing) { panel.style.display = 'block'; $('psPresetCustom').classList.add('active'); }
+    else { panel.style.display = 'none'; }
+  });
+  $('psCustomApply').addEventListener('click', function() {
+    var f = $('psCustomFrom').value, t = $('psCustomTo').value;
+    if (!f || !t) { alert('Please select both From and To dates.'); return; }
+    if (f > t) { alert('From date must be before To date.'); return; }
+    clearPsPreset();
+    $('psPresetCustom').classList.add('active');
+    $('psPresetClear').style.display = 'inline-flex';
+    renderProductSales(f, t);
+  });
 
   $('psSearch').addEventListener('input', function() { renderProductSales(); });
 
@@ -7968,6 +7986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#purchaseAnalyticsView .apill').forEach(function(b) { b.classList.remove('active'); });
     paActivePreset = null;
     $('paPresetClear').style.display = 'none';
+    $('paCustomRange').style.display = 'none';
   }
 
   function applyPaPreset(range, btnId) {
@@ -7987,7 +8006,24 @@ document.addEventListener('DOMContentLoaded', () => {
   $('paPresetLastMonth').addEventListener('click', function() { applyPaPreset(getMonthRange(-1), 'paPresetLastMonth'); });
   $('paPresetThisYear').addEventListener('click',  function() { applyPaPreset(getYearRange(0),   'paPresetThisYear'); });
   $('paPresetLastYear').addEventListener('click',  function() { applyPaPreset(getYearRange(-1),  'paPresetLastYear'); });
-  $('paPresetClear').addEventListener('click',     function() { clearPaPreset(); renderPurchaseAnalytics('', ''); });
+  $('paPresetClear').addEventListener('click',     function() { clearPaPreset(); $('paCustomRange').style.display = 'none'; renderPurchaseAnalytics('', ''); });
+
+  $('paPresetCustom').addEventListener('click', function() {
+    var panel = $('paCustomRange');
+    var showing = panel.style.display !== 'none';
+    clearPaPreset();
+    if (!showing) { panel.style.display = 'block'; $('paPresetCustom').classList.add('active'); }
+    else { panel.style.display = 'none'; }
+  });
+  $('paCustomApply').addEventListener('click', function() {
+    var f = $('paCustomFrom').value, t = $('paCustomTo').value;
+    if (!f || !t) { alert('Please select both From and To dates.'); return; }
+    if (f > t) { alert('From date must be before To date.'); return; }
+    clearPaPreset();
+    $('paPresetCustom').classList.add('active');
+    $('paPresetClear').style.display = 'inline-flex';
+    renderPurchaseAnalytics(f, t);
+  });
 
   $('paSearch').addEventListener('input', function() { renderPurchaseAnalytics(); });
 
@@ -8277,6 +8313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     crCompareTo    = lyr.to;
     crCompareLabel = 'Last Year';
     $('crPresetClear').style.display = 'none';
+    $('crCustomRange').style.display = 'none';
   }
 
   function applyCrPreset(range, btnId) {
@@ -8303,7 +8340,24 @@ document.addEventListener('DOMContentLoaded', () => {
   $('crPresetLastMonth').addEventListener('click', function() { applyCrPreset(getMonthRange(-1), 'crPresetLastMonth'); });
   $('crPresetThisYear').addEventListener('click',  function() { applyCrPreset(getYearRange(0),   'crPresetThisYear'); });
   $('crPresetLastYear').addEventListener('click',  function() { applyCrPreset(getYearRange(-1),  'crPresetLastYear'); });
-  $('crPresetClear').addEventListener('click',     function() { clearCrPreset(); renderCustomerReport('', ''); });
+  $('crPresetClear').addEventListener('click',     function() { clearCrPreset(); $('crCustomRange').style.display = 'none'; renderCustomerReport('', ''); });
+
+  $('crPresetCustom').addEventListener('click', function() {
+    var panel = $('crCustomRange');
+    var showing = panel.style.display !== 'none';
+    clearCrPreset();
+    if (!showing) { panel.style.display = 'block'; $('crPresetCustom').classList.add('active'); }
+    else { panel.style.display = 'none'; }
+  });
+  $('crCustomApply').addEventListener('click', function() {
+    var f = $('crCustomFrom').value, t = $('crCustomTo').value;
+    if (!f || !t) { alert('Please select both From and To dates.'); return; }
+    if (f > t) { alert('From date must be before To date.'); return; }
+    clearCrPreset();
+    $('crPresetCustom').classList.add('active');
+    $('crPresetClear').style.display = 'inline-flex';
+    renderCustomerReport(f, t);
+  });
 
   $('crSearch').addEventListener('input', function() { renderCustomerReport(); });
 
@@ -8594,6 +8648,7 @@ document.addEventListener('DOMContentLoaded', () => {
     vrCompareTo    = lyr.to;
     vrCompareLabel = 'Last Year';
     $('vrPresetClear').style.display = 'none';
+    $('vrCustomRange').style.display = 'none';
   }
 
   function applyVrPreset(range, btnId) {
@@ -8620,7 +8675,24 @@ document.addEventListener('DOMContentLoaded', () => {
   $('vrPresetLastMonth').addEventListener('click', function() { applyVrPreset(getMonthRange(-1), 'vrPresetLastMonth'); });
   $('vrPresetThisYear').addEventListener('click',  function() { applyVrPreset(getYearRange(0),   'vrPresetThisYear'); });
   $('vrPresetLastYear').addEventListener('click',  function() { applyVrPreset(getYearRange(-1),  'vrPresetLastYear'); });
-  $('vrPresetClear').addEventListener('click',     function() { clearVrPreset(); renderVendorReport('', ''); });
+  $('vrPresetClear').addEventListener('click',     function() { clearVrPreset(); $('vrCustomRange').style.display = 'none'; renderVendorReport('', ''); });
+
+  $('vrPresetCustom').addEventListener('click', function() {
+    var panel = $('vrCustomRange');
+    var showing = panel.style.display !== 'none';
+    clearVrPreset();
+    if (!showing) { panel.style.display = 'block'; $('vrPresetCustom').classList.add('active'); }
+    else { panel.style.display = 'none'; }
+  });
+  $('vrCustomApply').addEventListener('click', function() {
+    var f = $('vrCustomFrom').value, t = $('vrCustomTo').value;
+    if (!f || !t) { alert('Please select both From and To dates.'); return; }
+    if (f > t) { alert('From date must be before To date.'); return; }
+    clearVrPreset();
+    $('vrPresetCustom').classList.add('active');
+    $('vrPresetClear').style.display = 'inline-flex';
+    renderVendorReport(f, t);
+  });
 
   $('vrSearch').addEventListener('input', function() { renderVendorReport(); });
 

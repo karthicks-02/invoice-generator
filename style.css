@@ -2797,6 +2797,39 @@ input.inv-rate-input {
   .rate-popover-body { max-height: 55vh; }
 }
 
+/* ── Custom date range panel ─────────────────────────────── */
+.apill-custom {
+  background: #f0f9ff; color: #0284c7; border: 1.5px solid #bae6fd;
+  font-weight: 600;
+}
+.apill-custom:hover, .apill-custom.active {
+  background: #0284c7; color: #fff; border-color: #0284c7;
+}
+.custom-range-panel {
+  margin-top: 10px; padding: 10px 14px;
+  background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  animation: crp-in .15s ease;
+}
+@keyframes crp-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+.crp-inner {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.crp-label {
+  font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: .04em; text-transform: uppercase;
+}
+.crp-input {
+  border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 5px 8px;
+  font-size: 12.5px; color: #1e293b; background: #fff; outline: none;
+  cursor: pointer;
+}
+.crp-input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
+.crp-apply {
+  padding: 5px 16px; border-radius: 7px; border: none; cursor: pointer;
+  background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff;
+  font-size: 12.5px; font-weight: 600; transition: opacity .15s;
+}
+.crp-apply:hover { opacity: .88; }
+
 /* ── Customer Report: clickable rows ─────────────────────── */
 .cr-clickable-row { cursor: pointer; transition: background .15s; }
 .cr-clickable-row:hover { background: #f0f9ff; }
