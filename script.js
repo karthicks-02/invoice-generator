@@ -8125,14 +8125,14 @@ document.addEventListener('DOMContentLoaded', () => {
     var query   = ($('crSearch').value || '').toLowerCase();
     var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
 
-    var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
-    var avgRevenue   = visible.length ? totalRevenue / visible.length : 0;
-    var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+    var totalRevenue   = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
+    var totalLmRevKpi  = visible.reduce(function(s, r) { return s + r.lastMonthRevenue; }, 0);
+    var totalInvoices  = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
 
     $('crKpiCustomers').textContent = visible.length;
     $('crKpiInvoices').textContent  = totalInvoices;
     $('crKpiRevenue').textContent   = '₹' + fmtNum(totalRevenue);
-    $('crKpiAvg').textContent       = visible.length ? '₹' + fmtNum(avgRevenue) : '—';
+    $('crKpiAvg').textContent       = totalLmRevKpi ? '₹' + fmtNum(totalLmRevKpi) : '—';
 
     var tbody = $('crTableBody');
     if (!visible.length) {
