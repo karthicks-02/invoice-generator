@@ -8071,10 +8071,10 @@ document.addEventListener('DOMContentLoaded', () => {
   var crActivePreset  = null;
   var crCurrentFrom   = '';
   var crCurrentTo     = '';
-  var _crDefaultCmp  = getMonthRange(-1);
+  var _crDefaultCmp  = getYearRange(-1);
   var crCompareFrom  = _crDefaultCmp.from;
   var crCompareTo    = _crDefaultCmp.to;
-  var crCompareLabel = 'Last Month';
+  var crCompareLabel = 'Last Year';
 
   var CR_COMPARE_MAP = {
     crPresetToday:     { fn: function() { return getDayRange(-1);    }, label: 'Yesterday' },
@@ -8263,10 +8263,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function clearCrPreset() {
     document.querySelectorAll('#customerReportView .apill').forEach(function(b) { b.classList.remove('active'); });
     crActivePreset = null;
-    var lm = getMonthRange(-1);
-    crCompareFrom  = lm.from;
-    crCompareTo    = lm.to;
-    crCompareLabel = 'Last Month';
+    var lyr = getYearRange(-1);
+    crCompareFrom  = lyr.from;
+    crCompareTo    = lyr.to;
+    crCompareLabel = 'Last Year';
     $('crPresetClear').style.display = 'none';
   }
 
