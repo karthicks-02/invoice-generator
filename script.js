@@ -8201,13 +8201,20 @@ document.addEventListener('DOMContentLoaded', () => {
     var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
 
     var totalGrand    = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
-    var totalCmp      = visible.reduce(function(s, r) { return s + r.compareGrandTotal; }, 0);
     var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+
+    var totalCmpKpi = 0;
+    if (crCompareFrom && crCompareTo) {
+      invoices.forEach(function(inv) {
+        var date = inv.invoiceDate || '';
+        if (date >= crCompareFrom && date <= crCompareTo) totalCmpKpi += crInvGrandTotal(inv);
+      });
+    }
 
     $('crKpiCustomers').textContent  = visible.length;
     $('crKpiInvoices').textContent   = totalInvoices;
     $('crKpiRevenue').textContent    = '₹' + fmtNum(totalGrand);
-    $('crKpiAvg').textContent        = (crCompareFrom && totalCmp) ? '₹' + fmtNum(totalCmp) : '—';
+    $('crKpiAvg').textContent        = (crCompareFrom && totalCmpKpi) ? '₹' + fmtNum(totalCmpKpi) : '—';
     $('crKpiAvgLabel').textContent   = crCompareLabel + ' Revenue';
     $('crKpiAvgSub').textContent     = crCompareFrom ? 'vs ' + crCompareLabel.toLowerCase() : 'no comparison set';
     $('crCompareColHeader').textContent = crCompareLabel;
@@ -8515,13 +8522,20 @@ document.addEventListener('DOMContentLoaded', () => {
     var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
 
     var totalGrand    = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
-    var totalCmp      = visible.reduce(function(s, r) { return s + r.compareGrandTotal; }, 0);
     var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+
+    var totalCmpKpi = 0;
+    if (vrCompareFrom && vrCompareTo) {
+      poInvoices.forEach(function(inv) {
+        var date = inv.invoiceDate || '';
+        if (date >= vrCompareFrom && date <= vrCompareTo) totalCmpKpi += vrInvGrandTotal(inv);
+      });
+    }
 
     $('vrKpiVendors').textContent      = visible.length;
     $('vrKpiInvoices').textContent     = totalInvoices;
     $('vrKpiTotal').textContent        = '₹' + fmtNum(totalGrand);
-    $('vrKpiCmp').textContent          = (vrCompareFrom && totalCmp) ? '₹' + fmtNum(totalCmp) : '—';
+    $('vrKpiCmp').textContent          = (vrCompareFrom && totalCmpKpi) ? '₹' + fmtNum(totalCmpKpi) : '—';
     $('vrKpiCmpLabel').textContent     = vrCompareLabel + ' Revenue';
     $('vrKpiCmpSub').textContent       = vrCompareFrom ? 'vs ' + vrCompareLabel.toLowerCase() : 'no comparison set';
     $('vrCompareColHeader').textContent = vrCompareLabel;
