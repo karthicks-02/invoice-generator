@@ -8238,6 +8238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var totalGrand    = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
     var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+    var totalCmp      = visible.reduce(function(s, r) { return s + r.compareGrandTotal; }, 0);
 
     var totalCmpKpi = 0;
     if (crCompareFrom && crCompareTo) {
@@ -8577,6 +8578,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var totalGrand    = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
     var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+    var totalCmp      = visible.reduce(function(s, r) { return s + r.compareGrandTotal; }, 0);
 
     var totalCmpKpi = 0;
     if (vrCompareFrom && vrCompareTo) {
