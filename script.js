@@ -8072,47 +8072,105 @@ document.addEventListener('DOMContentLoaded', () => {
   var crCurrentFrom  = '';
   var crCurrentTo    = '';
 
+  function crInvTaxable(inv) {
+    var sub = 0;
+    (inv.items || []).forEach(function(it) { sub += numericQtyForLine(it) * (Number(it.rate) || 0); });
+    return sub;
+  }
+  function crInvGst(inv) {
+    var sub = crInvTaxable(inv), rate = inv.gstRate || 0;
+    return inv.gstType === 'intra' ? sub * rate / 100 * 2 : sub * rate / 100;
+  }
+  function crInvGrandTotal(inv) { return crInvTaxable(inv) + crInvGst(inv); }
+
   function computeCustomerReportStats(from, to) {
     var src = (from && to)
       ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
       : invoices;
 
-    var lmRange = getMonthRange(-1);
-    var lmFrom  = lmRange.from;
-    var lmTo    = lmRange.to;
+    var lm = getMonthRange(-1);
 
     var map = {};
     src.forEach(function(inv) {
       var name = (inv.buyerName || '').trim();
       if (!name) return;
       var key = name.toLowerCase();
-      if (!map[key]) map[key] = { name: name, invoiceCount: 0, totalRevenue: 0, lastMonthRevenue: 0, lastDate: '' };
+      if (!map[key]) map[key] = { name: name, gstin: '', invoiceCount: 0, taxable: 0, gstAmount: 0, grandTotal: 0, lastMonthGrandTotal: 0, lastDate: '', invList: [] };
+      if (!map[key].gstin && inv.buyerGstin) map[key].gstin = inv.buyerGstin;
       map[key].invoiceCount += 1;
       var date = inv.invoiceDate || '';
       if (date && date > map[key].lastDate) map[key].lastDate = date;
-      var invRev = 0;
-      (inv.items || []).forEach(function(it) {
-        invRev += (Number(it.rate) || 0) * numericQtyForLine(it);
-      });
-      map[key].totalRevenue += invRev;
+      var taxable = crInvTaxable(inv), gst = crInvGst(inv);
+      map[key].taxable    += taxable;
+      map[key].gstAmount  += gst;
+      map[key].grandTotal += taxable + gst;
+      map[key].invList.push(inv);
     });
 
     invoices.forEach(function(inv) {
-      var name = (inv.buyerName || '').trim();
-      if (!name) return;
-      var key = name.toLowerCase();
+      var key = (inv.buyerName || '').trim().toLowerCase();
       if (!map[key]) return;
       var date = inv.invoiceDate || '';
-      if (date >= lmFrom && date <= lmTo) {
-        (inv.items || []).forEach(function(it) {
-          map[key].lastMonthRevenue += (Number(it.rate) || 0) * numericQtyForLine(it);
-        });
-      }
+      if (date >= lm.from && date <= lm.to) map[key].lastMonthGrandTotal += crInvGrandTotal(inv);
     });
 
-    return Object.keys(map).map(function(key) {
-      return map[key];
-    }).sort(function(a, b) { return b.totalRevenue - a.totalRevenue; });
+    return Object.keys(map).map(function(k) { return map[k]; })
+      .sort(function(a, b) { return b.grandTotal - a.grandTotal; });
+  }
+
+  function openCrDrawer(r) {
+    $('crDrawerName').textContent       = r.name;
+    $('crDrawerGstin').textContent      = r.gstin || 'No GSTIN';
+    $('crDrawerTaxable').textContent    = '₹' + fmtNum(r.taxable);
+    $('crDrawerGst').textContent        = '₹' + fmtNum(r.gstAmount);
+    $('crDrawerGrandTotal').textContent = '₹' + fmtNum(r.grandTotal);
+
+    var tb = $('crDrawerTableBody'); tb.textContent = '';
+    r.invList.slice().sort(function(a, b) {
+      return (b.invoiceDate || '') > (a.invoiceDate || '') ? 1 : -1;
+    }).forEach(function(inv, i) {
+      var taxable  = crInvTaxable(inv);
+      var gst      = crInvGst(inv);
+      var grand    = taxable + gst;
+      var gstRate  = inv.gstRate || 0;
+      var gstLabel = inv.gstType === 'intra'
+        ? 'CGST ' + gstRate + '% + SGST ' + gstRate + '%'
+        : 'IGST ' + (gstRate * 2) + '%';
+
+      var tr = document.createElement('tr');
+      var c0 = document.createElement('td'); c0.textContent = i + 1; tr.appendChild(c0);
+
+      var c1 = document.createElement('td');
+      var sp = document.createElement('span'); sp.className = 'cr-inv-no'; sp.textContent = inv.invoiceNumber || '—';
+      c1.appendChild(sp); tr.appendChild(c1);
+
+      var c2 = document.createElement('td'); c2.className = 'r';
+      c2.textContent = inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '—'; tr.appendChild(c2);
+
+      var c3 = document.createElement('td'); c3.className = 'r';
+      c3.textContent = '₹' + fmtNum(taxable); tr.appendChild(c3);
+
+      var c4 = document.createElement('td'); c4.className = 'r';
+      var tag = document.createElement('span'); tag.className = 'cr-gst-tag'; tag.textContent = gstLabel;
+      var br  = document.createElement('br');
+      var amt = document.createTextNode('₹' + fmtNum(gst));
+      c4.appendChild(tag); c4.appendChild(br); c4.appendChild(amt); tr.appendChild(c4);
+
+      var c5 = document.createElement('td'); c5.className = 'r cr-grand-cell';
+      c5.textContent = '₹' + fmtNum(grand); tr.appendChild(c5);
+
+      tb.appendChild(tr);
+    });
+
+    $('crDrawerBackdrop').classList.add('cr-active');
+    $('crDrawer').classList.add('cr-active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCrDrawer() {
+    $('crDrawer').classList.remove('cr-active');
+    $('crDrawerBackdrop').classList.remove('cr-active');
+    document.body.style.overflow = '';
   }
 
   function renderCustomerReport(from, to) {
@@ -8125,14 +8183,14 @@ document.addEventListener('DOMContentLoaded', () => {
     var query   = ($('crSearch').value || '').toLowerCase();
     var visible = query ? rows.filter(function(r) { return r.name.toLowerCase().indexOf(query) !== -1; }) : rows;
 
-    var totalRevenue   = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
-    var totalLmRevKpi  = visible.reduce(function(s, r) { return s + r.lastMonthRevenue; }, 0);
-    var totalInvoices  = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+    var totalGrand    = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
+    var totalLmKpi    = visible.reduce(function(s, r) { return s + r.lastMonthGrandTotal; }, 0);
+    var totalInvoices = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
 
     $('crKpiCustomers').textContent = visible.length;
     $('crKpiInvoices').textContent  = totalInvoices;
-    $('crKpiRevenue').textContent   = '₹' + fmtNum(totalRevenue);
-    $('crKpiAvg').textContent       = totalLmRevKpi ? '₹' + fmtNum(totalLmRevKpi) : '—';
+    $('crKpiRevenue').textContent   = '₹' + fmtNum(totalGrand);
+    $('crKpiAvg').textContent       = totalLmKpi ? '₹' + fmtNum(totalLmKpi) : '—';
 
     var tbody = $('crTableBody');
     if (!visible.length) {
@@ -8142,33 +8200,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     $('crEmpty').style.display = 'none';
 
-    var totalLmRevAll   = visible.reduce(function(s, r) { return s + r.lastMonthRevenue; }, 0);
-    var totalRevenueAll = totalRevenue;
-    var totalCountAll   = totalInvoices;
-
     var fragment = document.createDocumentFragment();
     visible.forEach(function(r, i) {
-      var tr = document.createElement('tr');
-      var tdNum  = document.createElement('td'); tdNum.textContent  = i + 1; tr.appendChild(tdNum);
-      var tdName = document.createElement('td'); tdName.textContent = r.name; tr.appendChild(tdName);
+      var tr = document.createElement('tr'); tr.className = 'cr-clickable-row';
+      tr.title = 'Click to see GST breakdown';
+
+      var tdNum = document.createElement('td'); tdNum.textContent = i + 1; tr.appendChild(tdNum);
+
+      var tdName = document.createElement('td'); tdName.className = 'cr-name-td';
+      var nameSpan = document.createElement('span'); nameSpan.className = 'cr-name-cell'; nameSpan.textContent = r.name;
+      var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      arrow.setAttribute('viewBox', '0 0 24 24'); arrow.setAttribute('fill', 'none');
+      arrow.setAttribute('stroke', 'currentColor'); arrow.setAttribute('stroke-width', '2');
+      arrow.classList.add('cr-row-arrow');
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M9 18l6-6-6-6'); arrow.appendChild(path);
+      tdName.appendChild(nameSpan); tdName.appendChild(arrow); tr.appendChild(tdName);
+
       var tdCnt  = document.createElement('td'); tdCnt.className = 'r'; tdCnt.textContent = r.invoiceCount; tr.appendChild(tdCnt);
-      var tdLm   = document.createElement('td'); tdLm.className = 'r'; tdLm.textContent = r.lastMonthRevenue ? '₹' + fmtNum(r.lastMonthRevenue) : '—'; tr.appendChild(tdLm);
+      var tdLm   = document.createElement('td'); tdLm.className  = 'r'; tdLm.textContent  = r.lastMonthGrandTotal ? '₹' + fmtNum(r.lastMonthGrandTotal) : '—'; tr.appendChild(tdLm);
       var tdDate = document.createElement('td'); tdDate.className = 'r'; tdDate.textContent = r.lastDate ? formatShortDate(r.lastDate) : '—'; tr.appendChild(tdDate);
-      var tdRev  = document.createElement('td'); tdRev.className = 'r'; tdRev.style.cssText = 'font-weight:600;color:#0891b2'; tdRev.textContent = '₹' + fmtNum(r.totalRevenue); tr.appendChild(tdRev);
+      var tdRev  = document.createElement('td'); tdRev.className  = 'r cr-grand-cell'; tdRev.textContent = '₹' + fmtNum(r.grandTotal); tr.appendChild(tdRev);
+
+      (function(row) { tr.addEventListener('click', function() { openCrDrawer(row); }); }(r));
       fragment.appendChild(tr);
     });
 
     var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
     var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
-    var tt2 = document.createElement('td'); tt2.className = 'r'; tt2.textContent = totalCountAll; totRow.appendChild(tt2);
-    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = totalLmRevAll ? '₹' + fmtNum(totalLmRevAll) : '—'; totRow.appendChild(tt3);
+    var tt2 = document.createElement('td'); tt2.className = 'r'; tt2.textContent = totalInvoices; totRow.appendChild(tt2);
+    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = totalLmKpi ? '₹' + fmtNum(totalLmKpi) : '—'; totRow.appendChild(tt3);
     var tt4 = document.createElement('td'); tt4.className = 'r'; tt4.textContent = '—'; totRow.appendChild(tt4);
-    var tt5 = document.createElement('td'); tt5.className = 'r'; tt5.textContent = '₹' + fmtNum(totalRevenueAll); totRow.appendChild(tt5);
+    var tt5 = document.createElement('td'); tt5.className = 'r cr-grand-cell'; tt5.textContent = '₹' + fmtNum(totalGrand); totRow.appendChild(tt5);
     fragment.appendChild(totRow);
 
     tbody.textContent = '';
     tbody.appendChild(fragment);
   }
+
+  $('crDrawerBackdrop').addEventListener('click', closeCrDrawer);
+  $('crDrawerClose').addEventListener('click', closeCrDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeCrDrawer(); });
 
   function clearCrPreset() {
     document.querySelectorAll('#customerReportView .apill').forEach(function(b) { b.classList.remove('active'); });
@@ -8210,23 +8282,22 @@ document.addEventListener('DOMContentLoaded', () => {
       ? presetNames[crActivePreset]
       : (crCurrentFrom && crCurrentTo ? formatShortDate(crCurrentFrom) + ' – ' + formatShortDate(crCurrentTo) : 'All dates');
 
-    var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
-    var totalCount   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+    var totalGrand  = visible.reduce(function(s, r) { return s + r.grandTotal; }, 0);
+    var totalTax    = visible.reduce(function(s, r) { return s + r.taxable; }, 0);
+    var totalGst    = visible.reduce(function(s, r) { return s + r.gstAmount; }, 0);
+    var totalCount  = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
+    var totalLmRev  = visible.reduce(function(s, r) { return s + r.lastMonthGrandTotal; }, 0);
 
     var td  = 'padding:5px 8px;font-size:11px;border:1px solid #e2e8f0;vertical-align:top;';
     var thr = td + 'font-weight:700;background:#f8fafc;text-align:right;';
     var thl = td + 'font-weight:700;background:#f8fafc;text-align:left;';
     var tdr = td + 'text-align:right;';
 
-    var totalLmRev   = visible.reduce(function(s, r) { return s + r.lastMonthRevenue; }, 0);
-    var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
-    var totalCount   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
-
     var container = $('crAnalyticsPdf');
     container.textContent = '';
 
     var wrapper = document.createElement('div');
-    wrapper.style.cssText = 'font-family:sans-serif;padding:24px;max-width:700px;margin:0 auto';
+    wrapper.style.cssText = 'font-family:sans-serif;padding:24px;max-width:760px;margin:0 auto';
     container.appendChild(wrapper);
 
     var titleDiv = document.createElement('div'); titleDiv.style.marginBottom = '16px';
@@ -8235,25 +8306,25 @@ document.addEventListener('DOMContentLoaded', () => {
     titleDiv.appendChild(titleEl); titleDiv.appendChild(periodEl); wrapper.appendChild(titleDiv);
 
     var table = document.createElement('table'); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:11px';
-    table.insertAdjacentHTML('afterbegin',
-      '<thead><tr>'
-      + '<th style="' + thl + 'width:32px">#</th>'
-      + '<th style="' + thl + '">Customer Name</th>'
-      + '<th style="' + thr + '">Invoice Count</th>'
-      + '<th style="' + thr + '">Last Month Rev</th>'
-      + '<th style="' + thr + '">Last Invoice</th>'
-      + '<th style="' + thr + '">Total Revenue</th>'
-      + '</tr></thead>');
+    var thead = document.createElement('thead'); var htr = document.createElement('tr');
+    [['#', thl + 'width:28px'], ['Customer Name', thl], ['Invoices', thr], ['Last Month (GT)', thr],
+     ['Last Invoice', thr], ['Taxable', thr], ['GST', thr], ['Grand Total', thr]
+    ].forEach(function(pair) {
+      var th = document.createElement('th'); th.style.cssText = pair[1]; th.textContent = pair[0]; htr.appendChild(th);
+    });
+    thead.appendChild(htr); table.appendChild(thead);
+
     var tb = document.createElement('tbody');
     visible.forEach(function(r, i) {
       var row = document.createElement('tr');
-      [i + 1, r.name, r.invoiceCount,
-       r.lastMonthRevenue ? '₹' + fmtNum(r.lastMonthRevenue) : '—',
-       r.lastDate ? formatShortDate(r.lastDate) : '—',
-       '₹' + fmtNum(r.totalRevenue)].forEach(function(val, ci) {
+      var vals = [i + 1, r.name, r.invoiceCount,
+        r.lastMonthGrandTotal ? '₹' + fmtNum(r.lastMonthGrandTotal) : '—',
+        r.lastDate ? formatShortDate(r.lastDate) : '—',
+        '₹' + fmtNum(r.taxable), '₹' + fmtNum(r.gstAmount), '₹' + fmtNum(r.grandTotal)];
+      vals.forEach(function(val, ci) {
         var cell = document.createElement('td');
         cell.style.cssText = ci >= 2 ? tdr : td;
-        if (ci === 5) { cell.style.fontWeight = '600'; cell.style.color = '#0891b2'; }
+        if (ci === 7) { cell.style.fontWeight = '600'; cell.style.color = '#0891b2'; }
         cell.textContent = val;
         row.appendChild(cell);
       });
@@ -8261,7 +8332,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     var totRow2 = document.createElement('tr'); totRow2.style.background = '#ecfeff';
     var tc1 = document.createElement('td'); tc1.colSpan = 2; tc1.style.cssText = td + 'font-weight:700;color:#0891b2'; tc1.textContent = 'Totals'; totRow2.appendChild(tc1);
-    [totalCount, totalLmRev ? '₹' + fmtNum(totalLmRev) : '—', '—', '₹' + fmtNum(totalRevenue)].forEach(function(val, ci) {
+    [totalCount, totalLmRev ? '₹' + fmtNum(totalLmRev) : '—', '—',
+     '₹' + fmtNum(totalTax), '₹' + fmtNum(totalGst), '₹' + fmtNum(totalGrand)
+    ].forEach(function(val, ci) {
       var c = document.createElement('td'); c.style.cssText = tdr + 'font-weight:700;color:' + (ci === 2 ? '#94a3b8' : '#0891b2');
       c.textContent = val; totRow2.appendChild(c);
     });
