@@ -8077,19 +8077,37 @@ document.addEventListener('DOMContentLoaded', () => {
       ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
       : invoices;
 
+    var lmRange = getMonthRange(-1);
+    var lmFrom  = lmRange.from;
+    var lmTo    = lmRange.to;
+
     var map = {};
     src.forEach(function(inv) {
       var name = (inv.buyerName || '').trim();
       if (!name) return;
       var key = name.toLowerCase();
-      if (!map[key]) map[key] = { name: name, invoiceCount: 0, totalQty: 0, totalRevenue: 0, lastDate: '' };
+      if (!map[key]) map[key] = { name: name, invoiceCount: 0, totalRevenue: 0, lastMonthRevenue: 0, lastDate: '' };
       map[key].invoiceCount += 1;
       var date = inv.invoiceDate || '';
       if (date && date > map[key].lastDate) map[key].lastDate = date;
+      var invRev = 0;
       (inv.items || []).forEach(function(it) {
-        map[key].totalQty     += numericQtyForLine(it);
-        map[key].totalRevenue += (Number(it.rate) || 0) * numericQtyForLine(it);
+        invRev += (Number(it.rate) || 0) * numericQtyForLine(it);
       });
+      map[key].totalRevenue += invRev;
+    });
+
+    invoices.forEach(function(inv) {
+      var name = (inv.buyerName || '').trim();
+      if (!name) return;
+      var key = name.toLowerCase();
+      if (!map[key]) return;
+      var date = inv.invoiceDate || '';
+      if (date >= lmFrom && date <= lmTo) {
+        (inv.items || []).forEach(function(it) {
+          map[key].lastMonthRevenue += (Number(it.rate) || 0) * numericQtyForLine(it);
+        });
+      }
     });
 
     return Object.keys(map).map(function(key) {
@@ -8124,7 +8142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     $('crEmpty').style.display = 'none';
 
-    var totalQtyAll     = visible.reduce(function(s, r) { return s + r.totalQty; }, 0);
+    var totalLmRevAll   = visible.reduce(function(s, r) { return s + r.lastMonthRevenue; }, 0);
     var totalRevenueAll = totalRevenue;
     var totalCountAll   = totalInvoices;
 
@@ -8134,7 +8152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var tdNum  = document.createElement('td'); tdNum.textContent  = i + 1; tr.appendChild(tdNum);
       var tdName = document.createElement('td'); tdName.textContent = r.name; tr.appendChild(tdName);
       var tdCnt  = document.createElement('td'); tdCnt.className = 'r'; tdCnt.textContent = r.invoiceCount; tr.appendChild(tdCnt);
-      var tdQty  = document.createElement('td'); tdQty.className = 'r'; tdQty.textContent = fmtNum(r.totalQty); tr.appendChild(tdQty);
+      var tdLm   = document.createElement('td'); tdLm.className = 'r'; tdLm.textContent = r.lastMonthRevenue ? '₹' + fmtNum(r.lastMonthRevenue) : '—'; tr.appendChild(tdLm);
       var tdDate = document.createElement('td'); tdDate.className = 'r'; tdDate.textContent = r.lastDate ? formatShortDate(r.lastDate) : '—'; tr.appendChild(tdDate);
       var tdRev  = document.createElement('td'); tdRev.className = 'r'; tdRev.style.cssText = 'font-weight:600;color:#0891b2'; tdRev.textContent = '₹' + fmtNum(r.totalRevenue); tr.appendChild(tdRev);
       fragment.appendChild(tr);
@@ -8143,7 +8161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
     var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
     var tt2 = document.createElement('td'); tt2.className = 'r'; tt2.textContent = totalCountAll; totRow.appendChild(tt2);
-    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = fmtNum(totalQtyAll); totRow.appendChild(tt3);
+    var tt3 = document.createElement('td'); tt3.className = 'r'; tt3.textContent = totalLmRevAll ? '₹' + fmtNum(totalLmRevAll) : '—'; totRow.appendChild(tt3);
     var tt4 = document.createElement('td'); tt4.className = 'r'; tt4.textContent = '—'; totRow.appendChild(tt4);
     var tt5 = document.createElement('td'); tt5.className = 'r'; tt5.textContent = '₹' + fmtNum(totalRevenueAll); totRow.appendChild(tt5);
     fragment.appendChild(totRow);
@@ -8192,7 +8210,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ? presetNames[crActivePreset]
       : (crCurrentFrom && crCurrentTo ? formatShortDate(crCurrentFrom) + ' – ' + formatShortDate(crCurrentTo) : 'All dates');
 
-    var totalQty     = visible.reduce(function(s, r) { return s + r.totalQty; }, 0);
     var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
     var totalCount   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
 
@@ -8200,6 +8217,10 @@ document.addEventListener('DOMContentLoaded', () => {
     var thr = td + 'font-weight:700;background:#f8fafc;text-align:right;';
     var thl = td + 'font-weight:700;background:#f8fafc;text-align:left;';
     var tdr = td + 'text-align:right;';
+
+    var totalLmRev   = visible.reduce(function(s, r) { return s + r.lastMonthRevenue; }, 0);
+    var totalRevenue = visible.reduce(function(s, r) { return s + r.totalRevenue; }, 0);
+    var totalCount   = visible.reduce(function(s, r) { return s + r.invoiceCount; }, 0);
 
     var container = $('crAnalyticsPdf');
     container.textContent = '';
@@ -8219,14 +8240,15 @@ document.addEventListener('DOMContentLoaded', () => {
       + '<th style="' + thl + 'width:32px">#</th>'
       + '<th style="' + thl + '">Customer Name</th>'
       + '<th style="' + thr + '">Invoice Count</th>'
-      + '<th style="' + thr + '">Total Qty</th>'
+      + '<th style="' + thr + '">Last Month Rev</th>'
       + '<th style="' + thr + '">Last Invoice</th>'
       + '<th style="' + thr + '">Total Revenue</th>'
       + '</tr></thead>');
     var tb = document.createElement('tbody');
     visible.forEach(function(r, i) {
       var row = document.createElement('tr');
-      [i + 1, r.name, r.invoiceCount, fmtNum(r.totalQty),
+      [i + 1, r.name, r.invoiceCount,
+       r.lastMonthRevenue ? '₹' + fmtNum(r.lastMonthRevenue) : '—',
        r.lastDate ? formatShortDate(r.lastDate) : '—',
        '₹' + fmtNum(r.totalRevenue)].forEach(function(val, ci) {
         var cell = document.createElement('td');
@@ -8239,7 +8261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     var totRow2 = document.createElement('tr'); totRow2.style.background = '#ecfeff';
     var tc1 = document.createElement('td'); tc1.colSpan = 2; tc1.style.cssText = td + 'font-weight:700;color:#0891b2'; tc1.textContent = 'Totals'; totRow2.appendChild(tc1);
-    [totalCount, fmtNum(totalQty), '—', '₹' + fmtNum(totalRevenue)].forEach(function(val, ci) {
+    [totalCount, totalLmRev ? '₹' + fmtNum(totalLmRev) : '—', '—', '₹' + fmtNum(totalRevenue)].forEach(function(val, ci) {
       var c = document.createElement('td'); c.style.cssText = tdr + 'font-weight:700;color:' + (ci === 2 ? '#94a3b8' : '#0891b2');
       c.textContent = val; totRow2.appendChild(c);
     });
