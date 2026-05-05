@@ -235,6 +235,10 @@
                   <div class="home-nav-item-icon" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);box-shadow:0 6px 16px rgba(14,165,233,0.35)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></div>
                   <div class="home-nav-item-label">Purchase Analytics</div>
                 </div>
+                <div class="home-nav-item" data-view="vendorReportView">
+                  <div class="home-nav-item-icon" style="background:linear-gradient(135deg,#f97316,#ea580c);box-shadow:0 6px 16px rgba(249,115,22,0.35)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+                  <div class="home-nav-item-label">Vendor Report</div>
+                </div>
               </div>
             </div>
           </div>
@@ -681,6 +685,139 @@
         <div class="inv-empty" id="crEmpty">No data for the selected period.</div>
       </div>
       <div id="crAnalyticsPdf" style="display:none"></div>
+    </div>
+
+    <!-- ======== VENDOR REPORT VIEW ======== -->
+    <div id="vendorReportView" class="view hidden">
+      <div class="view-header analytics-view-header">
+        <button class="btn btn-secondary" id="vrBackBtn">&#8592; Back</button>
+        <div class="analytics-header-center">
+          <div class="analytics-header-icon" style="background:linear-gradient(135deg,#f97316,#ea580c)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          </div>
+          <div>
+            <h2>Vendor Report</h2>
+            <p class="analytics-header-sub">Vendor-wise purchase breakdown</p>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm analytics-dl-btn" id="vrDownloadPdfBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
+          Download PDF
+        </button>
+      </div>
+      <div class="analytics-filter-panel">
+        <span class="analytics-filter-label">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+          PERIOD
+        </span>
+        <div class="analytics-preset-pills">
+          <button type="button" class="apill" id="vrPresetToday">Today</button>
+          <button type="button" class="apill" id="vrPresetYesterday">Yesterday</button>
+          <button type="button" class="apill" id="vrPresetThisWeek">This week</button>
+          <button type="button" class="apill" id="vrPresetLastWeek">Last week</button>
+          <button type="button" class="apill" id="vrPresetThisMonth">This month</button>
+          <button type="button" class="apill" id="vrPresetLastMonth">Last month</button>
+          <button type="button" class="apill" id="vrPresetThisYear">This year</button>
+          <button type="button" class="apill" id="vrPresetLastYear">Last year</button>
+          <button type="button" class="apill apill-clear" id="vrPresetClear" style="display:none">&#10005; Clear</button>
+        </div>
+      </div>
+      <div class="analytics-kpi-row">
+        <div class="analytics-kpi-card akpi-products">
+          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+          <div class="akpi-label">Unique Vendors</div>
+          <div class="akpi-value" id="vrKpiVendors">&#8212;</div>
+          <div class="akpi-sub">billed in period</div>
+        </div>
+        <div class="analytics-kpi-card akpi-invoices">
+          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+          <div class="akpi-label">Total Invoices</div>
+          <div class="akpi-value" id="vrKpiInvoices">&#8212;</div>
+          <div class="akpi-sub">in period</div>
+        </div>
+        <div class="analytics-kpi-card akpi-revenue">
+          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+          <div class="akpi-label">Grand Total</div>
+          <div class="akpi-value" id="vrKpiTotal">&#8212;</div>
+          <div class="akpi-sub">taxable + GST</div>
+        </div>
+        <div class="analytics-kpi-card akpi-qty">
+          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+          <div class="akpi-label" id="vrKpiCmpLabel">Last Year Revenue</div>
+          <div class="akpi-value" id="vrKpiCmp">&#8212;</div>
+          <div class="akpi-sub" id="vrKpiCmpSub">previous year total</div>
+        </div>
+      </div>
+      <div class="analytics-search-wrap">
+        <div class="analytics-search-box">
+          <svg class="analytics-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="vrSearch" class="analytics-search-input" placeholder="Search by vendor name..." />
+        </div>
+      </div>
+      <div class="analytics-table-wrap">
+        <table class="analytics-table" id="vrTable">
+          <thead>
+            <tr>
+              <th class="at-num">#</th>
+              <th>Vendor Name</th>
+              <th class="r">Invoice Count</th>
+              <th class="r" id="vrCompareColHeader">Last Year</th>
+              <th class="r">Last Invoice</th>
+              <th class="r">Grand Total</th>
+            </tr>
+          </thead>
+          <tbody id="vrTableBody"></tbody>
+        </table>
+        <div class="inv-empty" id="vrEmpty">No data for the selected period.</div>
+      </div>
+      <div id="vrAnalyticsPdf" style="display:none"></div>
+    </div>
+
+    <!-- Vendor Report Drawer -->
+    <div id="vrDrawerBackdrop" class="cr-drawer-backdrop"></div>
+    <div id="vrDrawer" class="cr-drawer" style="--drawer-accent:#ea580c">
+      <div class="cr-drawer-header" style="background:linear-gradient(135deg,#fff7ed,#fff)">
+        <div class="cr-drawer-avatar" style="background:linear-gradient(135deg,#f97316,#ea580c);box-shadow:0 4px 12px rgba(249,115,22,.3)">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="cr-drawer-title-wrap">
+          <div class="cr-drawer-name" id="vrDrawerName"></div>
+          <div class="cr-drawer-gstin" id="vrDrawerGstin"></div>
+        </div>
+        <button class="cr-drawer-close" id="vrDrawerClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="cr-drawer-summary">
+        <div class="cr-summary-card cr-summary-taxable">
+          <div class="cr-summary-label">Taxable Amount</div>
+          <div class="cr-summary-value" id="vrDrawerTaxable">—</div>
+        </div>
+        <div class="cr-summary-card cr-summary-gst">
+          <div class="cr-summary-label">GST Amount</div>
+          <div class="cr-summary-value" id="vrDrawerGst">—</div>
+        </div>
+        <div class="cr-summary-card cr-summary-grand">
+          <div class="cr-summary-label">Grand Total</div>
+          <div class="cr-summary-value" id="vrDrawerGrandTotal">—</div>
+        </div>
+      </div>
+      <div class="cr-drawer-section-title">Invoice Breakdown</div>
+      <div class="cr-drawer-table-wrap">
+        <table class="cr-drawer-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Invoice No</th>
+              <th class="r">Date</th>
+              <th class="r">Taxable</th>
+              <th class="r">GST</th>
+              <th class="r">Grand Total</th>
+            </tr>
+          </thead>
+          <tbody id="vrDrawerTableBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Customer Report Drawer -->
