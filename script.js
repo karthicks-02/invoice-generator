@@ -8134,8 +8134,8 @@ document.addEventListener('DOMContentLoaded', () => {
       var grand    = taxable + gst;
       var gstRate  = inv.gstRate || 0;
       var gstLabel = inv.gstType === 'intra'
-        ? 'CGST ' + gstRate + '% + SGST ' + gstRate + '%'
-        : 'IGST ' + (gstRate * 2) + '%';
+        ? 'CGST+SGST @' + gstRate + '%'
+        : 'IGST @' + (gstRate * 2) + '%';
 
       var tr = document.createElement('tr');
       var c0 = document.createElement('td'); c0.textContent = i + 1; tr.appendChild(c0);
