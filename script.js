@@ -8196,9 +8196,11 @@ document.addEventListener('DOMContentLoaded', () => {
         var key = name.toLowerCase();
         var qty = numericQtyForLine(it);
         var val = qty * (Number(it.rate) || 0);
-        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0 };
-        map[key].value   += val;
+        var unit = normalizeItemQtyUnit(it);
+        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0, totalQty: 0, unit: unit };
+        map[key].value    += val;
         map[key].invoices += 1;
+        map[key].totalQty += qty;
       });
     });
     var products = Object.values(map).sort(function(a, b) { return b.value - a.value; });
@@ -8217,10 +8219,15 @@ document.addEventListener('DOMContentLoaded', () => {
       var info = document.createElement('div'); info.className = 'cr-product-info';
       var nameEl = document.createElement('span'); nameEl.className = 'cr-product-name'; nameEl.textContent = p.name;
       info.appendChild(nameEl);
+      var metaEl = document.createElement('div'); metaEl.className = 'cr-product-meta';
       if (p.hsn) {
         var hsnEl = document.createElement('span'); hsnEl.className = 'cr-product-hsn'; hsnEl.textContent = 'HSN ' + p.hsn;
-        info.appendChild(hsnEl);
+        metaEl.appendChild(hsnEl);
       }
+      var qtyEl = document.createElement('span'); qtyEl.className = 'cr-product-qty';
+      qtyEl.textContent = p.totalQty.toLocaleString('en-IN') + ' ' + p.unit;
+      metaEl.appendChild(qtyEl);
+      info.appendChild(metaEl);
 
       var right = document.createElement('div'); right.className = 'cr-product-right';
       var invCnt = document.createElement('span'); invCnt.className = 'cr-product-inv-count'; invCnt.textContent = p.invoices + ' inv';
