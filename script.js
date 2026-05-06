@@ -8309,15 +8309,17 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
+    var crNameKey = r.name.toLowerCase();
+    var crAllInvList = invoices.filter(function(inv) {
+      return (inv.buyerName || '').trim().toLowerCase() === crNameKey;
+    });
     var crCmpList = [];
     if (crCompareFrom && crCompareTo) {
-      var crNameKey = r.name.toLowerCase();
-      crCmpList = invoices.filter(function(inv) {
-        return (inv.buyerName || '').trim().toLowerCase() === crNameKey &&
-               inv.invoiceDate >= crCompareFrom && inv.invoiceDate <= crCompareTo;
+      crCmpList = crAllInvList.filter(function(inv) {
+        return inv.invoiceDate >= crCompareFrom && inv.invoiceDate <= crCompareTo;
       });
     }
-    renderDrawerProducts('crDrawerProductList', r.invList, false, crCmpList, crCompareLabel);
+    renderDrawerProducts('crDrawerProductList', crAllInvList, false, crCmpList, crCompareLabel);
 
     var tb = $('crDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
@@ -8661,15 +8663,17 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vrDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
+    var vrNameKey = r.name.toLowerCase();
+    var vrAllInvList = poInvoices.filter(function(inv) {
+      return (inv.vendorName || '').trim().toLowerCase() === vrNameKey;
+    });
     var vrCmpList = [];
     if (vrCompareFrom && vrCompareTo) {
-      var vrNameKey = r.name.toLowerCase();
-      vrCmpList = invoices.filter(function(inv) {
-        return (inv.buyerName || '').trim().toLowerCase() === vrNameKey &&
-               inv.invoiceDate >= vrCompareFrom && inv.invoiceDate <= vrCompareTo;
+      vrCmpList = vrAllInvList.filter(function(inv) {
+        return inv.invoiceDate >= vrCompareFrom && inv.invoiceDate <= vrCompareTo;
       });
     }
-    renderDrawerProducts('vrDrawerProductList', r.invList, true, vrCmpList, vrCompareLabel);
+    renderDrawerProducts('vrDrawerProductList', vrAllInvList, true, vrCmpList, vrCompareLabel);
 
     var tb = $('vrDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
