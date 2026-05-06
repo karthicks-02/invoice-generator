@@ -8187,7 +8187,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .sort(function(a, b) { return b.grandTotal - a.grandTotal; });
   }
 
-  function renderDrawerProducts(containerId, invList, isVendor) {
+  function renderDrawerProducts(containerId, invList, isVendor, cmpInvList, cmpLabel) {
     var map = {};
     invList.forEach(function(inv) {
       (inv.items || []).forEach(function(it) {
@@ -8197,12 +8197,24 @@ document.addEventListener('DOMContentLoaded', () => {
         var qty = numericQtyForLine(it);
         var val = qty * (Number(it.rate) || 0);
         var unit = normalizeItemQtyUnit(it);
-        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0, totalQty: 0, unit: unit };
+        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0, totalQty: 0, unit: unit, cmpValue: 0, cmpQty: 0 };
         map[key].value    += val;
         map[key].invoices += 1;
         map[key].totalQty += qty;
       });
     });
+    if (cmpInvList && cmpInvList.length) {
+      cmpInvList.forEach(function(inv) {
+        (inv.items || []).forEach(function(it) {
+          var name = (it.description || '').trim();
+          if (!name) return;
+          var key = name.toLowerCase();
+          var qty = numericQtyForLine(it);
+          var val = qty * (Number(it.rate) || 0);
+          if (map[key]) { map[key].cmpValue += val; map[key].cmpQty += qty; }
+        });
+      });
+    }
     var products = Object.values(map).sort(function(a, b) { return b.value - a.value; });
     var el = $(containerId); el.textContent = '';
     el.className = 'cr-product-list' + (isVendor ? ' cr-product-list--vendor' : '');
@@ -8227,12 +8239,34 @@ document.addEventListener('DOMContentLoaded', () => {
       var qtyEl = document.createElement('span'); qtyEl.className = 'cr-product-qty';
       qtyEl.textContent = p.totalQty.toLocaleString('en-IN') + ' ' + p.unit;
       metaEl.appendChild(qtyEl);
+
+      if (cmpInvList && cmpInvList.length) {
+        var qtyDelta = p.totalQty - p.cmpQty;
+        var qtySign = qtyDelta > 0 ? '+' : '';
+        var qtyDeltaEl = document.createElement('span');
+        qtyDeltaEl.className = 'cr-product-cmp-qty' + (qtyDelta > 0 ? ' cr-cmp-up' : qtyDelta < 0 ? ' cr-cmp-down' : ' cr-cmp-flat');
+        qtyDeltaEl.textContent = (qtyDelta === 0 ? '=' : qtySign + qtyDelta.toLocaleString('en-IN')) + ' ' + p.unit;
+        metaEl.appendChild(qtyDeltaEl);
+      }
+
       info.appendChild(metaEl);
 
       var right = document.createElement('div'); right.className = 'cr-product-right';
       var invCnt = document.createElement('span'); invCnt.className = 'cr-product-inv-count'; invCnt.textContent = p.invoices + ' inv';
       var valEl  = document.createElement('span'); valEl.className = 'cr-product-value'; valEl.textContent = '₹' + fmtNum(p.value);
       right.appendChild(invCnt); right.appendChild(valEl);
+
+      if (cmpInvList && cmpInvList.length) {
+        var valDelta = p.value - p.cmpValue;
+        var pct = p.cmpValue > 0 ? Math.round((valDelta / p.cmpValue) * 100) : null;
+        var deltaEl = document.createElement('span');
+        var isUp = valDelta > 0, isDown = valDelta < 0;
+        deltaEl.className = 'cr-product-delta' + (isUp ? ' cr-cmp-up' : isDown ? ' cr-cmp-down' : ' cr-cmp-flat');
+        deltaEl.textContent = p.cmpValue === 0
+          ? 'NEW'
+          : (isUp ? '▲ ' : isDown ? '▼ ' : '= ') + (pct !== null ? Math.abs(pct) + '%' : '—');
+        right.appendChild(deltaEl);
+      }
 
       var bar = document.createElement('div'); bar.className = 'cr-product-bar';
       var fill = document.createElement('div'); fill.className = 'cr-product-bar-fill';
@@ -8252,7 +8286,15 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
-    renderDrawerProducts('crDrawerProductList', r.invList);
+    var crCmpList = [];
+    if (crCompareFrom && crCompareTo) {
+      var crNameKey = r.name.toLowerCase();
+      crCmpList = invoices.filter(function(inv) {
+        return (inv.buyerName || '').trim().toLowerCase() === crNameKey &&
+               inv.invoiceDate >= crCompareFrom && inv.invoiceDate <= crCompareTo;
+      });
+    }
+    renderDrawerProducts('crDrawerProductList', r.invList, false, crCmpList, crCompareLabel);
 
     var tb = $('crDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
@@ -8595,7 +8637,15 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vrDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
-    renderDrawerProducts('vrDrawerProductList', r.invList, true);
+    var vrCmpList = [];
+    if (vrCompareFrom && vrCompareTo) {
+      var vrNameKey = r.name.toLowerCase();
+      vrCmpList = invoices.filter(function(inv) {
+        return (inv.buyerName || '').trim().toLowerCase() === vrNameKey &&
+               inv.invoiceDate >= vrCompareFrom && inv.invoiceDate <= vrCompareTo;
+      });
+    }
+    renderDrawerProducts('vrDrawerProductList', r.invList, true, vrCmpList, vrCompareLabel);
 
     var tb = $('vrDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
