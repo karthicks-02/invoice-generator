@@ -73,8 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
       renderProducts();
       renderPurchaseProducts();
       renderVendors();
-      checkReminders();
-      checkVendorReminders();
+      const reminderEl = document.getElementById('reminderNotifyToggle');
+      const remindersOn = localStorage.getItem('remindersEnabled') === 'true';
+      if (reminderEl) reminderEl.checked = remindersOn;
+      if (remindersOn) {
+        checkReminders();
+        checkVendorReminders();
+      }
+      if (reminderEl) {
+        reminderEl.addEventListener('change', () => {
+          localStorage.setItem('remindersEnabled', reminderEl.checked);
+        });
+      }
 
       $('loadingPanel').classList.add('hidden');
       hideCustForm();
