@@ -8209,17 +8209,28 @@ document.addEventListener('DOMContentLoaded', () => {
     de.className = 'cr-bh-lm-delta ' + (diff > 0 ? 'cr-lm-up' : diff < 0 ? 'cr-lm-down' : 'cr-lm-flat');
   }
 
-  function renderDrawerProducts(containerId, invList, isVendor, cmpInvList, cmpLabel) {
+  function renderDrawerProducts(containerId, allInvList, periodInvList, isVendor, cmpInvList, cmpLabel) {
     var map = {};
-    invList.forEach(function(inv) {
+    // Discover all products ever billed (all-time)
+    allInvList.forEach(function(inv) {
       (inv.items || []).forEach(function(it) {
         var name = (it.description || '').trim();
         if (!name) return;
         var key = name.toLowerCase();
-        var qty = numericQtyForLine(it);
-        var val = qty * (Number(it.rate) || 0);
         var unit = normalizeItemQtyUnit(it);
         if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0, totalQty: 0, unit: unit, cmpValue: 0, cmpQty: 0 };
+        if (!map[key].hsn && it.hsn) map[key].hsn = it.hsn;
+      });
+    });
+    // Calculate qty/value only for the active period
+    periodInvList.forEach(function(inv) {
+      (inv.items || []).forEach(function(it) {
+        var name = (it.description || '').trim();
+        if (!name) return;
+        var key = name.toLowerCase();
+        if (!map[key]) return;
+        var qty = numericQtyForLine(it);
+        var val = qty * (Number(it.rate) || 0);
         map[key].value    += val;
         map[key].invoices += 1;
         map[key].totalQty += qty;
@@ -8237,16 +8248,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     }
-    var products = Object.values(map).sort(function(a, b) { return b.value - a.value; });
+    // Products billed in period first, then not-billed (dimmed), both sorted by value
+    var products = Object.values(map).sort(function(a, b) {
+      if (a.value > 0 && b.value === 0) return -1;
+      if (a.value === 0 && b.value > 0) return 1;
+      return b.value - a.value;
+    });
     var el = $(containerId); el.textContent = '';
     el.className = 'cr-product-list' + (isVendor ? ' cr-product-list--vendor' : '');
     if (!products.length) {
       var empty = document.createElement('div'); empty.className = 'cr-product-empty';
       empty.textContent = 'No product data'; el.appendChild(empty); return;
     }
-    var maxVal = products[0].value;
+    var maxVal = products.reduce(function(m, p) { return p.value > m ? p.value : m; }, 0);
     products.forEach(function(p, idx) {
-      var row = document.createElement('div'); row.className = 'cr-product-row';
+      var inPeriod = p.invoices > 0;
+      var row = document.createElement('div');
+      row.className = 'cr-product-row' + (inPeriod ? '' : ' cr-product-row--inactive');
 
       var numEl = document.createElement('div'); numEl.className = 'cr-product-num'; numEl.textContent = idx + 1;
 
@@ -8258,41 +8276,53 @@ document.addEventListener('DOMContentLoaded', () => {
         var hsnEl = document.createElement('span'); hsnEl.className = 'cr-product-hsn'; hsnEl.textContent = 'HSN ' + p.hsn;
         metaEl.appendChild(hsnEl);
       }
-      var qtyEl = document.createElement('span'); qtyEl.className = 'cr-product-qty';
-      qtyEl.textContent = p.totalQty.toLocaleString('en-IN') + ' ' + p.unit;
-      metaEl.appendChild(qtyEl);
+      if (inPeriod) {
+        var qtyEl = document.createElement('span'); qtyEl.className = 'cr-product-qty';
+        qtyEl.textContent = p.totalQty.toLocaleString('en-IN') + ' ' + p.unit;
+        metaEl.appendChild(qtyEl);
 
-      if (cmpInvList && cmpInvList.length) {
-        var qtyDelta = p.totalQty - p.cmpQty;
-        var qtySign = qtyDelta > 0 ? '+' : '';
-        var qtyDeltaEl = document.createElement('span');
-        qtyDeltaEl.className = 'cr-product-cmp-qty' + (qtyDelta > 0 ? ' cr-cmp-up' : qtyDelta < 0 ? ' cr-cmp-down' : ' cr-cmp-flat');
-        qtyDeltaEl.textContent = (qtyDelta === 0 ? '=' : qtySign + qtyDelta.toLocaleString('en-IN')) + ' ' + p.unit;
-        metaEl.appendChild(qtyDeltaEl);
+        if (cmpInvList && cmpInvList.length) {
+          var qtyDelta = p.totalQty - p.cmpQty;
+          var qtySign = qtyDelta > 0 ? '+' : '';
+          var qtyDeltaEl = document.createElement('span');
+          qtyDeltaEl.className = 'cr-product-cmp-qty' + (qtyDelta > 0 ? ' cr-cmp-up' : qtyDelta < 0 ? ' cr-cmp-down' : ' cr-cmp-flat');
+          qtyDeltaEl.textContent = (qtyDelta === 0 ? '=' : qtySign + qtyDelta.toLocaleString('en-IN')) + ' ' + p.unit;
+          metaEl.appendChild(qtyDeltaEl);
+        }
+      } else {
+        var notBilledEl = document.createElement('span'); notBilledEl.className = 'cr-product-not-billed';
+        notBilledEl.textContent = 'Not billed in period';
+        metaEl.appendChild(notBilledEl);
       }
 
       info.appendChild(metaEl);
 
       var right = document.createElement('div'); right.className = 'cr-product-right';
-      var invCnt = document.createElement('span'); invCnt.className = 'cr-product-inv-count'; invCnt.textContent = p.invoices + ' inv';
-      var valEl  = document.createElement('span'); valEl.className = 'cr-product-value'; valEl.textContent = '₹' + fmtNum(p.value);
-      right.appendChild(invCnt); right.appendChild(valEl);
+      if (inPeriod) {
+        var invCnt = document.createElement('span'); invCnt.className = 'cr-product-inv-count'; invCnt.textContent = p.invoices + ' inv';
+        var valEl  = document.createElement('span'); valEl.className = 'cr-product-value'; valEl.textContent = '₹' + fmtNum(p.value);
+        right.appendChild(invCnt); right.appendChild(valEl);
 
-      if (cmpInvList && cmpInvList.length) {
-        var valDelta = p.value - p.cmpValue;
-        var pct = p.cmpValue > 0 ? Math.round((valDelta / p.cmpValue) * 100) : null;
-        var deltaEl = document.createElement('span');
-        var isUp = valDelta > 0, isDown = valDelta < 0;
-        deltaEl.className = 'cr-product-delta' + (isUp ? ' cr-cmp-up' : isDown ? ' cr-cmp-down' : ' cr-cmp-flat');
-        deltaEl.textContent = p.cmpValue === 0
-          ? 'NEW'
-          : (isUp ? '▲ ' : isDown ? '▼ ' : '= ') + (pct !== null ? Math.abs(pct) + '%' : '—');
-        right.appendChild(deltaEl);
+        if (cmpInvList && cmpInvList.length) {
+          var valDelta = p.value - p.cmpValue;
+          var pct = p.cmpValue > 0 ? Math.round((valDelta / p.cmpValue) * 100) : null;
+          var deltaEl = document.createElement('span');
+          var isUp = valDelta > 0, isDown = valDelta < 0;
+          deltaEl.className = 'cr-product-delta' + (isUp ? ' cr-cmp-up' : isDown ? ' cr-cmp-down' : ' cr-cmp-flat');
+          deltaEl.textContent = p.cmpValue === 0
+            ? 'NEW'
+            : (isUp ? '▲ ' : isDown ? '▼ ' : '= ') + (pct !== null ? Math.abs(pct) + '%' : '—');
+          right.appendChild(deltaEl);
+        }
+      } else {
+        var dashEl = document.createElement('span'); dashEl.className = 'cr-product-value cr-product-value--nil';
+        dashEl.textContent = '—';
+        right.appendChild(dashEl);
       }
 
       var bar = document.createElement('div'); bar.className = 'cr-product-bar';
       var fill = document.createElement('div'); fill.className = 'cr-product-bar-fill';
-      fill.style.width = (maxVal > 0 ? Math.round((p.value / maxVal) * 100) : 0) + '%';
+      fill.style.width = (maxVal > 0 && inPeriod ? Math.round((p.value / maxVal) * 100) : 0) + '%';
       bar.appendChild(fill);
 
       row.appendChild(numEl); row.appendChild(info); row.appendChild(right); row.appendChild(bar);
@@ -8310,14 +8340,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
     var crNameKey = r.name.toLowerCase();
+    var crAllInvList = invoices.filter(function(inv) {
+      return (inv.buyerName || '').trim().toLowerCase() === crNameKey;
+    });
     var crCmpList = [];
     if (crCompareFrom && crCompareTo) {
-      crCmpList = invoices.filter(function(inv) {
-        return (inv.buyerName || '').trim().toLowerCase() === crNameKey &&
-               inv.invoiceDate >= crCompareFrom && inv.invoiceDate <= crCompareTo;
+      crCmpList = crAllInvList.filter(function(inv) {
+        return inv.invoiceDate >= crCompareFrom && inv.invoiceDate <= crCompareTo;
       });
     }
-    renderDrawerProducts('crDrawerProductList', r.invList, false, crCmpList, crCompareLabel);
+    renderDrawerProducts('crDrawerProductList', crAllInvList, r.invList, false, crCmpList, crCompareLabel);
 
     var tb = $('crDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
@@ -8662,14 +8694,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
     var vrNameKey = r.name.toLowerCase();
+    var vrAllInvList = poInvoices.filter(function(inv) {
+      return (inv.vendorName || '').trim().toLowerCase() === vrNameKey;
+    });
     var vrCmpList = [];
     if (vrCompareFrom && vrCompareTo) {
-      vrCmpList = poInvoices.filter(function(inv) {
-        return (inv.vendorName || '').trim().toLowerCase() === vrNameKey &&
-               inv.invoiceDate >= vrCompareFrom && inv.invoiceDate <= vrCompareTo;
+      vrCmpList = vrAllInvList.filter(function(inv) {
+        return inv.invoiceDate >= vrCompareFrom && inv.invoiceDate <= vrCompareTo;
       });
     }
-    renderDrawerProducts('vrDrawerProductList', r.invList, true, vrCmpList, vrCompareLabel);
+    renderDrawerProducts('vrDrawerProductList', vrAllInvList, r.invList, true, vrCmpList, vrCompareLabel);
 
     var tb = $('vrDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
