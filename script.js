@@ -8209,8 +8209,10 @@ document.addEventListener('DOMContentLoaded', () => {
       empty.textContent = 'No product data'; el.appendChild(empty); return;
     }
     var maxVal = products[0].value;
-    products.forEach(function(p) {
+    products.forEach(function(p, idx) {
       var row = document.createElement('div'); row.className = 'cr-product-row';
+
+      var numEl = document.createElement('div'); numEl.className = 'cr-product-num'; numEl.textContent = idx + 1;
 
       var info = document.createElement('div'); info.className = 'cr-product-info';
       var nameEl = document.createElement('span'); nameEl.className = 'cr-product-name'; nameEl.textContent = p.name;
@@ -8230,7 +8232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fill.style.width = (maxVal > 0 ? Math.round((p.value / maxVal) * 100) : 0) + '%';
       bar.appendChild(fill);
 
-      row.appendChild(info); row.appendChild(right); row.appendChild(bar);
+      row.appendChild(numEl); row.appendChild(info); row.appendChild(right); row.appendChild(bar);
       el.appendChild(row);
     });
   }
