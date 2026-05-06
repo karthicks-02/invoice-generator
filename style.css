@@ -2940,10 +2940,22 @@ input.inv-rate-input {
   letter-spacing: .04em; text-transform: uppercase;
   backdrop-filter: blur(6px);
 }
-.cr-bh-period-badge {
-  font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+.cr-bh-lastmonth {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+}
+.cr-bh-lm-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: rgba(255,255,255,.45);
 }
+.cr-bh-lm-value {
+  font-size: 13px; font-weight: 700; color: rgba(255,255,255,.75);
+}
+.cr-bh-lm-delta {
+  font-size: 10px; font-weight: 800; border-radius: 4px; padding: 1px 6px;
+}
+.cr-lm-up   { color: #bbf7d0; background: rgba(21,128,61,.35); }
+.cr-lm-down { color: #fecaca; background: rgba(185,28,28,.35); }
+.cr-lm-flat { color: rgba(255,255,255,.4); }
 .cr-bh-amount {
   font-size: 30px; font-weight: 800; color: #fff;
   letter-spacing: -.03em; line-height: 1.1;

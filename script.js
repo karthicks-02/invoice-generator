@@ -8187,6 +8187,46 @@ document.addEventListener('DOMContentLoaded', () => {
       .sort(function(a, b) { return b.grandTotal - a.grandTotal; });
   }
 
+  function getLastMonthRange() {
+    var now = new Date();
+    var y = now.getFullYear(), m = now.getMonth(); // m = 0-based current month
+    var first = new Date(y, m - 1, 1);
+    var last  = new Date(y, m, 0);
+    var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+    return {
+      from: first.getFullYear() + '-' + pad(first.getMonth() + 1) + '-01',
+      to:   last.getFullYear()  + '-' + pad(last.getMonth()  + 1) + '-' + pad(last.getDate()),
+      label: first.toLocaleString('en-IN', { month: 'long' })
+    };
+  }
+
+  function computeLastMonthTotal(customerName, nameField) {
+    var range = getLastMonthRange();
+    var key = customerName.toLowerCase();
+    var total = 0;
+    invoices.forEach(function(inv) {
+      var field = (inv[nameField] || '').trim().toLowerCase();
+      if (field !== key) return;
+      if (!inv.invoiceDate || inv.invoiceDate < range.from || inv.invoiceDate > range.to) return;
+      total += crInvGrandTotal(inv);
+    });
+    return { total: total, label: range.label };
+  }
+
+  function setDrawerLastMonth(valueId, deltaId, currentTotal, nameField, customerName) {
+    var lm = computeLastMonthTotal(customerName, nameField);
+    var el = $(valueId), de = $(deltaId);
+    if (!el || !de) return;
+    if (lm.total === 0) {
+      el.textContent = '₹0'; de.textContent = ''; de.className = 'cr-bh-lm-delta'; return;
+    }
+    el.textContent = '₹' + fmtNum(lm.total);
+    var diff = currentTotal - lm.total;
+    var pct  = Math.round(Math.abs(diff / lm.total) * 100);
+    de.textContent = (diff > 0 ? '▲ +' : diff < 0 ? '▼ -' : '= ') + pct + '%';
+    de.className = 'cr-bh-lm-delta ' + (diff > 0 ? 'cr-lm-up' : diff < 0 ? 'cr-lm-down' : 'cr-lm-flat');
+  }
+
   function renderDrawerProducts(containerId, invList, isVendor, cmpInvList, cmpLabel) {
     var map = {};
     invList.forEach(function(inv) {
@@ -8283,6 +8323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerGstin').textContent       = r.gstin || 'No GSTIN';
     $('crDrawerCount').textContent       = r.invList.length;
     $('crDrawerBilledTotal').textContent = '₹' + fmtNum(r.grandTotal);
+    setDrawerLastMonth('crDrawerLastMonth', 'crDrawerLastMonthDelta', r.grandTotal, 'buyerName', r.name);
     $('crDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
@@ -8634,6 +8675,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vrDrawerGstin').textContent       = r.gstin || 'No GSTIN';
     $('vrDrawerCount').textContent       = r.invList.length;
     $('vrDrawerBilledTotal').textContent = '₹' + fmtNum(r.grandTotal);
+    setDrawerLastMonth('vrDrawerLastMonth', 'vrDrawerLastMonthDelta', r.grandTotal, 'buyerName', r.name);
     $('vrDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
