@@ -1055,11 +1055,12 @@ legend {
 
 /* ── 16. Print safety — ensure glass doesn't affect PDF rendering ── */
 @media print {
+  * { box-shadow: none !important; }
   .bg-mesh, .grain { display: none !important; }
   header { background: none !important; padding: 0 !important; position: static !important; }
-  .header-inner { background: none !important; border: none !important; box-shadow: none !important; }
-  fieldset { background: #fff !important; border: 1px solid #e2e6ed !important; box-shadow: none !important; backdrop-filter: none !important; }
-  .data-table-wrap { background: #fff !important; border: 1px solid #e2e6ed !important; box-shadow: none !important; backdrop-filter: none !important; }
+  .header-inner { background: none !important; border: none !important; }
+  fieldset { background: #fff !important; border: 1px solid #e2e6ed !important; backdrop-filter: none !important; }
+  .data-table-wrap { background: #fff !important; border: 1px solid #e2e6ed !important; backdrop-filter: none !important; }
 }
 
 /* ── 17. Reduce motion for accessibility ──────────────────── */
