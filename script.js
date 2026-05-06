@@ -8305,7 +8305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerGstin').textContent       = r.gstin || 'No GSTIN';
     $('crDrawerCount').textContent       = r.invList.length;
     $('crDrawerBilledTotal').textContent = '₹' + fmtNum(r.grandTotal);
-    setDrawerLastMonth('crDrawerLastMonth', 'crDrawerLastMonthDelta', r.grandTotal, 'buyerName', r.name);
+    setDrawerComparison('crDrawerCmpLabel', 'crDrawerLastMonth', 'crDrawerLastMonthDelta', r.grandTotal, r.name, crCompareFrom, crCompareTo, crCompareLabel);
     $('crDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
@@ -8657,7 +8657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vrDrawerGstin').textContent       = r.gstin || 'No GSTIN';
     $('vrDrawerCount').textContent       = r.invList.length;
     $('vrDrawerBilledTotal').textContent = '₹' + fmtNum(r.grandTotal);
-    setDrawerLastMonth('vrDrawerLastMonth', 'vrDrawerLastMonthDelta', r.grandTotal, 'buyerName', r.name);
+    setDrawerComparison('vrDrawerCmpLabel', 'vrDrawerLastMonth', 'vrDrawerLastMonthDelta', r.grandTotal, r.name, vrCompareFrom, vrCompareTo, vrCompareLabel);
     $('vrDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
