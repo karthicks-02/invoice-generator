@@ -8211,15 +8211,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderDrawerProducts(containerId, allInvList, periodInvList, isVendor, cmpInvList, cmpLabel) {
     var map = {};
-    // Discover all products ever billed (all-time)
+    // Discover all products ever billed (all-time), track last billed qty per product
     allInvList.forEach(function(inv) {
+      var date = inv.invoiceDate || '';
       (inv.items || []).forEach(function(it) {
         var name = (it.description || '').trim();
         if (!name) return;
         var key = name.toLowerCase();
         var unit = normalizeItemQtyUnit(it);
-        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0, totalQty: 0, unit: unit, cmpValue: 0, cmpQty: 0 };
+        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0, totalQty: 0, unit: unit, cmpValue: 0, cmpQty: 0, lastQty: 0, lastDate: '' };
         if (!map[key].hsn && it.hsn) map[key].hsn = it.hsn;
+        if (date >= map[key].lastDate) {
+          map[key].lastDate = date;
+          map[key].lastQty  = numericQtyForLine(it);
+        }
       });
     });
     // Calculate qty/value only for the active period
@@ -8291,7 +8296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         var notBilledEl = document.createElement('span'); notBilledEl.className = 'cr-product-not-billed';
-        notBilledEl.textContent = 'Not billed in period';
+        notBilledEl.textContent = 'Last: ' + p.lastQty.toLocaleString('en-IN') + ' ' + p.unit;
         metaEl.appendChild(notBilledEl);
       }
 
@@ -8315,9 +8320,9 @@ document.addEventListener('DOMContentLoaded', () => {
           right.appendChild(deltaEl);
         }
       } else {
-        var dashEl = document.createElement('span'); dashEl.className = 'cr-product-value cr-product-value--nil';
-        dashEl.textContent = '—';
-        right.appendChild(dashEl);
+        var zeroEl = document.createElement('span'); zeroEl.className = 'cr-product-value cr-product-value--nil';
+        zeroEl.textContent = '₹0';
+        right.appendChild(zeroEl);
       }
 
       var bar = document.createElement('div'); bar.className = 'cr-product-bar';
