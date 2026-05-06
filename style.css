@@ -3052,7 +3052,7 @@ input.inv-rate-input {
 }
 .cr-product-list--vendor .cr-product-value { color: #ea580c; }
 .cr-product-empty { font-size: 12px; color: #94a3b8; padding: 8px 10px; }
-.cr-product-row--inactive { opacity: 0.45; }
+.cr-product-row--inactive { opacity: 0.7; }
 .cr-product-row--inactive:hover { background: transparent; }
 .cr-product-not-billed { font-size: 10px; color: #94a3b8; font-style: italic; }
 .cr-product-value--nil { color: #cbd5e1; }
