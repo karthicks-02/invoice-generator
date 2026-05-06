@@ -8296,7 +8296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         var notBilledEl = document.createElement('span'); notBilledEl.className = 'cr-product-not-billed';
-        notBilledEl.textContent = 'Last: ' + p.lastQty.toLocaleString('en-IN') + ' ' + p.unit;
+        notBilledEl.textContent = 'Last: ' + p.lastQty.toLocaleString('en-IN') + ' ' + p.unit + (p.lastDate ? ' · ' + formatShortDate(p.lastDate) : '');
         metaEl.appendChild(notBilledEl);
       }
 
