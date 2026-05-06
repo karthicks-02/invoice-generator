@@ -2284,6 +2284,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!matchedInv) continue;
       prepareInvoiceForCapture(matchedInv);
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 150));
       const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pageW = pdf.internal.pageSize.getWidth();
@@ -3030,6 +3031,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!matchedInv) continue;
       prepareInvoiceForCapture(matchedInv);
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 150));
       const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pageW = pdf.internal.pageSize.getWidth();
@@ -3109,6 +3111,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!matchedInv) continue;
       prepareInvoiceForCapture(matchedInv);
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 150));
       const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const pageW = pdf.internal.pageSize.getWidth();
@@ -4412,7 +4415,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const PDF_OPT = {
     margin: [0.3, 0.3, 0.3, 0.3],
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
+    html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
 
@@ -4581,6 +4584,7 @@ document.addEventListener('DOMContentLoaded', () => {
     prepareInvoiceForCapture(inv);
     const shield = showPaperForCapture();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 150));
     await html2pdf().set({ ...PDF_OPT, filename: `${inv.invoiceNumber || 'invoice'}.pdf` }).from($('invoicePaper')).save();
     shield.remove();
     restoreViewState(state);
@@ -4959,6 +4963,7 @@ document.addEventListener('DOMContentLoaded', () => {
           fill.style.width = Math.round(((i + 1) / (selected.length + 1)) * 100) + '%';
           prepareInvoiceForCapture(selected[i]);
           await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          await new Promise(r => setTimeout(r, 150));
           const canvas = await html2pdf().set(PDF_OPT).from(paper).toContainer().toCanvas().get('canvas');
           const imgData = canvas.toDataURL('image/jpeg', 0.98);
           const pageW = pdf.internal.pageSize.getWidth();
@@ -5022,6 +5027,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       prepareInvoiceForCapture(selected[i]);
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 150));
 
       if (i === 0) {
         pdf = await html2pdf().set({ ...PDF_OPT, filename }).from(paper).toPdf().get('pdf');
