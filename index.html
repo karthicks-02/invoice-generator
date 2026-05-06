@@ -828,18 +828,30 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="cr-drawer-summary">
-        <div class="cr-summary-card cr-summary-taxable">
-          <div class="cr-summary-label">Taxable Amount</div>
-          <div class="cr-summary-value" id="vrDrawerTaxable">—</div>
+      <div class="cr-billing-hero cr-billing-hero--vendor">
+        <div class="cr-bh-top">
+          <div class="cr-bh-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+            <span id="vrDrawerCount">0</span> Invoices
+          </div>
+          <div class="cr-bh-period-badge">Billed Total</div>
         </div>
-        <div class="cr-summary-card cr-summary-gst">
-          <div class="cr-summary-label">GST Amount</div>
-          <div class="cr-summary-value" id="vrDrawerGst">—</div>
-        </div>
-        <div class="cr-summary-card cr-summary-grand">
-          <div class="cr-summary-label">Grand Total</div>
-          <div class="cr-summary-value" id="vrDrawerGrandTotal">—</div>
+        <div class="cr-bh-amount" id="vrDrawerBilledTotal">—</div>
+        <div class="cr-bh-stats">
+          <div class="cr-bh-stat">
+            <span class="cr-bh-stat-label">Taxable</span>
+            <span class="cr-bh-stat-val" id="vrDrawerTaxable">—</span>
+          </div>
+          <div class="cr-bh-stat-divider"></div>
+          <div class="cr-bh-stat">
+            <span class="cr-bh-stat-label">GST</span>
+            <span class="cr-bh-stat-val cr-bh-stat-gst" id="vrDrawerGst">—</span>
+          </div>
+          <div class="cr-bh-stat-divider"></div>
+          <div class="cr-bh-stat">
+            <span class="cr-bh-stat-label">Grand Total</span>
+            <span class="cr-bh-stat-val cr-bh-stat-grand" id="vrDrawerGrandTotal">—</span>
+          </div>
         </div>
       </div>
       <div class="cr-drawer-section-title">Invoice Breakdown</div>
@@ -875,18 +887,30 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="cr-drawer-summary">
-        <div class="cr-summary-card cr-summary-taxable">
-          <div class="cr-summary-label">Taxable Amount</div>
-          <div class="cr-summary-value" id="crDrawerTaxable">—</div>
+      <div class="cr-billing-hero">
+        <div class="cr-bh-top">
+          <div class="cr-bh-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+            <span id="crDrawerCount">0</span> Invoices
+          </div>
+          <div class="cr-bh-period-badge">Billed Total</div>
         </div>
-        <div class="cr-summary-card cr-summary-gst">
-          <div class="cr-summary-label">GST Amount</div>
-          <div class="cr-summary-value" id="crDrawerGst">—</div>
-        </div>
-        <div class="cr-summary-card cr-summary-grand">
-          <div class="cr-summary-label">Grand Total</div>
-          <div class="cr-summary-value" id="crDrawerGrandTotal">—</div>
+        <div class="cr-bh-amount" id="crDrawerBilledTotal">—</div>
+        <div class="cr-bh-stats">
+          <div class="cr-bh-stat">
+            <span class="cr-bh-stat-label">Taxable</span>
+            <span class="cr-bh-stat-val" id="crDrawerTaxable">—</span>
+          </div>
+          <div class="cr-bh-stat-divider"></div>
+          <div class="cr-bh-stat">
+            <span class="cr-bh-stat-label">GST</span>
+            <span class="cr-bh-stat-val cr-bh-stat-gst" id="crDrawerGst">—</span>
+          </div>
+          <div class="cr-bh-stat-divider"></div>
+          <div class="cr-bh-stat">
+            <span class="cr-bh-stat-label">Grand Total</span>
+            <span class="cr-bh-stat-val cr-bh-stat-grand" id="crDrawerGrandTotal">—</span>
+          </div>
         </div>
       </div>
       <div class="cr-drawer-section-title">Invoice Breakdown</div>

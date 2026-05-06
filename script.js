@@ -8188,11 +8188,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openCrDrawer(r) {
-    $('crDrawerName').textContent       = r.name;
-    $('crDrawerGstin').textContent      = r.gstin || 'No GSTIN';
-    $('crDrawerTaxable').textContent    = '₹' + fmtNum(r.taxable);
-    $('crDrawerGst').textContent        = '₹' + fmtNum(r.gstAmount);
-    $('crDrawerGrandTotal').textContent = '₹' + fmtNum(r.grandTotal);
+    $('crDrawerName').textContent        = r.name;
+    $('crDrawerGstin').textContent       = r.gstin || 'No GSTIN';
+    $('crDrawerCount').textContent       = r.invList.length;
+    $('crDrawerBilledTotal').textContent = '₹' + fmtNum(r.grandTotal);
+    $('crDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
+    $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
+    $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
 
     var tb = $('crDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
@@ -8528,11 +8530,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openVrDrawer(r) {
-    $('vrDrawerName').textContent       = r.name;
-    $('vrDrawerGstin').textContent      = r.gstin || 'No GSTIN';
-    $('vrDrawerTaxable').textContent    = '₹' + fmtNum(r.taxable);
-    $('vrDrawerGst').textContent        = '₹' + fmtNum(r.gstAmount);
-    $('vrDrawerGrandTotal').textContent = '₹' + fmtNum(r.grandTotal);
+    $('vrDrawerName').textContent        = r.name;
+    $('vrDrawerGstin').textContent       = r.gstin || 'No GSTIN';
+    $('vrDrawerCount').textContent       = r.invList.length;
+    $('vrDrawerBilledTotal').textContent = '₹' + fmtNum(r.grandTotal);
+    $('vrDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
+    $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
+    $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
 
     var tb = $('vrDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
