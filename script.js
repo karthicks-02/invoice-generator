@@ -8187,6 +8187,54 @@ document.addEventListener('DOMContentLoaded', () => {
       .sort(function(a, b) { return b.grandTotal - a.grandTotal; });
   }
 
+  function renderDrawerProducts(containerId, invList, isVendor) {
+    var map = {};
+    invList.forEach(function(inv) {
+      (inv.items || []).forEach(function(it) {
+        var name = (it.description || '').trim();
+        if (!name) return;
+        var key = name.toLowerCase();
+        var qty = numericQtyForLine(it);
+        var val = qty * (Number(it.rate) || 0);
+        if (!map[key]) map[key] = { name: name, hsn: it.hsn || '', value: 0, invoices: 0 };
+        map[key].value   += val;
+        map[key].invoices += 1;
+      });
+    });
+    var products = Object.values(map).sort(function(a, b) { return b.value - a.value; });
+    var el = $(containerId); el.textContent = '';
+    el.className = 'cr-product-list' + (isVendor ? ' cr-product-list--vendor' : '');
+    if (!products.length) {
+      var empty = document.createElement('div'); empty.className = 'cr-product-empty';
+      empty.textContent = 'No product data'; el.appendChild(empty); return;
+    }
+    var maxVal = products[0].value;
+    products.forEach(function(p) {
+      var row = document.createElement('div'); row.className = 'cr-product-row';
+
+      var info = document.createElement('div'); info.className = 'cr-product-info';
+      var nameEl = document.createElement('span'); nameEl.className = 'cr-product-name'; nameEl.textContent = p.name;
+      info.appendChild(nameEl);
+      if (p.hsn) {
+        var hsnEl = document.createElement('span'); hsnEl.className = 'cr-product-hsn'; hsnEl.textContent = 'HSN ' + p.hsn;
+        info.appendChild(hsnEl);
+      }
+
+      var right = document.createElement('div'); right.className = 'cr-product-right';
+      var invCnt = document.createElement('span'); invCnt.className = 'cr-product-inv-count'; invCnt.textContent = p.invoices + ' inv';
+      var valEl  = document.createElement('span'); valEl.className = 'cr-product-value'; valEl.textContent = '₹' + fmtNum(p.value);
+      right.appendChild(invCnt); right.appendChild(valEl);
+
+      var bar = document.createElement('div'); bar.className = 'cr-product-bar';
+      var fill = document.createElement('div'); fill.className = 'cr-product-bar-fill';
+      fill.style.width = (maxVal > 0 ? Math.round((p.value / maxVal) * 100) : 0) + '%';
+      bar.appendChild(fill);
+
+      row.appendChild(info); row.appendChild(right); row.appendChild(bar);
+      el.appendChild(row);
+    });
+  }
+
   function openCrDrawer(r) {
     $('crDrawerName').textContent        = r.name;
     $('crDrawerGstin').textContent       = r.gstin || 'No GSTIN';
@@ -8195,6 +8243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('crDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
+    renderDrawerProducts('crDrawerProductList', r.invList);
 
     var tb = $('crDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
@@ -8537,6 +8586,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vrDrawerTaxable').textContent     = '₹' + fmtNum(r.taxable);
     $('vrDrawerGst').textContent         = '₹' + fmtNum(r.gstAmount);
     $('vrDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
+    renderDrawerProducts('vrDrawerProductList', r.invList, true);
 
     var tb = $('vrDrawerTableBody'); tb.textContent = '';
     r.invList.slice().sort(function(a, b) {
