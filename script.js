@@ -3992,7 +3992,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     syncCopyChecks('copyType', 'copyTypePreview');
     if (!saveCurrentInvoice()) return;
-    checkReminders();
+    if (localStorage.getItem('remindersEnabled') === 'true') checkReminders();
     buildAllInvoices();
     $('formPanel').classList.add('hidden');
     $('previewPanel').classList.remove('hidden');
