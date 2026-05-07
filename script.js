@@ -8315,7 +8315,7 @@ document.addEventListener('DOMContentLoaded', () => {
           var isUp = valDelta > 0, isDown = valDelta < 0;
           deltaEl.className = 'cr-product-delta' + (isUp ? ' cr-cmp-up' : isDown ? ' cr-cmp-down' : ' cr-cmp-flat');
           deltaEl.textContent = p.cmpValue === 0
-            ? 'NEW'
+            ? ''
             : (isUp ? '▲ ' : isDown ? '▼ ' : '= ') + (pct !== null ? Math.abs(pct) + '%' : '—');
           right.appendChild(deltaEl);
         }
