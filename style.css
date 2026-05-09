@@ -1480,7 +1480,8 @@ input.inv-rate-input {
 }
 .days-preset.active,
 .co-days-btn.active,
-.overlay-days-btn.active {
+.overlay-days-btn.active,
+.pay-pdf-aging-pill.active {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);

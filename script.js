@@ -2585,7 +2585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pdfBtn && pdfBtn.dataset.company) {
       e.stopPropagation();
       e.preventDefault();
-      downloadCompanyPaymentSummaryPDF(pdfBtn.dataset.company).catch(() => alert('Could not generate PDF. Try again.'));
+      openPaySumPdfFilterDialog(pdfBtn.dataset.company);
       return;
     }
     const waBtn = e.target.closest('.btn-pay-wa');
@@ -2612,6 +2612,57 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!ed || !ed.dataset.company || !ed.dataset.creditId) return;
     e.stopPropagation();
     openEditCreditForm(ed.dataset.company, ed.dataset.creditId);
+  });
+
+  let _paySumPdfTargetCompany = null;
+
+  function openPaySumPdfFilterDialog(companyName) {
+    _paySumPdfTargetCompany = companyName;
+    document.querySelectorAll('.pay-pdf-aging-pill').forEach(b => b.classList.remove('active'));
+    const allPill = document.querySelector('.pay-pdf-aging-pill[data-from="30"][data-to=""]');
+    if (allPill) allPill.classList.add('active');
+    $('paySumPdfFromDays').value = '';
+    $('paySumPdfToDays').value = '';
+    $('paySumPdfFilterOverlay').classList.remove('hidden');
+  }
+
+  document.querySelectorAll('.pay-pdf-aging-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.pay-pdf-aging-pill').forEach(b => b.classList.remove('active'));
+      pill.classList.add('active');
+      $('paySumPdfFromDays').value = '';
+      $('paySumPdfToDays').value = '';
+    });
+  });
+
+  [$('paySumPdfFromDays'), $('paySumPdfToDays')].forEach(inp => {
+    inp.addEventListener('input', () => {
+      document.querySelectorAll('.pay-pdf-aging-pill').forEach(b => b.classList.remove('active'));
+    });
+  });
+
+  $('paySumPdfCancelBtn').addEventListener('click', () => {
+    $('paySumPdfFilterOverlay').classList.add('hidden');
+    _paySumPdfTargetCompany = null;
+  });
+
+  $('paySumPdfDownloadBtn').addEventListener('click', () => {
+    if (!_paySumPdfTargetCompany) return;
+    const activePill = document.querySelector('.pay-pdf-aging-pill.active');
+    let minDays = 0, maxDays = Infinity;
+    if (activePill) {
+      minDays = parseInt(activePill.dataset.from, 10) || 0;
+      maxDays = activePill.dataset.to ? (parseInt(activePill.dataset.to, 10) || Infinity) : Infinity;
+    } else {
+      const fromVal = parseInt($('paySumPdfFromDays').value, 10);
+      const toVal = parseInt($('paySumPdfToDays').value, 10);
+      if (!isNaN(fromVal)) minDays = fromVal;
+      if (!isNaN(toVal)) maxDays = toVal;
+    }
+    const co = _paySumPdfTargetCompany;
+    $('paySumPdfFilterOverlay').classList.add('hidden');
+    _paySumPdfTargetCompany = null;
+    downloadCompanyPaymentSummaryPDF(co, false, {minDays, maxDays}).catch(() => alert('Could not generate PDF. Try again.'));
   });
 
   $('payFormSaveBtn').addEventListener('click', () => {
@@ -4441,8 +4492,14 @@ document.addEventListener('DOMContentLoaded', () => {
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
 
-  function buildPaymentSummaryPdfHtml(companyName) {
+  function buildPaymentSummaryPdfHtml(companyName, {minDays = 0, maxDays = Infinity} = {}) {
     const s = getPaymentSummarySnapshot(companyName);
+    const filteredOpenFifo = (minDays > 0 || maxDays < Infinity)
+      ? s.openFifo.filter(r => { const d = daysSince(r.inv.invoiceDate || r.inv.createdAt); return d >= minDays && d <= maxDays; })
+      : s.openFifo;
+    const agingLabel = minDays === 0 && maxDays === Infinity ? null
+      : maxDays === Infinity ? `${minDays}+ days overdue`
+      : `${minDays}–${maxDays} days overdue`;
 
     const td = 'padding:3px 4px;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word;';
     const th = 'padding:3px 4px;font-weight:700;text-align:left;';
@@ -4478,16 +4535,16 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`;
     }).join('');
 
-    const pendRows = s.openFifo.length
-      ? s.openFifo.map(r => { const _d = daysSince(r.inv.invoiceDate || r.inv.createdAt); return `<tr style="border-bottom:1px solid #e2e8f0">
+    const pendRows = filteredOpenFifo.length
+      ? filteredOpenFifo.map(r => { const _d = daysSince(r.inv.invoiceDate || r.inv.createdAt); return `<tr style="border-bottom:1px solid #e2e8f0">
           <td style="${td}">${esc(r.inv.invoiceNumber)}</td>
           <td style="${td}font-size:7px;">${r.inv.invoiceDate ? esc(formatShortDate(r.inv.invoiceDate)) : '—'}</td>
           <td style="${amt}">₹${fmtNum(r.gross)}</td>
           <td style="${amt}">₹${fmtNum(r.applied)}</td>
           <td style="${amt}font-weight:600;">₹${fmtNum(r.balance)}</td>
-          <td style="${td}text-align:center;${_d >= daysFilterFromVal ? 'color:#dc2626;font-weight:700;' : ''}">${_d}d</td>
+          <td style="${td}text-align:center;${_d >= minDays ? 'color:#dc2626;font-weight:700;' : ''}">${_d}d</td>
         </tr>`; }).join('')
-      : `<tr><td colspan="6" style="padding:8px;text-align:center;color:#059669">No pending balances — all covered (FIFO).</td></tr>`;
+      : `<tr><td colspan="6" style="padding:8px;text-align:center;color:#059669">${agingLabel ? 'No pending invoices match the selected aging filter.' : 'No pending balances — all covered (FIFO).'}</td></tr>`;
 
     const allInvRows = s.fifoRows.length
       ? s.fifoRows.map(r => `<tr style="border-bottom:1px solid #e2e8f0;${r.balance <= 0.005 ? 'color:#64748b' : ''}">
@@ -4500,40 +4557,29 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`).join('')
       : `<tr><td colspan="6" style="padding:8px;text-align:center">No invoices.</td></tr>`;
 
+    const filteredOutstanding = filteredOpenFifo.reduce((sum, r) => sum + r.balance, 0);
+    const lastCredit = s.creditEntries.length ? s.creditEntries[s.creditEntries.length - 1] : null;
+    const lastCreditCell = lastCredit ? `₹${fmtNum(lastCredit.amount)}` : '—';
+    const filteredOutstandingLabel = agingLabel ? `Outstanding (${agingLabel})` : 'Outstanding (all invoices)';
+
     return `<div class="pay-pdf-root" style="box-sizing:border-box;width:100%;max-width:100%;padding:8px 6px;color:#0f172a;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.35;">
       <div style="border-bottom:2px solid #1e3a5f;padding-bottom:8px;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700;color:#1e3a5f">${esc(COMPANY.name)}</div>
         <div style="font-size:11px;font-weight:700;margin-top:4px">Payment summary — outstanding &amp; credits</div>
         <div style="margin-top:6px;font-size:10px"><strong>Customer:</strong> ${esc(s.companyName)}</div>
+        ${agingLabel ? `<div style="margin-top:3px;font-size:8px;background:#fef3c7;color:#92400e;display:inline-block;padding:1px 6px;border-radius:3px;font-weight:600;">Pending invoices filter: ${esc(agingLabel)}</div>` : ''}
         <div style="margin-top:2px;font-size:8px;color:#64748b">Generated: ${esc(s.generatedAt)}</div>
       </div>
 
       <div style="font-size:10px;font-weight:700;margin:8px 0 4px">Figures at a glance</div>
       <table style="${tbl}margin-bottom:10px">
         <colgroup><col style="width:58%"><col style="width:42%"></colgroup>
-        <tr style="background:#f1f5f9"><td style="${td}">Invoices billed (no.)</td><td style="${amt}font-weight:700;">${s.invCount}</td></tr>
-        <tr><td style="${td}">Total billed</td><td style="${amt}">₹${fmtNum(s.totalAmt)}</td></tr>
-        <tr style="background:#f8fafc"><td style="${td}">Payments recorded (no.)</td><td style="${amt}font-weight:700;">${s.payCount}</td></tr>
-        <tr><td style="${td}">Total credited</td><td style="${amt}">₹${fmtNum(s.credited)}</td></tr>
-        <tr style="background:#fef2f2"><td style="${td}"><strong>Outstanding</strong></td><td style="${amt}"><strong>₹${fmtNum(s.outstanding)}</strong></td></tr>
-        <tr><td style="${td}">Invoices with balance due (no.)</td><td style="${amt}font-weight:700;">${s.pendCount}</td></tr>
+        <tr style="background:#f1f5f9"><td style="${td}">Last credited</td><td style="${amt}font-weight:600;">${lastCreditCell}</td></tr>
+        <tr style="background:#fef2f2"><td style="${td}"><strong>${filteredOutstandingLabel}</strong></td><td style="${amt}"><strong>₹${fmtNum(filteredOutstanding)}</strong></td></tr>
+        <tr><td style="${td}"><strong>Total outstanding</strong></td><td style="${amt}font-weight:700;">₹${fmtNum(s.outstanding)}</td></tr>
+        <tr style="background:#f1f5f9"><td style="${td}">Invoices with balance due (no.)</td><td style="${amt}font-weight:700;">${filteredOpenFifo.length}</td></tr>
       </table>
-      <p style="margin:0 0 10px;font-size:7px;color:#475569">Credits apply oldest invoice date first (FIFO).</p>
-
-      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Payments (chronological)</div>
-      <table style="${tbl}margin-bottom:10px">
-        <colgroup><col style="width:5%"><col style="width:20%"><col style="width:17%"><col style="width:30%"><col style="width:28%"></colgroup>
-        <thead><tr style="background:#1e3a5f;color:#fff">
-          <th style="${thC}font-size:7px;">#</th>
-          <th style="${th}font-size:7px;">When</th>
-          <th style="${thR}font-size:7px;">Amount</th>
-          <th style="${th}font-size:7px;">Note</th>
-          <th style="${thR}font-size:7px;">Outstd.</th>
-        </tr></thead>
-        <tbody>${s.payCount ? payRows : `<tr><td colspan="5" style="padding:8px;text-align:center">No credits yet.</td></tr>`}</tbody>
-      </table>
-
-      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Invoices pending</div>
+      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">Invoices pending${agingLabel ? ` <span style="font-size:7px;font-weight:400;color:#92400e;background:#fef3c7;padding:1px 5px;border-radius:3px;margin-left:4px;">${esc(agingLabel)}</span>` : ''}</div>
       <table style="${tbl}margin-bottom:10px">
         <colgroup><col style="width:17%"><col style="width:14%"><col style="width:16%"><col style="width:17%"><col style="width:18%"><col style="width:18%"></colgroup>
         <thead><tr style="background:#1e3a5f;color:#fff">
@@ -4547,27 +4593,14 @@ document.addEventListener('DOMContentLoaded', () => {
         <tbody>${pendRows}</tbody>
       </table>
 
-      <div style="font-size:10px;font-weight:700;margin:10px 0 4px">All invoices — FIFO allocation</div>
-      <table style="${tbl}">
-        <colgroup><col style="width:17%"><col style="width:14%"><col style="width:16%"><col style="width:17%"><col style="width:18%"><col style="width:18%"></colgroup>
-        <thead><tr style="background:#334155;color:#fff">
-          <th style="${th}font-size:7px;">Inv. no.</th>
-          <th style="${th}font-size:7px;">Date</th>
-          <th style="${thR}font-size:7px;">Total</th>
-          <th style="${thR}font-size:7px;">Settled</th>
-          <th style="${thR}font-size:7px;">Balance</th>
-          <th style="${thC}font-size:7px;">St.</th>
-        </tr></thead>
-        <tbody>${allInvRows}</tbody>
-      </table>
     </div>`;
   }
 
-  async function downloadCompanyPaymentSummaryPDF(companyName, returnBlob) {
+  async function downloadCompanyPaymentSummaryPDF(companyName, returnBlob, {minDays = 0, maxDays = Infinity} = {}) {
     if (!companyName) return;
     const state = saveViewState();
     const paper = $('invoicePaper');
-    paper.innerHTML = buildPaymentSummaryPdfHtml(companyName);
+    paper.innerHTML = buildPaymentSummaryPdfHtml(companyName, {minDays, maxDays}); // eslint-disable-line
     paper.classList.add('payment-summary-pdf');
     const shield = showPaperForCapture();
     window.scrollTo(0, 0);

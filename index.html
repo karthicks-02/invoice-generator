@@ -1319,6 +1319,31 @@
         </div>
       </div>
     </div>
+    <div id="paySumPdfFilterOverlay" class="overlay hidden">
+      <div class="overlay-box" style="max-width:420px">
+        <h3 style="margin:0 0 4px">Download Summary PDF</h3>
+        <p style="margin:0 0 12px;font-size:13px;color:#475569">Filter pending invoices shown in the PDF:</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="paySumPdfAgingPills">
+          <button type="button" class="preset-pill pay-pdf-aging-pill" data-from="0" data-to="">All</button>
+          <button type="button" class="preset-pill pay-pdf-aging-pill active" data-from="30" data-to="">30d+</button>
+          <button type="button" class="preset-pill pay-pdf-aging-pill" data-from="45" data-to="">45d+</button>
+          <button type="button" class="preset-pill pay-pdf-aging-pill" data-from="60" data-to="">60d+</button>
+          <button type="button" class="preset-pill pay-pdf-aging-pill" data-from="90" data-to="">90d+</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:18px;font-size:13px">
+          <span style="color:#64748b">Custom:</span>
+          <input type="number" id="paySumPdfFromDays" class="days-input" min="0" placeholder="0" style="width:58px" />
+          <span style="color:#64748b">to</span>
+          <input type="number" id="paySumPdfToDays" class="days-input" min="0" placeholder="∞" style="width:58px" />
+          <span style="color:#64748b">days</span>
+        </div>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="paySumPdfDownloadBtn">Download PDF</button>
+          <button class="btn btn-secondary" id="paySumPdfCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div id="vpayReminderOverlay" class="overlay hidden">
       <div class="overlay-box">
         <h3>Set Reminder</h3>

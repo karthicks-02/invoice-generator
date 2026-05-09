@@ -871,7 +871,8 @@ legend {
 .preset-btn.active,
 .days-preset.active,
 .co-days-btn.active,
-.overlay-days-btn.active {
+.overlay-days-btn.active,
+.pay-pdf-aging-pill.active {
   background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
   color: #fff !important;
   border-color: transparent !important;
