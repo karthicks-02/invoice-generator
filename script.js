@@ -3490,7 +3490,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const list = document.createElement('div');
     list.className = 'ac-list hidden';
-    wrap.appendChild(list);
+    if (opts && opts.itemsTable) list.dataset.itemsTable = '1';
+    document.body.appendChild(list);
+
+    function positionList() {
+      const rect = input.getBoundingClientRect();
+      list.style.position = 'fixed';
+      list.style.top = rect.bottom + 'px';
+      list.style.left = rect.left + 'px';
+      list.style.width = rect.width + 'px';
+      list.style.zIndex = '9999';
+    }
 
     let activeIdx = -1;
 
@@ -3509,6 +3519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         list.appendChild(div);
       });
+      positionList();
       list.classList.remove('hidden');
     }
 
@@ -3833,6 +3844,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderItems() {
+    document.querySelectorAll('body > .ac-list[data-items-table]').forEach(el => el.remove());
     const tbody = $('itemsBody');
     tbody.innerHTML = '';
     items.forEach((item, i) => {
@@ -3967,7 +3979,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inp = e.target;
     if ((inp.dataset.f === 'description' || inp.dataset.f === 'hsn') && !inp.dataset.acInit) {
       inp.dataset.acInit = '1';
-      createAutocomplete(inp, matchProducts, p => fillProduct(inp, p));
+      createAutocomplete(inp, matchProducts, p => fillProduct(inp, p), { itemsTable: true });
       inp.focus();
     }
   });

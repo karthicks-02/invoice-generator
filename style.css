@@ -856,17 +856,14 @@ input.inv-rate-input {
 /* ===== Autocomplete ===== */
 .ac-wrap { position: relative; }
 .ac-list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  position: fixed;
   background: var(--surface);
   border: 1px solid var(--border);
   border-top: none;
   border-radius: 0 0 8px 8px;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 100;
+  z-index: 9999;
   box-shadow: 0 6px 16px rgba(0,0,0,.1);
 }
 .ac-item {
