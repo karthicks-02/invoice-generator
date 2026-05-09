@@ -129,6 +129,18 @@
           <canvas class="kpi-spark" id="kpiCountSpark" width="80" height="32"></canvas>
         </div>
 
+        <div class="home-kpi-card home-kpi-profit" id="plKpiCard" style="cursor:pointer">
+          <div class="kpi-bg-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+          </div>
+          <div class="home-kpi-label">Net Profit</div>
+          <div class="home-kpi-value" id="kpiNetProfit">--</div>
+          <div class="kpi-footer">
+            <span class="home-kpi-sub">This month</span>
+            <span class="kpi-trend" id="kpiProfitTrend"></span>
+          </div>
+        </div>
+
       </div>
 
       <!-- Luxury nav cards — Customer / Vendor (above chart) -->
@@ -183,6 +195,14 @@
                 <div class="home-nav-item" data-view="customerReportView">
                   <div class="home-nav-item-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2);box-shadow:0 6px 16px rgba(6,182,212,0.35)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
                   <div class="home-nav-item-label">Customer Report</div>
+                </div>
+                <div class="home-nav-item" data-view="plView">
+                  <div class="home-nav-item-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 6px 16px rgba(34,197,94,0.35)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
+                  <div class="home-nav-item-label">P&amp;L</div>
+                </div>
+                <div class="home-nav-item" data-view="expenseView">
+                  <div class="home-nav-item-icon" style="background:linear-gradient(135deg,#f97316,#ea580c);box-shadow:0 6px 16px rgba(249,115,22,0.35)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+                  <div class="home-nav-item-label">Expenses</div>
                 </div>
               </div>
             </div>
@@ -2038,6 +2058,196 @@
         <div class="invoice-paper" id="poInvoicePaper"></div>
       </section>
     </div>
+
+    <!-- ======== COST SHEET OVERLAY ======== -->
+    <div id="costSheetOverlay" class="overlay hidden">
+      <div class="overlay-box" style="max-width:360px">
+        <h3>Cost Sheet</h3>
+        <p class="overlay-subtitle" id="costSheetProdName" style="font-weight:600;margin-bottom:1rem"></p>
+        <div class="field">
+          <label>Steel Coil Cost (per unit)</label>
+          <input type="number" id="csCoilCost" min="0" step="0.01" placeholder="0.00" inputmode="decimal" />
+        </div>
+        <div class="field">
+          <label>Coating Charge (per unit)</label>
+          <input type="number" id="csCoatingCharge" min="0" step="0.01" placeholder="0.00" inputmode="decimal" />
+        </div>
+        <div class="field">
+          <label>Drilling Charge (per unit)</label>
+          <input type="number" id="csDrillingCharge" min="0" step="0.01" placeholder="0.00" inputmode="decimal" />
+        </div>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="csSaveBtn">Save</button>
+          <button class="btn btn-secondary" id="csCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== EXPENSE TRACKER VIEW ======== -->
+    <section id="expenseView" class="view hidden">
+      <div class="view-header" style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+        <button class="btn btn-secondary" id="expBackBtn">&#8592; Back</button>
+        <h2 style="margin:0">Expenses</h2>
+      </div>
+
+      <div style="margin-bottom:1.5rem">
+        <fieldset>
+          <legend>Add Expense</legend>
+          <div class="field">
+            <label>Category</label>
+            <select id="expCategory" class="filter-input" style="max-width:220px">
+              <option value="Rent">Rent</option>
+              <option value="Electricity">Electricity</option>
+              <option value="Fuel">Fuel</option>
+              <option value="Salary">Salary</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field" id="expEmployeeField" style="display:none">
+            <label>Employee Name</label>
+            <input type="text" id="expEmployeeName" placeholder="e.g. Ravi" />
+          </div>
+          <div class="field">
+            <label>Amount (Rs.)</label>
+            <input type="number" id="expAmount" min="0" step="0.01" placeholder="0.00" inputmode="decimal" style="max-width:180px" />
+          </div>
+          <div class="field">
+            <label>Month</label>
+            <input type="month" id="expMonth" style="max-width:180px" />
+          </div>
+          <div class="field">
+            <label>Note (optional)</label>
+            <input type="text" id="expNote" placeholder="e.g. EB bill Q1" />
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="addExpBtn">+ Add Expense</button>
+          </div>
+        </fieldset>
+      </div>
+
+      <div id="expTableWrap">
+        <table class="data-table analytics-table" id="expTable" style="display:none">
+          <thead>
+            <tr>
+              <th>Category / Employee</th>
+              <th>Amount</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="expListBody"></tbody>
+        </table>
+        <p id="expEmpty" class="empty-msg">No expenses added yet.</p>
+      </div>
+    </section>
+
+    <!-- ======== P&L VIEW ======== -->
+    <section id="plView" class="view hidden">
+      <div class="view-header" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem">
+        <button class="btn btn-secondary" id="plBackBtn">&#8592; Back</button>
+        <h2 style="margin:0;flex:1">Profit &amp; Loss</h2>
+        <button class="btn btn-primary btn-sm analytics-dl-btn" id="plDownloadPdfBtn">&#8595; PDF</button>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.25rem">
+        <button type="button" class="btn btn-sm btn-secondary preset-btn apill active" id="plPresetMonth">This Month</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="plPresetWeek">This Week</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="plPresetYear">This Year</button>
+        <button type="button" class="btn btn-sm btn-secondary preset-btn apill" id="plPresetCustom">Custom</button>
+      </div>
+      <div class="custom-range-panel" id="plCustomRange" style="display:none;margin-bottom:1rem">
+        <label style="display:flex;align-items:center;gap:.5rem">From <input type="date" id="plCustomFrom" /></label>
+        <label style="display:flex;align-items:center;gap:.5rem">To <input type="date" id="plCustomTo" /></label>
+        <button class="btn btn-primary btn-sm" id="plCustomApply">Apply</button>
+      </div>
+
+      <div id="plTableWrap" style="overflow-x:auto">
+        <table class="pl-table">
+          <thead>
+            <tr id="plHeaderRow">
+              <th class="pl-label-col"></th>
+              <th id="plPeriodA" class="pl-val-col">--</th>
+              <th id="plPeriodB" class="pl-val-col pl-compare-col">--</th>
+              <th class="pl-delta-col pl-compare-col">&#916;</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="pl-section-hdr"><td colspan="4">REVENUE</td></tr>
+            <tr>
+              <td class="pl-label">Customer Invoices</td>
+              <td id="plRevenueA" class="pl-num">--</td>
+              <td id="plRevenueB" class="pl-num pl-compare-col">--</td>
+              <td id="plRevenueD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr class="pl-section-hdr"><td colspan="4">COST OF GOODS</td></tr>
+            <tr>
+              <td class="pl-label pl-indent">Steel Coil</td>
+              <td id="plCoilA" class="pl-num">--</td>
+              <td id="plCoilB" class="pl-num pl-compare-col">--</td>
+              <td id="plCoilD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr>
+              <td class="pl-label pl-indent">Coating</td>
+              <td id="plCoatingA" class="pl-num">--</td>
+              <td id="plCoatingB" class="pl-num pl-compare-col">--</td>
+              <td id="plCoatingD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr>
+              <td class="pl-label pl-indent">Drilling</td>
+              <td id="plDrillingA" class="pl-num">--</td>
+              <td id="plDrillingB" class="pl-num pl-compare-col">--</td>
+              <td id="plDrillingD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr class="pl-section-hdr"><td colspan="4">VENDOR PURCHASES</td></tr>
+            <tr>
+              <td class="pl-label">Purchase Invoices</td>
+              <td id="plVendorA" class="pl-num">--</td>
+              <td id="plVendorB" class="pl-num pl-compare-col">--</td>
+              <td id="plVendorD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr class="pl-section-hdr"><td colspan="4">OVERHEADS &amp; PAYROLL</td></tr>
+            <tr>
+              <td class="pl-label pl-indent">Rent</td>
+              <td id="plRentA" class="pl-num">--</td>
+              <td id="plRentB" class="pl-num pl-compare-col">--</td>
+              <td id="plRentD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr>
+              <td class="pl-label pl-indent">Electricity</td>
+              <td id="plElectA" class="pl-num">--</td>
+              <td id="plElectB" class="pl-num pl-compare-col">--</td>
+              <td id="plElectD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr>
+              <td class="pl-label pl-indent">Fuel</td>
+              <td id="plFuelA" class="pl-num">--</td>
+              <td id="plFuelB" class="pl-num pl-compare-col">--</td>
+              <td id="plFuelD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr>
+              <td class="pl-label pl-indent">Salaries</td>
+              <td id="plSalaryA" class="pl-num">--</td>
+              <td id="plSalaryB" class="pl-num pl-compare-col">--</td>
+              <td id="plSalaryD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr>
+              <td class="pl-label pl-indent">Other</td>
+              <td id="plOtherA" class="pl-num">--</td>
+              <td id="plOtherB" class="pl-num pl-compare-col">--</td>
+              <td id="plOtherD" class="pl-delta pl-compare-col"></td>
+            </tr>
+            <tr class="pl-profit-row">
+              <td class="pl-label pl-profit-label">NET PROFIT</td>
+              <td id="plProfitA" class="pl-num pl-profit-num">--</td>
+              <td id="plProfitB" class="pl-num pl-profit-num pl-compare-col">--</td>
+              <td id="plProfitD" class="pl-delta pl-compare-col"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="plPdfContainer" style="display:none;position:absolute;left:-9999px"></div>
+    </section>
 
   </main>
 

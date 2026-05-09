@@ -3091,3 +3091,72 @@ input.inv-rate-input {
   .cr-bh-amount { font-size: 24px; }
   .cr-bh-stat-val { font-size: 11px; }
 }
+
+/* ===== P&L KPI card ===== */
+.home-kpi-profit {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+/* ===== Cost Sheet button in product table ===== */
+.btn-costsheet {
+  background: none;
+  border: 1px solid #7c3aed;
+  color: #7c3aed;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: .78rem;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.btn-costsheet:hover { background: #7c3aed; color: #fff; }
+
+/* ===== Expense month group header ===== */
+.exp-month-header {
+  background: var(--bg);
+  font-weight: 700;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  padding: .5rem .75rem;
+}
+
+/* ===== P&L Table ===== */
+.pl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .95rem;
+}
+.pl-table th,
+.pl-table td {
+  padding: .55rem .85rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+.pl-label-col { text-align: left !important; width: 44%; }
+.pl-val-col   { min-width: 110px; }
+.pl-delta-col { min-width: 80px; }
+.pl-label     { text-align: left !important; color: var(--text); }
+.pl-indent    { padding-left: 2rem !important; color: var(--text-muted); }
+.pl-num       { font-variant-numeric: tabular-nums; }
+.pl-section-hdr td {
+  background: var(--bg);
+  font-weight: 700;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  padding: .4rem .85rem;
+  border-bottom: none;
+}
+.pl-profit-row td {
+  border-top: 2px solid var(--border);
+  padding-top: .75rem;
+  padding-bottom: .75rem;
+}
+.pl-profit-label { font-weight: 700; font-size: 1rem; color: var(--text) !important; }
+.pl-profit-num   { font-weight: 700; font-size: 1rem; }
+.pl-delta-up { color: #16a34a; font-weight: 600; font-size: .85rem; white-space: nowrap; }
+.pl-delta-dn { color: #dc2626; font-weight: 600; font-size: .85rem; white-space: nowrap; }
+.pl-delta-na { color: var(--text-muted); }
+.pl-no-compare .pl-compare-col { display: none; }

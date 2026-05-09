@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       purchaseProducts = await db.loadPurchaseProducts();
       poInvoices = await db.loadPoInvoices();
       vendorPayments = await db.loadVendorPayments();
+      expenses = await db.loadExpenses();
       migratePaymentCreditIds();
       migrateVendorPaymentCreditIds();
 
@@ -93,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hideVendForm();
       $('previewPanel').classList.add('hidden');
       $('poPreviewPanel').classList.add('hidden');
+      updatePlKpi();
       goHome();
     } else {
       customers = [];
@@ -103,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
       vendors = [];
       poInvoices = [];
       vendorPayments = {};
+      expenses = [];
       db.setUser(null);
 
       $('userBar').classList.add('hidden');
@@ -201,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (v === 'purchaseAnalyticsView') renderPurchaseAnalytics();
       if (v === 'customerReportView')    renderCustomerReport();
       if (v === 'vendorReportView')      renderVendorReport();
+      if (v === 'expenseView') { initExpMonth(); renderExpenseList(); }
+      if (v === 'plView')      { renderPlPanel(); }
     });
   });
 
@@ -284,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${conCount}</td>
         <td class="actions">
           <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-costsheet" data-i="${i}">Cost Sheet</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
       custFrag.appendChild(tr);
@@ -621,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Product List CRUD ──
   // ══════════════════════════════════════
   let products = [];
+  let expenses = [];
   let editProdIdx = -1;
 
   function saveProducts() {
@@ -650,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         <td class="actions">
           <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-costsheet" data-i="${i}">Cost Sheet</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
       prodFrag.appendChild(tr);
@@ -787,6 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.classList.contains('btn-edit')) {
       openProdEdit(i);
     }
+    if (e.target.classList.contains('btn-costsheet')) {
+      openCostSheet(i);
+    }
     if (e.target.classList.contains('btn-del')) {
       if (confirm('Delete this product?')) {
         products.splice(i, 1);
@@ -794,6 +805,36 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProducts();
       }
     }
+  });
+
+  let costSheetProductIdx = -1;
+
+  function openCostSheet(idx) {
+    costSheetProductIdx = idx;
+    const p  = products[idx];
+    const cs = p.costSheet || {};
+    document.getElementById('costSheetProdName').textContent   = p.name;
+    document.getElementById('csCoilCost').value                = cs.coilCost       != null ? cs.coilCost       : '';
+    document.getElementById('csCoatingCharge').value           = cs.coatingCharge  != null ? cs.coatingCharge  : '';
+    document.getElementById('csDrillingCharge').value          = cs.drillingCharge != null ? cs.drillingCharge : '';
+    document.getElementById('costSheetOverlay').classList.remove('hidden');
+  }
+
+  document.getElementById('csSaveBtn').addEventListener('click', () => {
+    if (costSheetProductIdx < 0) return;
+    const coil     = parseFloat(document.getElementById('csCoilCost').value)      || 0;
+    const coating  = parseFloat(document.getElementById('csCoatingCharge').value)  || 0;
+    const drilling = parseFloat(document.getElementById('csDrillingCharge').value) || 0;
+    products[costSheetProductIdx].costSheet = { coilCost: coil, coatingCharge: coating, drillingCharge: drilling };
+    saveProducts();
+    updatePlKpi();
+    document.getElementById('costSheetOverlay').classList.add('hidden');
+    costSheetProductIdx = -1;
+  });
+
+  document.getElementById('csCancelBtn').addEventListener('click', () => {
+    document.getElementById('costSheetOverlay').classList.add('hidden');
+    costSheetProductIdx = -1;
   });
 
   // ══════════════════════════════════════
@@ -5909,6 +5950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${Number(p.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         <td class="actions">
           <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-costsheet" data-i="${i}">Cost Sheet</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
       pprodFrag.appendChild(tr);
@@ -6109,6 +6151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${escHtml(v.phone)}</td>
         <td class="actions">
           <button class="btn-edit" data-i="${i}">Edit</button>
+          <button class="btn-costsheet" data-i="${i}">Cost Sheet</button>
           <button class="btn-del" data-i="${i}">Delete</button>
         </td>`;
       vendFrag.appendChild(tr);
@@ -8981,6 +9024,611 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       container.style.display = 'none';
       container.textContent = '';
+    }
+  });
+
+  // =====================================================
+  // -- Expense Tracker --
+  // =====================================================
+
+  function saveExpenses() {
+    db.saveExpenses(expenses);
+  }
+
+  function expMonthLabel(ym) {
+    if (!ym) return 'Unknown';
+    const parts = ym.split('-');
+    return new Date(+parts[0], +parts[1] - 1, 1)
+      .toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  }
+
+  function renderExpenseList() {
+    const tbody = document.getElementById('expListBody');
+    const table = document.getElementById('expTable');
+    const empty = document.getElementById('expEmpty');
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+    if (!expenses.length) {
+      table.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    table.style.display = 'table';
+    empty.style.display = 'none';
+
+    const byMonth = {};
+    expenses.forEach(function(e, i) {
+      const key = e.month || 'Unknown';
+      if (!byMonth[key]) byMonth[key] = [];
+      byMonth[key].push({ e: e, i: i });
+    });
+    const months = Object.keys(byMonth).sort().reverse();
+    const frag = document.createDocumentFragment();
+
+    months.forEach(function(month) {
+      const hdrTr = document.createElement('tr');
+      const hdrTd = document.createElement('td');
+      hdrTd.colSpan = 4;
+      hdrTd.className = 'exp-month-header';
+      hdrTd.textContent = expMonthLabel(month);
+      hdrTr.appendChild(hdrTd);
+      frag.appendChild(hdrTr);
+
+      byMonth[month].forEach(function(item) {
+        const e = item.e;
+        const i = item.i;
+        const tr = document.createElement('tr');
+
+        const catTd = document.createElement('td');
+        catTd.textContent = e.category
+          + (e.category === 'Salary' && e.employeeName ? ' — ' + e.employeeName : '');
+        tr.appendChild(catTd);
+
+        const amtTd = document.createElement('td');
+        amtTd.textContent = '₹' + Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        tr.appendChild(amtTd);
+
+        const noteTd = document.createElement('td');
+        noteTd.textContent = e.note || '—';
+        tr.appendChild(noteTd);
+
+        const actTd = document.createElement('td');
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-del exp-del-btn';
+        delBtn.dataset.i = i;
+        delBtn.textContent = 'Delete';
+        actTd.appendChild(delBtn);
+        tr.appendChild(actTd);
+
+        frag.appendChild(tr);
+      });
+    });
+    tbody.appendChild(frag);
+  }
+
+  // Show employee name field only for Salary
+  document.getElementById('expCategory').addEventListener('change', function() {
+    document.getElementById('expEmployeeField').style.display =
+      this.value === 'Salary' ? 'block' : 'none';
+  });
+
+  // Default month to current month on view open
+  function initExpMonth() {
+    const now = new Date();
+    document.getElementById('expMonth').value =
+      now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }
+
+  document.getElementById('addExpBtn').addEventListener('click', function() {
+    const category = document.getElementById('expCategory').value;
+    const amount   = parseFloat(document.getElementById('expAmount').value);
+    const month    = document.getElementById('expMonth').value;
+    const note     = document.getElementById('expNote').value.trim();
+    const empName  = category === 'Salary' ? document.getElementById('expEmployeeName').value.trim() : '';
+
+    if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+    if (!month)                 { alert('Please select a month.'); return; }
+
+    expenses.push({ category: category, amount: amount, month: month, note: note, employeeName: empName });
+    saveExpenses();
+    renderExpenseList();
+    updatePlKpi();
+
+    document.getElementById('expAmount').value = '';
+    document.getElementById('expNote').value = '';
+    document.getElementById('expEmployeeName').value = '';
+    document.getElementById('expAmount').focus();
+  });
+
+  document.getElementById('expListBody').addEventListener('click', function(e) {
+    if (!e.target.classList.contains('exp-del-btn')) return;
+    const i = +e.target.dataset.i;
+    if (confirm('Delete this expense?')) {
+      expenses.splice(i, 1);
+      saveExpenses();
+      renderExpenseList();
+      updatePlKpi();
+    }
+  });
+
+  document.getElementById('expBackBtn').addEventListener('click', goHome);
+
+  // =====================================================
+  // -- P&L Calculation Engine --
+  // =====================================================
+
+  function plMonthRange(ym) {
+    const parts = ym.split('-').map(Number);
+    const y = parts[0], m = parts[1];
+    const last = new Date(y, m, 0).getDate();
+    return { from: ym + '-01', to: ym + '-' + String(last).padStart(2, '0') };
+  }
+
+  function plWeekRange(date) {
+    const d   = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() + diff);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return { from: formatDateYMDLocal(mon), to: formatDateYMDLocal(sun) };
+  }
+
+  function plFilterInvoices(from, to) {
+    return invoices.filter(function(inv) {
+      return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to;
+    });
+  }
+
+  function plFilterPoInvoices(from, to) {
+    return poInvoices.filter(function(inv) {
+      return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to;
+    });
+  }
+
+  function computePlRevenue(from, to) {
+    return plFilterInvoices(from, to).reduce(function(s, inv) {
+      return s + computeGrandTotal(inv);
+    }, 0);
+  }
+
+  function computePlVendorPurchases(from, to) {
+    return plFilterPoInvoices(from, to).reduce(function(s, inv) {
+      return s + computePoGrandTotal(inv);
+    }, 0);
+  }
+
+  function computePlCogs(from, to) {
+    const result = { coil: 0, coating: 0, drilling: 0 };
+    plFilterInvoices(from, to).forEach(function(inv) {
+      (inv.items || []).forEach(function(it) {
+        const prod = products.find(function(p) {
+          return p.name && p.name.toLowerCase() === (it.description || '').toLowerCase();
+        });
+        if (!prod || !prod.costSheet) return;
+        const qty = numericQtyForLine(it);
+        result.coil     += qty * (Number(prod.costSheet.coilCost)       || 0);
+        result.coating  += qty * (Number(prod.costSheet.coatingCharge)  || 0);
+        result.drilling += qty * (Number(prod.costSheet.drillingCharge) || 0);
+      });
+    });
+    return result;
+  }
+
+  function computePlExpenses(from, to) {
+    const fromD  = new Date(from + 'T00:00:00');
+    const toD    = new Date(to + 'T00:00:00');
+    const fromYM = from.slice(0, 7);
+    const toYM   = to.slice(0, 7);
+    const result = { rent: 0, electricity: 0, fuel: 0, salary: 0, other: 0 };
+
+    expenses.forEach(function(exp) {
+      const ym = exp.month || '';
+      if (ym < fromYM || ym > toYM) return;
+
+      const parts   = ym.split('-').map(Number);
+      const ey = parts[0], em = parts[1];
+      const moStart  = new Date(ey, em - 1, 1);
+      const moEnd    = new Date(ey, em, 0);
+      const moLen    = moEnd.getDate();
+      const oStart   = fromD > moStart ? fromD : moStart;
+      const oEnd     = toD   < moEnd   ? toD   : moEnd;
+      const oDays    = Math.max(0, Math.floor((oEnd - oStart) / 86400000) + 1);
+      const fraction = oDays / moLen;
+      const amt      = (Number(exp.amount) || 0) * fraction;
+
+      const cat = (exp.category || '').toLowerCase();
+      if      (cat === 'rent')        result.rent        += amt;
+      else if (cat === 'electricity') result.electricity += amt;
+      else if (cat === 'fuel')        result.fuel        += amt;
+      else if (cat === 'salary')      result.salary      += amt;
+      else                            result.other       += amt;
+    });
+
+    return result;
+  }
+
+  function computeNetProfit(from, to) {
+    const revenue = computePlRevenue(from, to);
+    const cogs    = computePlCogs(from, to);
+    const vendor  = computePlVendorPurchases(from, to);
+    const exp     = computePlExpenses(from, to);
+    const costs   = cogs.coil + cogs.coating + cogs.drilling
+      + vendor + exp.rent + exp.electricity + exp.fuel + exp.salary + exp.other;
+    return { revenue: revenue, cogs: cogs, vendor: vendor, exp: exp, profit: Math.round(revenue - costs) };
+  }
+
+  // =====================================================
+  // -- P&L Panel --
+  // =====================================================
+
+  let plPreset     = 'month';
+  let plCustomFrom = '';
+  let plCustomTo   = '';
+
+  function getPlRanges() {
+    const now = new Date();
+    const y   = now.getFullYear();
+    const m   = now.getMonth();
+    let curRange, prevRange;
+
+    if (plPreset === 'week') {
+      curRange  = plWeekRange(now);
+      const pw  = new Date(now);
+      pw.setDate(now.getDate() - 7);
+      prevRange = plWeekRange(pw);
+
+    } else if (plPreset === 'month') {
+      const ym  = y + '-' + String(m + 1).padStart(2, '0');
+      curRange  = plMonthRange(ym);
+      const pd  = new Date(y, m - 1, 1);
+      const pym = pd.getFullYear() + '-' + String(pd.getMonth() + 1).padStart(2, '0');
+      prevRange = plMonthRange(pym);
+
+    } else if (plPreset === 'year') {
+      curRange  = { from: y + '-01-01',       to: y + '-12-31' };
+      prevRange = { from: (y - 1) + '-01-01', to: (y - 1) + '-12-31' };
+
+    } else {
+      curRange  = { from: plCustomFrom, to: plCustomTo };
+      prevRange = null;
+    }
+
+    return { curRange: curRange, prevRange: prevRange };
+  }
+
+  function plPeriodLabel(range) {
+    const f = range.from, t = range.to;
+    if (!f || !t) return '';
+    if (f.slice(0, 7) === t.slice(0, 7)) {
+      return new Date(f + 'T00:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    }
+    if (f.slice(5) === '01-01' && t.slice(5) === '12-31') return f.slice(0, 4);
+    return formatShortDate(f) + ' – ' + formatShortDate(t);
+  }
+
+  function setPlDelta(el, cur, prev) {
+    if (!el) return;
+    if (prev == null || prev === 0) {
+      el.textContent = '—';
+      el.className = 'pl-delta pl-compare-col pl-delta-na';
+      return;
+    }
+    const pct = (cur - prev) / Math.abs(prev) * 100;
+    const up  = pct >= 0;
+    el.textContent = (up ? '▲' : '▼') + ' ' + Math.abs(pct).toFixed(1) + '%';
+    el.className = 'pl-delta pl-compare-col ' + (up ? 'pl-delta-up' : 'pl-delta-dn');
+  }
+
+  function plFmtRs(v) {
+    return '₹' + Math.round(v).toLocaleString('en-IN');
+  }
+
+  function renderPlPanel() {
+    const ranges = getPlRanges();
+    const curRange  = ranges.curRange;
+    const prevRange = ranges.prevRange;
+    if (!curRange || !curRange.from || !curRange.to) return;
+
+    const cur  = computeNetProfit(curRange.from, curRange.to);
+    const prev = prevRange ? computeNetProfit(prevRange.from, prevRange.to) : null;
+
+    document.getElementById('plPeriodA').textContent = plPeriodLabel(curRange);
+
+    const hasCompare = !!prevRange;
+    document.getElementById('plPeriodB').textContent = hasCompare ? plPeriodLabel(prevRange) : '';
+    document.querySelectorAll('.pl-compare-col').forEach(function(el) {
+      el.style.display = hasCompare ? '' : 'none';
+    });
+
+    function setRow(idA, idB, idD, curVal, prevVal) {
+      const elA = document.getElementById(idA);
+      const elB = document.getElementById(idB);
+      const elD = document.getElementById(idD);
+      if (elA) elA.textContent = plFmtRs(curVal);
+      if (elB) elB.textContent = prev ? plFmtRs(prevVal) : '—';
+      setPlDelta(elD, curVal, prev ? prevVal : null);
+    }
+
+    setRow('plRevenueA',  'plRevenueB',  'plRevenueD',  cur.revenue,         prev ? prev.revenue         : null);
+    setRow('plCoilA',     'plCoilB',     'plCoilD',     cur.cogs.coil,       prev ? prev.cogs.coil       : null);
+    setRow('plCoatingA',  'plCoatingB',  'plCoatingD',  cur.cogs.coating,    prev ? prev.cogs.coating    : null);
+    setRow('plDrillingA', 'plDrillingB', 'plDrillingD', cur.cogs.drilling,   prev ? prev.cogs.drilling   : null);
+    setRow('plVendorA',   'plVendorB',   'plVendorD',   cur.vendor,          prev ? prev.vendor          : null);
+    setRow('plRentA',     'plRentB',     'plRentD',     cur.exp.rent,        prev ? prev.exp.rent        : null);
+    setRow('plElectA',    'plElectB',    'plElectD',    cur.exp.electricity, prev ? prev.exp.electricity : null);
+    setRow('plFuelA',     'plFuelB',     'plFuelD',     cur.exp.fuel,        prev ? prev.exp.fuel        : null);
+    setRow('plSalaryA',   'plSalaryB',   'plSalaryD',   cur.exp.salary,      prev ? prev.exp.salary      : null);
+    setRow('plOtherA',    'plOtherB',    'plOtherD',    cur.exp.other,       prev ? prev.exp.other       : null);
+    setRow('plProfitA',   'plProfitB',   'plProfitD',   cur.profit,          prev ? prev.profit          : null);
+
+    const profEl = document.getElementById('plProfitA');
+    if (profEl) profEl.style.color = cur.profit >= 0 ? '#16a34a' : '#dc2626';
+  }
+
+  // Period preset buttons
+  ['Month', 'Week', 'Year', 'Custom'].forEach(function(label) {
+    const btn = document.getElementById('plPreset' + label);
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      plPreset = label.toLowerCase();
+      document.querySelectorAll('#plView .preset-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+      const showCustom = plPreset === 'custom';
+      document.getElementById('plCustomRange').style.display = showCustom ? 'block' : 'none';
+      if (!showCustom) renderPlPanel();
+    });
+  });
+
+  document.getElementById('plCustomApply').addEventListener('click', function() {
+    plCustomFrom = document.getElementById('plCustomFrom').value;
+    plCustomTo   = document.getElementById('plCustomTo').value;
+    if (!plCustomFrom || !plCustomTo) { alert('Please select both From and To dates.'); return; }
+    renderPlPanel();
+  });
+
+  document.getElementById('plBackBtn').addEventListener('click', goHome);
+
+  // P&L KPI card click
+  document.getElementById('plKpiCard').addEventListener('click', function() {
+    showView('plView');
+    renderPlPanel();
+  });
+
+  // Home dashboard KPI update — called after data loads and after expense/cost changes
+  function updatePlKpi() {
+    const now   = new Date();
+    const y     = now.getFullYear();
+    const m     = now.getMonth();
+    const ym    = y + '-' + String(m + 1).padStart(2, '0');
+    const range = plMonthRange(ym);
+
+    const pd    = new Date(y, m - 1, 1);
+    const pym   = pd.getFullYear() + '-' + String(pd.getMonth() + 1).padStart(2, '0');
+    const pRange = plMonthRange(pym);
+
+    const cur  = computeNetProfit(range.from, range.to);
+    const prev = computeNetProfit(pRange.from, pRange.to);
+
+    const el = document.getElementById('kpiNetProfit');
+    if (el) el.textContent = '₹' + Math.round(Math.abs(cur.profit)).toLocaleString('en-IN');
+
+    const trendEl = document.getElementById('kpiProfitTrend');
+    if (trendEl) {
+      if (prev.profit !== 0) {
+        const pct = Math.round((cur.profit - prev.profit) / Math.abs(prev.profit) * 100);
+        const up  = pct >= 0;
+        trendEl.textContent = (up ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
+        trendEl.className = 'kpi-trend ' + (up ? 'trend-up' : 'trend-down');
+      } else {
+        trendEl.textContent = '';
+      }
+    }
+  }
+
+  // ----- P&L PDF -----
+  function plDeltaPdfText(curVal, prevVal) {
+    if (prevVal == null || prevVal === 0) return '—';
+    const pct = (curVal - prevVal) / Math.abs(prevVal) * 100;
+    const up  = pct >= 0;
+    return (up ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(1) + '%';
+  }
+
+  $('plDownloadPdfBtn').addEventListener('click', async function() {
+    const ranges    = getPlRanges();
+    const curRange  = ranges.curRange;
+    const prevRange = ranges.prevRange;
+    if (!curRange || !curRange.from || !curRange.to) {
+      alert('Please choose a valid period (including From / To for custom range).');
+      return;
+    }
+
+    const cur  = computeNetProfit(curRange.from, curRange.to);
+    const prev = prevRange ? computeNetProfit(prevRange.from, prevRange.to) : null;
+    const hasCompare = !!prevRange;
+
+    const presetTitles = { week: 'This week', month: 'This month', year: 'This year', custom: 'Custom range' };
+    const presetTitle    = presetTitles[plPreset] || '';
+    const periodCurLabel = plPeriodLabel(curRange);
+    const periodPrevLabel = hasCompare ? plPeriodLabel(prevRange) : '';
+
+    const td    = 'padding:6px 8px;font-size:11px;border:1px solid #e2e8f0;vertical-align:middle;';
+    const tdR   = td + 'text-align:right;font-variant-numeric:tabular-nums;';
+    const tdLbl = td + 'text-align:left;';
+    const thR   = td + 'font-weight:700;background:#e2e8f0;text-align:right;';
+    const thL   = td + 'font-weight:700;background:#e2e8f0;text-align:left;';
+    const sec   = td + 'font-weight:700;background:#cbd5e1;font-size:10px;';
+    const prof  = td + 'font-weight:700;font-size:12px;';
+    const profR = tdR + 'font-weight:700;font-size:12px;';
+
+    const container = $('plPdfContainer');
+    container.replaceChildren();
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'font-family:Arial,Helvetica,sans-serif;padding:24px;max-width:760px;margin:0 auto;color:#0f172a';
+
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:17px;font-weight:700;color:#1e3a5f';
+    nameEl.textContent = COMPANY.name;
+    wrapper.appendChild(nameEl);
+
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:15px;font-weight:700;margin-top:8px';
+    titleEl.textContent = 'Profit & Loss';
+    wrapper.appendChild(titleEl);
+
+    const presetEl = document.createElement('div');
+    presetEl.style.cssText = 'font-size:12px;color:#64748b;margin-top:4px';
+    presetEl.textContent = presetTitle;
+    wrapper.appendChild(presetEl);
+
+    const curPeriodEl = document.createElement('div');
+    curPeriodEl.style.cssText = 'font-size:12px;margin-top:6px';
+    curPeriodEl.appendChild(document.createElement('strong')).textContent = 'Current: ';
+    curPeriodEl.appendChild(document.createTextNode(periodCurLabel + ' (' + curRange.from + ' — ' + curRange.to + ')'));
+    wrapper.appendChild(curPeriodEl);
+
+    if (hasCompare) {
+      const prevPeriodEl = document.createElement('div');
+      prevPeriodEl.style.cssText = 'font-size:12px;margin-top:2px';
+      prevPeriodEl.appendChild(document.createElement('strong')).textContent = 'Compare: ';
+      prevPeriodEl.appendChild(document.createTextNode(periodPrevLabel + ' (' + prevRange.from + ' — ' + prevRange.to + ')'));
+      wrapper.appendChild(prevPeriodEl);
+    }
+
+    const genEl = document.createElement('div');
+    genEl.style.cssText = 'font-size:10px;color:#64748b;margin-top:8px';
+    genEl.textContent = 'Generated: ' + new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    wrapper.appendChild(genEl);
+
+    const table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;margin-top:4px';
+
+    const thead = document.createElement('thead');
+    const hr = document.createElement('tr');
+    function th(txt, st) {
+      const x = document.createElement('th');
+      x.style.cssText = st;
+      x.textContent = txt;
+      return x;
+    }
+    hr.appendChild(th('Line', thL + 'width:40%'));
+    hr.appendChild(th(periodCurLabel, thR));
+    if (hasCompare) {
+      hr.appendChild(th(periodPrevLabel, thR));
+      hr.appendChild(th('Δ', thR + 'width:14%'));
+    }
+    thead.appendChild(hr);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    function appendSection(title) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = hasCompare ? 4 : 2;
+      td.style.cssText = sec;
+      td.textContent = title;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+
+    function appendDataRow(label, curVal, prevVal, indent, isProfit) {
+      const tr = document.createElement('tr');
+      const c1 = document.createElement('td');
+      c1.style.cssText = tdLbl + (indent ? 'padding-left:20px;color:#475569' : '');
+      c1.textContent = label;
+      tr.appendChild(c1);
+
+      const profitColor = isProfit ? (curVal >= 0 ? '#15803d' : '#b91c1c') : '';
+      const c2 = document.createElement('td');
+      c2.style.cssText = tdR + (isProfit ? ';color:' + profitColor + ';font-weight:600' : '');
+      c2.textContent = plFmtRs(curVal);
+      tr.appendChild(c2);
+
+      if (hasCompare) {
+        const c3 = document.createElement('td');
+        const pCol = isProfit && prev ? (prevVal >= 0 ? '#15803d' : '#b91c1c') : '';
+        c3.style.cssText = tdR + (isProfit && prev ? ';color:' + pCol + ';font-weight:600' : '');
+        c3.textContent = prev ? plFmtRs(prevVal) : '—';
+        tr.appendChild(c3);
+        const c4 = document.createElement('td');
+        c4.style.cssText = tdR + 'font-size:10px;color:#475569';
+        c4.textContent = plDeltaPdfText(curVal, prev ? prevVal : null);
+        tr.appendChild(c4);
+      }
+      tbody.appendChild(tr);
+    }
+
+    appendSection('REVENUE');
+    appendDataRow('Customer Invoices', cur.revenue, prev ? prev.revenue : null, false, false);
+
+    appendSection('COST OF GOODS');
+    appendDataRow('Steel Coil', cur.cogs.coil, prev ? prev.cogs.coil : null, true, false);
+    appendDataRow('Coating', cur.cogs.coating, prev ? prev.cogs.coating : null, true, false);
+    appendDataRow('Drilling', cur.cogs.drilling, prev ? prev.cogs.drilling : null, true, false);
+
+    appendSection('VENDOR PURCHASES');
+    appendDataRow('Purchase Invoices', cur.vendor, prev ? prev.vendor : null, false, false);
+
+    appendSection('OVERHEADS & PAYROLL');
+    appendDataRow('Rent', cur.exp.rent, prev ? prev.exp.rent : null, true, false);
+    appendDataRow('Electricity', cur.exp.electricity, prev ? prev.exp.electricity : null, true, false);
+    appendDataRow('Fuel', cur.exp.fuel, prev ? prev.exp.fuel : null, true, false);
+    appendDataRow('Salaries', cur.exp.salary, prev ? prev.exp.salary : null, true, false);
+    appendDataRow('Other', cur.exp.other, prev ? prev.exp.other : null, true, false);
+
+    const pc = cur.profit;
+    const pp = prev ? prev.profit : null;
+    const ptr = document.createElement('tr');
+    const p0 = document.createElement('td');
+    p0.style.cssText = prof;
+    p0.textContent = 'NET PROFIT';
+    ptr.appendChild(p0);
+    const p1 = document.createElement('td');
+    p1.style.cssText = profR + ';color:' + (pc >= 0 ? '#15803d' : '#b91c1c');
+    p1.textContent = plFmtRs(pc);
+    ptr.appendChild(p1);
+    if (hasCompare) {
+      const p2 = document.createElement('td');
+      p2.style.cssText = profR + ';color:' + (pp != null && pp >= 0 ? '#15803d' : '#b91c1c');
+      p2.textContent = pp != null ? plFmtRs(pp) : '—';
+      ptr.appendChild(p2);
+      const p3 = document.createElement('td');
+      p3.style.cssText = tdR + 'font-size:10px;font-weight:700;color:#475569';
+      p3.textContent = plDeltaPdfText(pc, pp);
+      ptr.appendChild(p3);
+    }
+    tbody.appendChild(ptr);
+
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+
+    container.appendChild(wrapper);
+    container.style.display = 'block';
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+
+    const fname = 'profit-loss-' + curRange.from + '-to-' + curRange.to + '.pdf';
+    const opt = Object.assign({}, PDF_OPT, {
+      margin: [0.35, 0.42, 0.35, 0.42],
+      html2canvas: Object.assign({}, PDF_OPT.html2canvas, { scale: 1.65, scrollX: 0, scrollY: 0 }),
+      filename: fname
+    });
+
+    try {
+      await html2pdf().set(opt).from(container).save();
+    } catch (err) {
+      console.error('P&L PDF failed:', err);
+      alert('Could not generate PDF. Please try again.');
+    } finally {
+      container.style.display = 'none';
+      container.replaceChildren();
+      var tmp = document.getElementById('html2pdf__container');
+      if (tmp) tmp.remove();
     }
   });
 
