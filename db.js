@@ -89,6 +89,16 @@ const db = {
     this._doc('poInvoices').set({ items: data });
   },
 
+  async loadExpenses() {
+    const snap = await this._doc('expenses').get();
+    return snap.exists ? (snap.data().items || []) : [];
+  },
+
+  saveExpenses(data) {
+    if (!this._uid) return;
+    this._doc('expenses').set({ items: data });
+  },
+
   async migrateFromLocalStorage() {
     const keys = ['ki_customers', 'ki_products', 'ki_invoices', 'ki_payments'];
     const hasData = keys.some(k => localStorage.getItem(k));
