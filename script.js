@@ -1735,8 +1735,12 @@ document.addEventListener('DOMContentLoaded', () => {
     savePayments();
   }
 
+  function isProformaInvoice(inv) {
+    return Array.isArray(inv.copyTypes) && inv.copyTypes.includes('PROFORMA INVOICE');
+  }
+
   function getCompanyInvoiceTotal(name) {
-    return invoices.filter(inv => inv.buyerName === name).reduce((s, inv) => s + computeGrandTotal(inv), 0);
+    return invoices.filter(inv => inv.buyerName === name && !isProformaInvoice(inv)).reduce((s, inv) => s + computeGrandTotal(inv), 0);
   }
 
   /** Oldest invoice date first; ties broken by invoice no. then id */
@@ -1756,7 +1760,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /** Apply total credited amount to invoices in FIFO order; returns per-invoice applied & balance */
   function fifoAllocationsForCompany(name) {
-    const invs = sortInvoicesFifo(invoices.filter(inv => inv.buyerName === name));
+    const invs = sortInvoicesFifo(invoices.filter(inv => inv.buyerName === name && !isProformaInvoice(inv)));
     const rec = payments[name];
     let pool = rec ? Number(rec.totalCredited) : 0;
     if (Number.isNaN(pool) || pool < 0) pool = 0;
@@ -1809,7 +1813,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getPaymentSummarySnapshot(companyName) {
     migratePaymentCreditIds();
-    const invs = invoices.filter(inv => inv.buyerName === companyName);
+    const invs = invoices.filter(inv => inv.buyerName === companyName && !isProformaInvoice(inv));
     const totalAmt = getCompanyInvoiceTotal(companyName);
     const rec = payments[companyName];
     const credited = rec ? rec.totalCredited : 0;
@@ -1842,7 +1846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const companyNames = [...new Set(invoices.map(inv => inv.buyerName).filter(Boolean))].sort();
 
     const companies = companyNames.map(name => {
-      const invs = invoices.filter(inv => inv.buyerName === name);
+      const invs = invoices.filter(inv => inv.buyerName === name && !isProformaInvoice(inv));
       const totalAmt = invs.reduce((s, inv) => s + computeGrandTotal(inv), 0);
       const rec = payments[name];
       const credited = rec ? rec.totalCredited : 0;

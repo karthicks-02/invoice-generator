@@ -373,7 +373,9 @@
       Object.keys(payData).forEach(function (name) {
         compPaid[name] = Number((payData[name] || {}).totalCredited) || 0;
       });
-      invoices.slice().sort(function (a, b) {
+      invoices.slice().filter(function (inv) {
+        return !(Array.isArray(inv.copyTypes) && inv.copyTypes.includes('PROFORMA INVOICE'));
+      }).sort(function (a, b) {
         return new Date(a.invoiceDate || a.date || 0) - new Date(b.invoiceDate || b.date || 0);
       }).forEach(function (inv) {
         var buyer = inv.buyerName || '';
