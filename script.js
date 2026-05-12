@@ -8436,7 +8436,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var gstRate  = inv.gstRate || 0;
       var gstLabel = inv.gstType === 'intra'
         ? 'CGST+SGST @' + gstRate + '%'
-        : 'IGST @' + (gstRate * 2) + '%';
+        : 'IGST @' + gstRate + '%';
 
       var tr = document.createElement('tr');
       var c0 = document.createElement('td'); c0.textContent = i + 1; tr.appendChild(c0);
@@ -8790,7 +8790,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var gstRate  = inv.gstRate || 0;
       var gstLabel = inv.gstType === 'intra'
         ? 'CGST+SGST @' + gstRate + '%'
-        : 'IGST @' + (gstRate * 2) + '%';
+        : 'IGST @' + gstRate + '%';
 
       var tr = document.createElement('tr');
       var c0 = document.createElement('td'); c0.textContent = i + 1; tr.appendChild(c0);
