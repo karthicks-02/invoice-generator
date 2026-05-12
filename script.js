@@ -1028,9 +1028,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const filtered = invoices.filter(inv => {
       if (query) {
-        const productInfo = (inv.items || []).map(it => `${it.description || ''} ${it.hsn || ''}`).join(' ');
-        const haystack = [inv.invoiceNumber, inv.buyerName, productInfo].join(' ').toLowerCase();
-        if (!haystack.includes(query)) return false;
+        const buyerName = (inv.buyerName || '').toLowerCase();
+        const invoiceNum = (inv.invoiceNumber || '').toLowerCase();
+        const productInfo = (inv.items || []).map(it => `${it.description || ''} ${it.hsn || ''}`).join(' ').toLowerCase();
+        if (!buyerName.startsWith(query) && !invoiceNum.includes(query) && !productInfo.includes(query)) return false;
       }
       if (from && inv.invoiceDate < from) return false;
       if (to && inv.invoiceDate > to) return false;
@@ -1302,9 +1303,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const to = $('invDateTo').value;
     const result = invoices.filter(inv => {
       if (query) {
-        const productInfo = (inv.items || []).map(it => (it.description || '') + ' ' + (it.hsn || '')).join(' ');
-        const haystack = [inv.invoiceNumber, inv.buyerName, productInfo].join(' ').toLowerCase();
-        if (!haystack.includes(query)) return false;
+        const buyerName = (inv.buyerName || '').toLowerCase();
+        const invoiceNum = (inv.invoiceNumber || '').toLowerCase();
+        const productInfo = (inv.items || []).map(it => (it.description || '') + ' ' + (it.hsn || '')).join(' ').toLowerCase();
+        if (!buyerName.startsWith(query) && !invoiceNum.includes(query) && !productInfo.includes(query)) return false;
       }
       if (from && inv.invoiceDate < from) return false;
       if (to && inv.invoiceDate > to) return false;
