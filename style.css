@@ -2598,7 +2598,7 @@ input.inv-rate-input {
 }
 #invoiceListView.invoice-analytics-view .invoice-kpi-row {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 14px;
   margin-bottom: 16px;
 }
