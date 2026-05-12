@@ -1052,11 +1052,20 @@ document.addEventListener('DOMContentLoaded', () => {
     $('invListTable').style.display = filtered.length ? 'table' : 'none';
 
     const fragment = document.createDocumentFragment();
-    let sum = 0;
+    let confirmedSum = 0;
+    let proformaSum = 0;
+    let confirmedCount = 0;
+    let proformaCount = 0;
     filtered.forEach(inv => {
       const tr = document.createElement('tr');
       const total = computeGrandTotal(inv);
-      sum += total;
+      if (isProformaInvoice(inv)) {
+        proformaSum += total;
+        proformaCount++;
+      } else {
+        confirmedSum += total;
+        confirmedCount++;
+      }
       tr.innerHTML = `
         <td><input type="checkbox" class="inv-check" data-inv-id="${inv.id}" /></td>
         <td>${escHtml(inv.invoiceNumber)}</td>
@@ -1075,14 +1084,23 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
     if ($('invSelectAll')) $('invSelectAll').checked = false;
+    const periodLabel = getInvoiceListSummaryPeriodLabel();
     const periodEl = $('invTotalSummaryPeriod');
     const valueEl = $('invTotalSummaryValue');
+    const proformaPeriodEl = $('invProformaSummaryPeriod');
+    const proformaValueEl = $('invProformaSummaryValue');
     const countEl = $('invTotalSummaryCount');
-    if (periodEl) periodEl.textContent = getInvoiceListSummaryPeriodLabel();
-    if (valueEl) valueEl.textContent = '₹' + fmtNum(sum);
+    const confirmedCountEl = $('invConfirmedCount');
+    const proformaCountEl = $('invProformaCount');
+    if (periodEl) periodEl.textContent = periodLabel;
+    if (valueEl) valueEl.textContent = '₹' + fmtNum(confirmedSum);
+    if (proformaPeriodEl) proformaPeriodEl.textContent = periodLabel;
+    if (proformaValueEl) proformaValueEl.textContent = '₹' + fmtNum(proformaSum);
     if (countEl) {
       countEl.textContent = filtered.length + ' invoice' + (filtered.length !== 1 ? 's' : '');
     }
+    if (confirmedCountEl) confirmedCountEl.textContent = confirmedCount;
+    if (proformaCountEl) proformaCountEl.textContent = proformaCount;
   }
 
   function getInvoiceListSummaryPeriodLabel() {
