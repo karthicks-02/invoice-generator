@@ -993,16 +993,32 @@
         </div>
       </div>
       <div class="invoice-kpi-row" id="invTotalPanel">
-        <div class="analytics-kpi-card invoice-kpi-card">
+        <div class="analytics-kpi-card invoice-kpi-card akpi-revenue">
           <div class="akpi-label">Total Amount</div>
           <div class="inv-total-panel-period" id="invTotalSummaryPeriod">All dates</div>
           <div class="akpi-value" id="invTotalSummaryValue">₹0.00</div>
-          <div class="akpi-sub">filtered invoice value</div>
+          <div class="akpi-sub">confirmed invoices only</div>
+        </div>
+        <div class="analytics-kpi-card invoice-kpi-card akpi-proforma">
+          <div class="akpi-label">Proforma Value</div>
+          <div class="inv-total-panel-period" id="invProformaSummaryPeriod">All dates</div>
+          <div class="akpi-value" id="invProformaSummaryValue">₹0.00</div>
+          <div class="akpi-sub">proforma invoices</div>
         </div>
         <div class="analytics-kpi-card invoice-kpi-card invoice-kpi-count-card">
           <div class="akpi-label">Total Invoices</div>
           <div class="akpi-value" id="invTotalSummaryCount">0 invoices</div>
           <div class="akpi-sub">matching current filters</div>
+          <div class="inv-count-split">
+            <div class="inv-count-chip">
+              <span class="inv-count-chip-val" id="invConfirmedCount">0</span>
+              <span class="inv-count-chip-label">Confirmed</span>
+            </div>
+            <div class="inv-count-chip proforma">
+              <span class="inv-count-chip-val" id="invProformaCount">0</span>
+              <span class="inv-count-chip-label">Proforma</span>
+            </div>
+          </div>
           <div class="inv-total-panel-hint">Uses search + date range filters.</div>
         </div>
       </div>
