@@ -289,12 +289,16 @@
       var vpayData   = snaps[3].exists ? (snaps[3].data().data  || {}) : {};
 
       /* ── Totals ──────────────────────────────────────────── */
-      var revenue = invoices.reduce(function (s, inv) { return s + calcTotal(inv); }, 0);
+      function isProforma(inv) {
+        return Array.isArray(inv.copyTypes) && inv.copyTypes.includes('PROFORMA INVOICE');
+      }
+      var confirmedInvoices = invoices.filter(function (inv) { return !isProforma(inv); });
+      var revenue = confirmedInvoices.reduce(function (s, inv) { return s + calcTotal(inv); }, 0);
 
       var now = new Date();
       var mo0 = new Date(now.getFullYear(), now.getMonth(), 1);
       var mo1 = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      var monthInvs = invoices.filter(function (inv) {
+      var monthInvs = confirmedInvoices.filter(function (inv) {
         var d = inv.invoiceDate || inv.date || '';
         if (!d) return false;
         var parsed = new Date(d);
@@ -313,7 +317,7 @@
       countUp('kpiRevenue',      revenue,       fmtMoney, 1400);
       countUp('kpiOutstanding',  outstanding,   fmtMoney, 1000);
       countUp('kpiThisMonth',    month,          fmtMoney,  900);
-      countUp('kpiInvoiceCount', invoices.length, null,     750);
+      countUp('kpiInvoiceCount', confirmedInvoices.length, null,     750);
 
       /* ── Monthly buckets (last 12 months) ────────────────── */
       var buckets = [];
@@ -321,7 +325,7 @@
         var bd = new Date(now.getFullYear(), now.getMonth() - i, 1);
         buckets.push({ y: bd.getFullYear(), m: bd.getMonth(), rev: 0, cnt: 0 });
       }
-      invoices.forEach(function (inv) {
+      confirmedInvoices.forEach(function (inv) {
         var dStr = inv.invoiceDate || inv.date || '';
         if (!dStr) return;
         var d = new Date(dStr);
