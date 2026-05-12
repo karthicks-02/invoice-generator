@@ -8222,9 +8222,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function crInvGrandTotal(inv) { return crInvTaxable(inv) + crInvGst(inv); }
 
   function computeCustomerReportStats(from, to, cmpFrom, cmpTo) {
+    var confirmed = invoices.filter(function(inv) { return !isProformaInvoice(inv); });
     var src = (from && to)
-      ? invoices.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
-      : invoices;
+      ? confirmed.filter(function(inv) { return inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to; })
+      : confirmed;
 
     var map = {};
     src.forEach(function(inv) {
@@ -8244,7 +8245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (cmpFrom && cmpTo) {
-      invoices.forEach(function(inv) {
+      confirmed.forEach(function(inv) {
         var key = (inv.buyerName || '').trim().toLowerCase();
         if (!map[key]) return;
         var date = inv.invoiceDate || '';
@@ -8265,7 +8266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     var key = customerName.toLowerCase();
     var cmpTotal = 0;
-    invoices.forEach(function(inv) {
+    invoices.filter(function(inv) { return !isProformaInvoice(inv); }).forEach(function(inv) {
       if ((inv.buyerName || '').trim().toLowerCase() !== key) return;
       if (!inv.invoiceDate || inv.invoiceDate < cmpFrom || inv.invoiceDate > cmpTo) return;
       cmpTotal += crInvGrandTotal(inv);
@@ -8415,7 +8416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('crDrawerGrandTotal').textContent  = '₹' + fmtNum(r.grandTotal);
     var crNameKey = r.name.toLowerCase();
     var crAllInvList = invoices.filter(function(inv) {
-      return (inv.buyerName || '').trim().toLowerCase() === crNameKey;
+      return !isProformaInvoice(inv) && (inv.buyerName || '').trim().toLowerCase() === crNameKey;
     });
     var crCmpList = [];
     if (crCompareFrom && crCompareTo) {
