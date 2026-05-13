@@ -306,12 +306,16 @@
       });
       var month = monthInvs.reduce(function (s, inv) { return s + calcTotal(inv); }, 0);
 
-      var paid = 0;
-      Object.values(payData).forEach(function (rec) {
-        if (!rec || typeof rec !== 'object') return;
-        paid += Number(rec.totalCredited) || 0;
+      var byBuyer = {};
+      confirmedInvoices.forEach(function (inv) {
+        var n = inv.buyerName || '';
+        byBuyer[n] = (byBuyer[n] || 0) + calcTotal(inv);
       });
-      var outstanding = Math.max(0, revenue - paid);
+      var outstanding = 0;
+      Object.keys(byBuyer).forEach(function (name) {
+        var credited = Number((payData[name] || {}).totalCredited) || 0;
+        outstanding += Math.max(0, byBuyer[name] - credited);
+      });
 
       /* ── Animated KPI values ─────────────────────────────── */
       countUp('kpiRevenue',      revenue,       fmtMoney, 1400);
