@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (v === 'poInvoiceListView')    renderPoInvoiceList();
       if (v === 'productSalesView')      renderProductSales();
       if (v === 'purchaseAnalyticsView') renderPurchaseAnalytics();
-      if (v === 'customerReportView')    renderCustomerReport();
+      if (v === 'customerReportView')    { switchCrTab('summary'); renderCustomerReport(); }
       if (v === 'vendorReportView')      renderVendorReport();
     });
   });
@@ -8553,6 +8553,133 @@ document.addEventListener('DOMContentLoaded', () => {
   $('crDrawerBackdrop').addEventListener('click', closeCrDrawer);
   $('crDrawerClose').addEventListener('click', closeCrDrawer);
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeCrDrawer(); });
+
+  // ── Aging Report ────────────────────────────────────────────
+  var crActiveTab = 'summary';
+
+  function switchCrTab(tab) {
+    crActiveTab = tab;
+    $('crTabSummary').classList.toggle('cr-tab-active', tab === 'summary');
+    $('crTabAging').classList.toggle('cr-tab-active', tab === 'aging');
+    $('crSummaryContent').style.display = tab === 'summary' ? '' : 'none';
+    $('crAgingContent').style.display   = tab === 'aging'   ? '' : 'none';
+    if (tab === 'aging') renderAgingReport();
+  }
+
+  $('crTabSummary').addEventListener('click', function() { switchCrTab('summary'); });
+  $('crTabAging').addEventListener('click',   function() { switchCrTab('aging'); });
+
+  function renderAgingReport() {
+    var confirmed = invoices.filter(function(inv) { return !isProformaInvoice(inv); });
+    var customerNames = [];
+    var seen = {};
+    confirmed.forEach(function(inv) {
+      var name = (inv.buyerName || '').trim();
+      if (name && !seen[name.toLowerCase()]) { seen[name.toLowerCase()] = true; customerNames.push(name); }
+    });
+
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+
+    var rows = [];
+    customerNames.forEach(function(name) {
+      var fifo = fifoAllocationsForCompany(name);
+      var unpaid = fifo.filter(function(f) { return f.balance > 0.005; });
+      if (!unpaid.length) return;
+
+      var b = [0, 0, 0, 0];
+      var oldestDate = '';
+      unpaid.forEach(function(f) {
+        var dateStr = f.inv.invoiceDate || (f.inv.createdAt ? f.inv.createdAt.slice(0, 10) : '');
+        if (dateStr && (!oldestDate || dateStr < oldestDate)) oldestDate = dateStr;
+        var days = dateStr ? Math.max(0, Math.floor((today - new Date(dateStr)) / 86400000)) : 0;
+        var bi = days <= 30 ? 0 : days <= 60 ? 1 : days <= 90 ? 2 : 3;
+        b[bi] += f.balance;
+      });
+
+      var total = b[0] + b[1] + b[2] + b[3];
+      if (total > 0.005) rows.push({ name: name, total: total, b: b, oldestDate: oldestDate });
+    });
+
+    rows.sort(function(a, b) { return b.total - a.total; });
+
+    var bucketTotals = [0, 0, 0, 0];
+    var bucketCounts = [0, 0, 0, 0];
+    rows.forEach(function(r) {
+      r.b.forEach(function(v, i) { if (v > 0.005) { bucketTotals[i] += v; bucketCounts[i]++; } });
+    });
+
+    [0, 1, 2, 3].forEach(function(i) {
+      $('agingAmt' + i).textContent = '₹' + fmtNum(bucketTotals[i]);
+      $('agingCnt' + i).textContent = bucketCounts[i] + ' customer' + (bucketCounts[i] !== 1 ? 's' : '');
+    });
+
+    var tbody = $('crAgingTableBody');
+    tbody.textContent = '';
+
+    if (!rows.length) {
+      $('crAgingEmpty').style.display = 'block';
+      return;
+    }
+    $('crAgingEmpty').style.display = 'none';
+
+    var fragment = document.createDocumentFragment();
+    rows.forEach(function(r, i) {
+      var tr = document.createElement('tr'); tr.className = 'cr-clickable-row';
+
+      var td0 = document.createElement('td'); td0.textContent = i + 1; tr.appendChild(td0);
+
+      var td1 = document.createElement('td'); td1.className = 'cr-name-td';
+      var sp = document.createElement('span'); sp.className = 'cr-name-cell'; sp.textContent = r.name;
+      var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      arrow.setAttribute('viewBox', '0 0 24 24'); arrow.setAttribute('fill', 'none');
+      arrow.setAttribute('stroke', 'currentColor'); arrow.setAttribute('stroke-width', '2');
+      arrow.classList.add('cr-row-arrow');
+      var ap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      ap.setAttribute('d', 'M9 18l6-6-6-6'); arrow.appendChild(ap);
+      td1.appendChild(sp); td1.appendChild(arrow); tr.appendChild(td1);
+
+      var td2 = document.createElement('td'); td2.className = 'r cr-grand-cell';
+      td2.textContent = '₹' + fmtNum(r.total); tr.appendChild(td2);
+
+      r.b.forEach(function(v, bi) {
+        var td = document.createElement('td'); td.className = 'r';
+        if (v > 0.005) { td.textContent = '₹' + fmtNum(v); td.classList.add('aging-cell-' + bi); }
+        else { td.textContent = '—'; td.style.color = '#c9c4d4'; }
+        tr.appendChild(td);
+      });
+
+      var td7 = document.createElement('td'); td7.className = 'r';
+      td7.textContent = r.oldestDate ? formatShortDate(r.oldestDate) : '—'; tr.appendChild(td7);
+
+      (function(row) {
+        tr.addEventListener('click', function() {
+          var invList = invoices.filter(function(inv) {
+            return !isProformaInvoice(inv) && (inv.buyerName || '').trim().toLowerCase() === row.name.toLowerCase();
+          });
+          var gstin = '';
+          for (var k = 0; k < invList.length; k++) { if (invList[k].buyerGstin) { gstin = invList[k].buyerGstin; break; } }
+          var taxable = invList.reduce(function(s, inv) { return s + crInvTaxable(inv); }, 0);
+          var gst     = invList.reduce(function(s, inv) { return s + crInvGst(inv); }, 0);
+          openCrDrawer({ name: row.name, gstin: gstin, invoiceCount: invList.length, taxable: taxable, gstAmount: gst, grandTotal: taxable + gst, lastDate: row.oldestDate, invList: invList });
+        });
+      }(r));
+
+      fragment.appendChild(tr);
+    });
+
+    var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
+    var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
+    var tt2 = document.createElement('td'); tt2.className = 'r cr-grand-cell';
+    tt2.textContent = '₹' + fmtNum(rows.reduce(function(s, r) { return s + r.total; }, 0)); totRow.appendChild(tt2);
+    bucketTotals.forEach(function(v) {
+      var td = document.createElement('td'); td.className = 'r';
+      td.textContent = v > 0 ? '₹' + fmtNum(v) : '—'; totRow.appendChild(td);
+    });
+    var tdBlank = document.createElement('td'); totRow.appendChild(tdBlank);
+    fragment.appendChild(totRow);
+
+    tbody.appendChild(fragment);
+  }
 
   function clearCrPreset() {
     document.querySelectorAll('#customerReportView .apill').forEach(function(b) { b.classList.remove('active'); });

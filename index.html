@@ -639,82 +639,137 @@
           Download PDF
         </button>
       </div>
-      <div class="analytics-filter-panel">
-        <span class="analytics-filter-label">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-          PERIOD
-        </span>
-        <div class="analytics-preset-pills">
-          <button type="button" class="apill" id="crPresetToday">Today</button>
-          <button type="button" class="apill" id="crPresetYesterday">Yesterday</button>
-          <button type="button" class="apill" id="crPresetThisWeek">This week</button>
-          <button type="button" class="apill" id="crPresetLastWeek">Last week</button>
-          <button type="button" class="apill" id="crPresetThisMonth">This month</button>
-          <button type="button" class="apill" id="crPresetLastMonth">Last month</button>
-          <button type="button" class="apill" id="crPresetThisYear">This year</button>
-          <button type="button" class="apill" id="crPresetLastYear">Last year</button>
-          <button type="button" class="apill apill-custom" id="crPresetCustom">&#128197; Custom</button>
-          <button type="button" class="apill apill-clear" id="crPresetClear" style="display:none">&#10005; Clear</button>
-        </div>
-        <div class="custom-range-panel" id="crCustomRange" style="display:none">
-          <div class="crp-inner">
-            <label class="crp-label">From</label>
-            <input type="date" class="crp-input" id="crCustomFrom" />
-            <label class="crp-label">To</label>
-            <input type="date" class="crp-input" id="crCustomTo" />
-            <button type="button" class="crp-apply" id="crCustomApply">Apply</button>
+      <div class="cr-tab-bar">
+        <button class="cr-tab cr-tab-active" id="crTabSummary">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          Sales Summary
+        </button>
+        <button class="cr-tab" id="crTabAging">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          Aging Report
+        </button>
+      </div>
+      <div id="crSummaryContent">
+        <div class="analytics-filter-panel">
+          <span class="analytics-filter-label">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+            PERIOD
+          </span>
+          <div class="analytics-preset-pills">
+            <button type="button" class="apill" id="crPresetToday">Today</button>
+            <button type="button" class="apill" id="crPresetYesterday">Yesterday</button>
+            <button type="button" class="apill" id="crPresetThisWeek">This week</button>
+            <button type="button" class="apill" id="crPresetLastWeek">Last week</button>
+            <button type="button" class="apill" id="crPresetThisMonth">This month</button>
+            <button type="button" class="apill" id="crPresetLastMonth">Last month</button>
+            <button type="button" class="apill" id="crPresetThisYear">This year</button>
+            <button type="button" class="apill" id="crPresetLastYear">Last year</button>
+            <button type="button" class="apill apill-custom" id="crPresetCustom">&#128197; Custom</button>
+            <button type="button" class="apill apill-clear" id="crPresetClear" style="display:none">&#10005; Clear</button>
+          </div>
+          <div class="custom-range-panel" id="crCustomRange" style="display:none">
+            <div class="crp-inner">
+              <label class="crp-label">From</label>
+              <input type="date" class="crp-input" id="crCustomFrom" />
+              <label class="crp-label">To</label>
+              <input type="date" class="crp-input" id="crCustomTo" />
+              <button type="button" class="crp-apply" id="crCustomApply">Apply</button>
+            </div>
           </div>
         </div>
+        <div class="analytics-kpi-row">
+          <div class="analytics-kpi-card akpi-products">
+            <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+            <div class="akpi-label">Unique Customers</div>
+            <div class="akpi-value" id="crKpiCustomers">&#8212;</div>
+            <div class="akpi-sub">billed in period</div>
+          </div>
+          <div class="analytics-kpi-card akpi-invoices">
+            <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-4h8v2H8zm0-4h5v2H8z"/></svg></div>
+            <div class="akpi-label">Total Invoices</div>
+            <div class="akpi-value" id="crKpiInvoices">&#8212;</div>
+            <div class="akpi-sub">in period</div>
+          </div>
+          <div class="analytics-kpi-card akpi-revenue">
+            <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+            <div class="akpi-label">Grand Total</div>
+            <div class="akpi-value" id="crKpiRevenue">&#8212;</div>
+            <div class="akpi-sub">taxable + GST</div>
+          </div>
+          <div class="analytics-kpi-card akpi-qty">
+            <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+            <div class="akpi-label" id="crKpiAvgLabel">Last Month Revenue</div>
+            <div class="akpi-value" id="crKpiAvg">&#8212;</div>
+            <div class="akpi-sub" id="crKpiAvgSub">previous month total</div>
+          </div>
+        </div>
+        <div class="analytics-search-wrap">
+          <div class="analytics-search-box">
+            <svg class="analytics-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="crSearch" class="analytics-search-input" placeholder="Search by customer name..." />
+          </div>
+        </div>
+        <div class="analytics-table-wrap">
+          <table class="analytics-table" id="crTable">
+            <thead>
+              <tr>
+                <th class="at-num">#</th>
+                <th>Customer Name</th>
+                <th class="r">Invoice Count</th>
+                <th class="r" id="crCompareColHeader">Last Month</th>
+                <th class="r">Last Invoice</th>
+                <th class="r">Grand Total</th>
+              </tr>
+            </thead>
+            <tbody id="crTableBody"></tbody>
+          </table>
+          <div class="inv-empty" id="crEmpty">No data for the selected period.</div>
+        </div>
+        <div id="crAnalyticsPdf" style="display:none"></div>
       </div>
-      <div class="analytics-kpi-row">
-        <div class="analytics-kpi-card akpi-products">
-          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
-          <div class="akpi-label">Unique Customers</div>
-          <div class="akpi-value" id="crKpiCustomers">&#8212;</div>
-          <div class="akpi-sub">billed in period</div>
+      <div id="crAgingContent" style="display:none">
+        <div class="aging-note">Outstanding balances as of today — across all time, not filtered by period.</div>
+        <div class="aging-buckets-row">
+          <div class="aging-bucket aging-bucket-0">
+            <div class="aging-bucket-days">0 – 30 days</div>
+            <div class="aging-bucket-amount" id="agingAmt0">₹0</div>
+            <div class="aging-bucket-count" id="agingCnt0">0 customers</div>
+          </div>
+          <div class="aging-bucket aging-bucket-1">
+            <div class="aging-bucket-days">31 – 60 days</div>
+            <div class="aging-bucket-amount" id="agingAmt1">₹0</div>
+            <div class="aging-bucket-count" id="agingCnt1">0 customers</div>
+          </div>
+          <div class="aging-bucket aging-bucket-2">
+            <div class="aging-bucket-days">61 – 90 days</div>
+            <div class="aging-bucket-amount" id="agingAmt2">₹0</div>
+            <div class="aging-bucket-count" id="agingCnt2">0 customers</div>
+          </div>
+          <div class="aging-bucket aging-bucket-3">
+            <div class="aging-bucket-days">90+ days</div>
+            <div class="aging-bucket-amount" id="agingAmt3">₹0</div>
+            <div class="aging-bucket-count" id="agingCnt3">0 customers</div>
+          </div>
         </div>
-        <div class="analytics-kpi-card akpi-invoices">
-          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-4h8v2H8zm0-4h5v2H8z"/></svg></div>
-          <div class="akpi-label">Total Invoices</div>
-          <div class="akpi-value" id="crKpiInvoices">&#8212;</div>
-          <div class="akpi-sub">in period</div>
-        </div>
-        <div class="analytics-kpi-card akpi-revenue">
-          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
-          <div class="akpi-label">Grand Total</div>
-          <div class="akpi-value" id="crKpiRevenue">&#8212;</div>
-          <div class="akpi-sub">taxable + GST</div>
-        </div>
-        <div class="analytics-kpi-card akpi-qty">
-          <div class="akpi-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
-          <div class="akpi-label" id="crKpiAvgLabel">Last Month Revenue</div>
-          <div class="akpi-value" id="crKpiAvg">&#8212;</div>
-          <div class="akpi-sub" id="crKpiAvgSub">previous month total</div>
+        <div class="analytics-table-wrap">
+          <table class="analytics-table" id="crAgingTable">
+            <thead>
+              <tr>
+                <th class="at-num">#</th>
+                <th>Customer</th>
+                <th class="r">Outstanding</th>
+                <th class="r">0–30d</th>
+                <th class="r">31–60d</th>
+                <th class="r">61–90d</th>
+                <th class="r">90+d</th>
+                <th class="r">Oldest Invoice</th>
+              </tr>
+            </thead>
+            <tbody id="crAgingTableBody"></tbody>
+          </table>
+          <div class="inv-empty" id="crAgingEmpty" style="display:none">No outstanding invoices. All customers are fully paid.</div>
         </div>
       </div>
-      <div class="analytics-search-wrap">
-        <div class="analytics-search-box">
-          <svg class="analytics-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="crSearch" class="analytics-search-input" placeholder="Search by customer name..." />
-        </div>
-      </div>
-      <div class="analytics-table-wrap">
-        <table class="analytics-table" id="crTable">
-          <thead>
-            <tr>
-              <th class="at-num">#</th>
-              <th>Customer Name</th>
-              <th class="r">Invoice Count</th>
-              <th class="r" id="crCompareColHeader">Last Month</th>
-              <th class="r">Last Invoice</th>
-              <th class="r">Grand Total</th>
-            </tr>
-          </thead>
-          <tbody id="crTableBody"></tbody>
-        </table>
-        <div class="inv-empty" id="crEmpty">No data for the selected period.</div>
-      </div>
-      <div id="crAnalyticsPdf" style="display:none"></div>
     </div>
 
     <!-- ======== VENDOR REPORT VIEW ======== -->
