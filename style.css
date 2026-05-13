@@ -3273,6 +3273,7 @@ input.inv-rate-input {
   font-size: 13px;
 }
 .aging-dr-inv-row:first-of-type { border-top: none; }
+.aging-dr-inv-row:hover { background: #f0f9ff; }
 .aging-dr-inv-no { font-weight: 700; color: #1e1040; font-size: 13px; }
 .aging-dr-inv-date { font-size: 11px; color: #7a6a9a; margin-top: 2px; }
 .aging-dr-inv-amount { font-weight: 700; color: #1e1040; text-align: right; white-space: nowrap; }

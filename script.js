@@ -133,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let cameFromInvoiceList = false;
   let cameFromPayment = false;
   let cameFromVendorPayment = false;
+  let cameFromAgingReport = false;
 
   $('custBackBtn').addEventListener('click', () => {
     if (!$('custFormWrap').classList.contains('hidden')) {
@@ -155,6 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
       cameFromPayment = false;
       showView('paymentView');
       renderPaymentView();
+    } else if (cameFromAgingReport) {
+      cameFromAgingReport = false;
+      showView('customerReportView');
+      switchCrTab('aging');
     } else if (cameFromInvoiceList) {
       cameFromInvoiceList = false;
       showView('invoiceListView');
@@ -2509,6 +2514,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const inv = invoices.find(x => x.id === id);
     if (!inv) return;
     cameFromPayment = true;
+    loadInvoiceIntoForm(inv);
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
+    showView('invoiceView');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+  }
+
+  function viewInvoiceFromAging(id) {
+    const inv = invoices.find(x => x.id === id);
+    if (!inv) return;
+    closeAgingDrawer();
+    cameFromAgingReport = true;
     loadInvoiceIntoForm(inv);
     syncCopyChecks('copyType', 'copyTypePreview');
     buildAllInvoices();
@@ -8720,7 +8738,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var dateStr = f.inv.invoiceDate || (f.inv.createdAt ? f.inv.createdAt.slice(0, 10) : '');
       var days = dateStr ? Math.max(0, Math.floor((today - new Date(dateStr)) / 86400000)) : 0;
       var bi = days <= 30 ? 3 : days <= 60 ? 2 : days <= 90 ? 1 : 0;
-      buckets[bi].items.push({ invNo: f.inv.invoiceNumber || '—', dateStr: dateStr, amount: f.balance, days: days });
+      buckets[bi].items.push({ id: f.inv.id, invNo: f.inv.invoiceNumber || '—', dateStr: dateStr, amount: f.balance, days: days });
     });
 
     buckets.forEach(function(b) { b.items.sort(function(a, b) { return b.days - a.days; }); });
@@ -8748,7 +8766,8 @@ document.addEventListener('DOMContentLoaded', () => {
       section.appendChild(hdr);
 
       bucket.items.forEach(function(item) {
-        var invRow = document.createElement('div'); invRow.className = 'aging-dr-inv-row';
+        var invRow = document.createElement('div'); invRow.className = 'aging-dr-inv-row'; invRow.style.cursor = 'pointer';
+        (function(invId) { invRow.addEventListener('click', function() { viewInvoiceFromAging(invId); }); }(item.id));
 
         var left = document.createElement('div');
         var invNo = document.createElement('div'); invNo.className = 'aging-dr-inv-no'; invNo.textContent = item.invNo;
