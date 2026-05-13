@@ -3239,7 +3239,6 @@ input.inv-rate-input {
 .aging-inv-count {
   font-size: 10px; font-weight: 600; opacity: 0.65; margin-top: 2px;
 }
-#crAgingTable td { vertical-align: top !important; padding-top: 10px; padding-bottom: 10px; }
 
 @media (max-width: 700px) {
   .aging-buckets-row { grid-template-columns: repeat(2, 1fr); }
