@@ -8768,8 +8768,9 @@ document.addEventListener('DOMContentLoaded', () => {
       hdr.appendChild(lbl); hdr.appendChild(tot);
       section.appendChild(hdr);
 
-      bucket.items.forEach(function(item) {
+      bucket.items.forEach(function(item, itemIdx) {
         var invRow = document.createElement('div'); invRow.className = 'aging-dr-inv-row'; invRow.style.cursor = 'pointer';
+        if (itemIdx >= 4) { invRow.className += ' aging-dr-inv-extra'; invRow.style.display = 'none'; }
         (function(invId) { invRow.addEventListener('click', function() { viewInvoiceFromAging(invId); }); }(item.id));
 
         var info = document.createElement('div'); info.className = 'aging-dr-inv-info';
@@ -8788,6 +8789,25 @@ document.addEventListener('DOMContentLoaded', () => {
         invRow.appendChild(info); invRow.appendChild(amt); invRow.appendChild(pill); invRow.appendChild(arrow);
         section.appendChild(invRow);
       });
+
+      if (bucket.items.length > 4) {
+        var extra = bucket.items.length - 4;
+        var toggleBtn = document.createElement('button');
+        toggleBtn.className = 'aging-dr-toggle-btn aging-dr-toggle-' + bucket.cls;
+        toggleBtn.innerHTML = '<span class="aging-dr-toggle-icon">+</span> Show ' + extra + ' more';
+        var isExpanded = false;
+        (function(sec, btn, cnt) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            isExpanded = !isExpanded;
+            sec.querySelectorAll('.aging-dr-inv-extra').forEach(function(r) { r.style.display = isExpanded ? '' : 'none'; });
+            btn.innerHTML = isExpanded
+              ? '<span class="aging-dr-toggle-icon">−</span> Show less'
+              : '<span class="aging-dr-toggle-icon">+</span> Show ' + cnt + ' more';
+          });
+        }(section, toggleBtn, extra));
+        section.appendChild(toggleBtn);
+      }
 
       body.appendChild(section);
     });

@@ -3278,8 +3278,26 @@ input.inv-rate-input {
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .aging-dr-inv-row:first-of-type { border-top: none; }
-.aging-dr-inv-row:last-child { border-radius: 0 0 15px 15px; }
+.aging-dr-inv-row:last-of-type:not(.aging-dr-toggle-btn) { border-radius: 0 0 15px 15px; }
 .aging-dr-inv-row:hover { background: #f0f9ff; box-shadow: inset 3px 0 0 #0891b2; }
+
+.aging-dr-toggle-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 11px 16px;
+  border: none; border-top: 1px solid rgba(0,0,0,0.06);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer;
+  border-radius: 0 0 15px 15px;
+  transition: background 0.15s, color 0.15s;
+}
+.aging-dr-toggle-0 { background: #f0fdf4; color: #059669; }
+.aging-dr-toggle-1 { background: #fffbeb; color: #d97706; }
+.aging-dr-toggle-2 { background: #fff7ed; color: #ea580c; }
+.aging-dr-toggle-3 { background: #fff1f2; color: #e11d48; }
+.aging-dr-toggle-0:hover { background: #dcfce7; }
+.aging-dr-toggle-1:hover { background: #fef3c7; }
+.aging-dr-toggle-2:hover { background: #ffedd5; }
+.aging-dr-toggle-3:hover { background: #ffe4e6; }
+.aging-dr-toggle-icon { font-size: 16px; font-weight: 400; line-height: 1; }
 
 .aging-dr-inv-info { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
 .aging-dr-inv-no { font-weight: 800; color: #0f172a; font-size: 13px; letter-spacing: 0.2px; white-space: nowrap; }
