@@ -8588,16 +8588,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       var b = [0, 0, 0, 0];
       var oldestDate = '';
+      var invNos = [];
       unpaid.forEach(function(f) {
         var dateStr = f.inv.invoiceDate || (f.inv.createdAt ? f.inv.createdAt.slice(0, 10) : '');
         if (dateStr && (!oldestDate || dateStr < oldestDate)) oldestDate = dateStr;
         var days = dateStr ? Math.max(0, Math.floor((today - new Date(dateStr)) / 86400000)) : 0;
         var bi = days <= 30 ? 0 : days <= 60 ? 1 : days <= 90 ? 2 : 3;
         b[bi] += f.balance;
+        if (f.inv.invoiceNumber) invNos.push({ no: f.inv.invoiceNumber, bi: bi });
       });
 
       var total = b[0] + b[1] + b[2] + b[3];
-      if (total > 0.005) rows.push({ name: name, total: total, b: b, oldestDate: oldestDate });
+      if (total > 0.005) rows.push({ name: name, total: total, b: b, oldestDate: oldestDate, invNos: invNos });
     });
 
     rows.sort(function(a, b) { return b.total - a.total; });
@@ -8636,7 +8638,18 @@ document.addEventListener('DOMContentLoaded', () => {
       arrow.classList.add('cr-row-arrow');
       var ap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       ap.setAttribute('d', 'M9 18l6-6-6-6'); arrow.appendChild(ap);
-      td1.appendChild(sp); td1.appendChild(arrow); tr.appendChild(td1);
+      td1.appendChild(sp); td1.appendChild(arrow);
+      if (r.invNos.length) {
+        var chipsWrap = document.createElement('div'); chipsWrap.className = 'aging-inv-chips';
+        r.invNos.forEach(function(item) {
+          var chip = document.createElement('span');
+          chip.className = 'aging-inv-chip aging-inv-chip-' + item.bi;
+          chip.textContent = item.no;
+          chipsWrap.appendChild(chip);
+        });
+        td1.appendChild(chipsWrap);
+      }
+      tr.appendChild(td1);
 
       var td2 = document.createElement('td'); td2.className = 'r cr-grand-cell';
       td2.textContent = '₹' + fmtNum(r.total); tr.appendChild(td2);

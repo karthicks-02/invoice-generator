@@ -3235,6 +3235,21 @@ input.inv-rate-input {
 .aging-cell-2 { color: #c2410c; font-weight: 600; }
 .aging-cell-3 { color: #b91c1c; font-weight: 700; }
 
+/* Invoice number chips under customer name */
+.aging-inv-chips {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px;
+}
+.aging-inv-chip {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+  padding: 2px 7px; border-radius: 6px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.aging-inv-chip-0 { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+.aging-inv-chip-1 { background: #fef3c7; color: #78350f; border-color: #fde68a; }
+.aging-inv-chip-2 { background: #ffedd5; color: #7c2d12; border-color: #fed7aa; }
+.aging-inv-chip-3 { background: #fee2e2; color: #7f1d1d; border-color: #fecaca; }
+
 @media (max-width: 700px) {
   .aging-buckets-row { grid-template-columns: repeat(2, 1fr); }
   .cr-tab { padding: 8px 12px; font-size: 12px; }
