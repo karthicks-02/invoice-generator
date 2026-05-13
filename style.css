@@ -3246,45 +3246,55 @@ input.inv-rate-input {
 
 /* ── Aging Drawer ─────────────────────────────────────────── */
 .aging-drawer-body {
-  padding: 16px; display: flex; flex-direction: column; gap: 14px;
-  overflow-y: auto; flex: 1;
+  padding: 20px 16px; display: flex; flex-direction: column; gap: 16px;
+  overflow-y: auto; flex: 1; background: #f8fafc;
 }
-.aging-dr-section { border-radius: 14px; overflow: hidden; border: 1px solid transparent; }
-.aging-dr-section-0 { border-color: #a7f3d0; }
-.aging-dr-section-1 { border-color: #fde68a; }
-.aging-dr-section-2 { border-color: #fed7aa; }
-.aging-dr-section-3 { border-color: #fecaca; }
+.aging-dr-section {
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  border: 1px solid transparent;
+}
+.aging-dr-section-0 { border-color: rgba(167,243,208,0.7); }
+.aging-dr-section-1 { border-color: rgba(253,230,138,0.7); }
+.aging-dr-section-2 { border-color: rgba(254,215,170,0.7); }
+.aging-dr-section-3 { border-color: rgba(254,202,202,0.7); }
 
 .aging-dr-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 9px 14px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  padding: 11px 16px; font-size: 10px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase;
 }
-.aging-dr-header-0 { background: #d1fae5; color: #065f46; }
-.aging-dr-header-1 { background: #fef3c7; color: #78350f; }
-.aging-dr-header-2 { background: #ffedd5; color: #7c2d12; }
-.aging-dr-header-3 { background: #fee2e2; color: #7f1d1d; }
-.aging-dr-header-total { font-size: 13px; font-weight: 800; }
+.aging-dr-header-0 { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; }
+.aging-dr-header-1 { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #78350f; }
+.aging-dr-header-2 { background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); color: #7c2d12; }
+.aging-dr-header-3 { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #7f1d1d; }
+.aging-dr-header-total { font-size: 14px; font-weight: 900; letter-spacing: -0.3px; }
 
 .aging-dr-inv-row {
-  display: grid; grid-template-columns: 1fr auto auto auto;
-  align-items: center; gap: 10px;
-  padding: 10px 14px; background: #fff;
-  border-top: 1px solid rgba(0,0,0,0.05);
-  font-size: 13px;
+  display: grid; grid-template-columns: 1fr auto auto 20px;
+  align-items: center; gap: 12px;
+  padding: 13px 16px; background: #fff;
+  border-top: 1px solid rgba(0,0,0,0.04);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .aging-dr-inv-row:first-of-type { border-top: none; }
-.aging-dr-inv-row:hover { background: #f0f9ff; }
-.aging-dr-inv-no { font-weight: 700; color: #1e1040; font-size: 13px; }
-.aging-dr-inv-date { font-size: 11px; color: #7a6a9a; margin-top: 2px; }
-.aging-dr-inv-amount { font-weight: 700; color: #1e1040; text-align: right; white-space: nowrap; }
+.aging-dr-inv-row:hover { background: #f0f9ff; box-shadow: inset 3px 0 0 #0891b2; }
+
+.aging-dr-inv-info { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.aging-dr-inv-no { font-weight: 800; color: #0f172a; font-size: 13px; letter-spacing: 0.2px; white-space: nowrap; }
+.aging-dr-sep { color: #cbd5e1; font-size: 15px; font-weight: 300; line-height: 1; }
+.aging-dr-inv-date { font-size: 12px; font-weight: 700; color: #475569; white-space: nowrap; }
+.aging-dr-inv-amount { font-weight: 800; color: #0f172a; font-size: 14px; text-align: right; white-space: nowrap; letter-spacing: -0.4px; }
+.aging-dr-arrow { color: #94a3b8; font-size: 20px; font-weight: 300; text-align: right; line-height: 1; }
+
 .aging-dr-days-pill {
-  font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 20px;
-  white-space: nowrap; text-align: center; min-width: 54px;
+  font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px;
+  white-space: nowrap; text-align: center; min-width: 58px; letter-spacing: 0.3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
-.aging-days-0 { background: #d1fae5; color: #065f46; }
-.aging-days-1 { background: #fef3c7; color: #78350f; }
-.aging-days-2 { background: #ffedd5; color: #7c2d12; }
-.aging-days-3 { background: #fee2e2; color: #7f1d1d; }
+.aging-days-0 { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; }
+.aging-days-1 { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #78350f; }
+.aging-days-2 { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #7c2d12; }
+.aging-days-3 { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #7f1d1d; }
 
 @media (max-width: 700px) {
   .aging-buckets-row { grid-template-columns: repeat(2, 1fr); }

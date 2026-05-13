@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let cameFromPayment = false;
   let cameFromVendorPayment = false;
   let cameFromAgingReport = false;
+  var lastAgingDrawerRow = null;
 
   $('custBackBtn').addEventListener('click', () => {
     if (!$('custFormWrap').classList.contains('hidden')) {
@@ -160,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cameFromAgingReport = false;
       showView('customerReportView');
       switchCrTab('aging');
+      if (lastAgingDrawerRow) openAgingDrawer(lastAgingDrawerRow);
     } else if (cameFromInvoiceList) {
       cameFromInvoiceList = false;
       showView('invoiceListView');
@@ -8723,6 +8725,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Aging Drawer ────────────────────────────────────────────
   function openAgingDrawer(row) {
+    lastAgingDrawerRow = row;
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var fifo = fifoAllocationsForCompany(row.name);
     var unpaid = fifo.filter(function(f) { return f.balance > 0.005; });
@@ -8769,17 +8772,20 @@ document.addEventListener('DOMContentLoaded', () => {
         var invRow = document.createElement('div'); invRow.className = 'aging-dr-inv-row'; invRow.style.cursor = 'pointer';
         (function(invId) { invRow.addEventListener('click', function() { viewInvoiceFromAging(invId); }); }(item.id));
 
-        var left = document.createElement('div');
-        var invNo = document.createElement('div'); invNo.className = 'aging-dr-inv-no'; invNo.textContent = item.invNo;
-        var invDate = document.createElement('div'); invDate.className = 'aging-dr-inv-date'; invDate.textContent = item.dateStr ? formatShortDate(item.dateStr) : '—';
-        left.appendChild(invNo); left.appendChild(invDate);
+        var info = document.createElement('div'); info.className = 'aging-dr-inv-info';
+        var invNo = document.createElement('span'); invNo.className = 'aging-dr-inv-no'; invNo.textContent = item.invNo;
+        var sep = document.createElement('span'); sep.className = 'aging-dr-sep'; sep.textContent = '·';
+        var invDate = document.createElement('span'); invDate.className = 'aging-dr-inv-date'; invDate.textContent = item.dateStr ? formatShortDate(item.dateStr) : '—';
+        info.appendChild(invNo); info.appendChild(sep); info.appendChild(invDate);
 
         var amt = document.createElement('div'); amt.className = 'aging-dr-inv-amount'; amt.textContent = '₹' + fmtNum(item.amount);
 
         var pill = document.createElement('span'); pill.className = 'aging-dr-days-pill aging-days-' + bucket.cls;
         pill.textContent = item.days + ' days';
 
-        invRow.appendChild(left); invRow.appendChild(amt); invRow.appendChild(pill);
+        var arrow = document.createElement('span'); arrow.className = 'aging-dr-arrow'; arrow.textContent = '›';
+
+        invRow.appendChild(info); invRow.appendChild(amt); invRow.appendChild(pill); invRow.appendChild(arrow);
         section.appendChild(invRow);
       });
 
