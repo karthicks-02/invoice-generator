@@ -134,7 +134,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let cameFromPayment = false;
   let cameFromVendorPayment = false;
   let cameFromAgingReport = false;
+  let cameFromCrDrawer = false;
   var lastAgingDrawerRow = null;
+  var lastCrDrawerRow = null;
 
   $('custBackBtn').addEventListener('click', () => {
     if (!$('custFormWrap').classList.contains('hidden')) {
@@ -162,6 +164,11 @@ document.addEventListener('DOMContentLoaded', () => {
       showView('customerReportView');
       switchCrTab('aging');
       if (lastAgingDrawerRow) openAgingDrawer(lastAgingDrawerRow);
+    } else if (cameFromCrDrawer) {
+      cameFromCrDrawer = false;
+      showView('customerReportView');
+      switchCrTab('summary');
+      if (lastCrDrawerRow) openCrDrawer(lastCrDrawerRow);
     } else if (cameFromInvoiceList) {
       cameFromInvoiceList = false;
       showView('invoiceListView');
@@ -2529,6 +2536,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!inv) return;
     closeAgingDrawer();
     cameFromAgingReport = true;
+    loadInvoiceIntoForm(inv);
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
+    showView('invoiceView');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+  }
+
+  function viewInvoiceFromCrDrawer(id) {
+    const inv = invoices.find(x => x.id === id);
+    if (!inv) return;
+    closeCrDrawer();
+    cameFromCrDrawer = true;
     loadInvoiceIntoForm(inv);
     syncCopyChecks('copyType', 'copyTypePreview');
     buildAllInvoices();
@@ -8426,6 +8446,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openCrDrawer(r) {
+    lastCrDrawerRow = r;
     $('crDrawerName').textContent        = r.name;
     $('crDrawerGstin').textContent       = r.gstin || 'No GSTIN';
     $('crDrawerCount').textContent       = r.invList.length;
@@ -8458,7 +8479,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'CGST+SGST @' + gstRate + '%'
         : 'IGST @' + gstRate + '%';
 
-      var tr = document.createElement('tr');
+      var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
+      (function(invId) { tr.addEventListener('click', function() { viewInvoiceFromCrDrawer(invId); }); }(inv.id));
       var c0 = document.createElement('td'); c0.textContent = i + 1; tr.appendChild(c0);
 
       var c1 = document.createElement('td');

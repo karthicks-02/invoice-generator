@@ -3133,7 +3133,7 @@ input.inv-rate-input {
 .cr-drawer-table thead th.r { text-align: right; }
 .cr-drawer-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .12s; }
 .cr-drawer-table tbody tr:last-child { border-bottom: none; }
-.cr-drawer-table tbody tr:hover { background: #f8fafc; }
+.cr-drawer-table tbody tr:hover { background: #f0f9ff; box-shadow: inset 3px 0 0 #0891b2; }
 .cr-drawer-table td { padding: 7px 7px; vertical-align: middle; }
 .cr-drawer-table td.r { text-align: right; white-space: nowrap; }
 
