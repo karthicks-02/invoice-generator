@@ -8587,32 +8587,32 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!unpaid.length) return;
 
       var b = [0, 0, 0, 0];
+      var bc = [0, 0, 0, 0];
       var oldestDate = '';
-      var invNos = [];
       unpaid.forEach(function(f) {
         var dateStr = f.inv.invoiceDate || (f.inv.createdAt ? f.inv.createdAt.slice(0, 10) : '');
         if (dateStr && (!oldestDate || dateStr < oldestDate)) oldestDate = dateStr;
         var days = dateStr ? Math.max(0, Math.floor((today - new Date(dateStr)) / 86400000)) : 0;
         var bi = days <= 30 ? 0 : days <= 60 ? 1 : days <= 90 ? 2 : 3;
         b[bi] += f.balance;
-        if (f.inv.invoiceNumber) invNos.push({ no: f.inv.invoiceNumber, bi: bi });
+        bc[bi] += 1;
       });
 
       var total = b[0] + b[1] + b[2] + b[3];
-      if (total > 0.005) rows.push({ name: name, total: total, b: b, oldestDate: oldestDate, invNos: invNos });
+      if (total > 0.005) rows.push({ name: name, total: total, b: b, bc: bc, oldestDate: oldestDate });
     });
 
     rows.sort(function(a, b) { return b.total - a.total; });
 
     var bucketTotals = [0, 0, 0, 0];
-    var bucketCounts = [0, 0, 0, 0];
+    var bucketInvCounts = [0, 0, 0, 0];
     rows.forEach(function(r) {
-      r.b.forEach(function(v, i) { if (v > 0.005) { bucketTotals[i] += v; bucketCounts[i]++; } });
+      r.b.forEach(function(v, i) { bucketTotals[i] += v; bucketInvCounts[i] += r.bc[i]; });
     });
 
     [0, 1, 2, 3].forEach(function(i) {
       $('agingAmt' + i).textContent = '₹' + fmtNum(bucketTotals[i]);
-      $('agingCnt' + i).textContent = bucketCounts[i] + ' customer' + (bucketCounts[i] !== 1 ? 's' : '');
+      $('agingCnt' + i).textContent = bucketInvCounts[i] + ' invoice' + (bucketInvCounts[i] !== 1 ? 's' : '');
     });
 
     var tbody = $('crAgingTableBody');
@@ -8638,26 +8638,22 @@ document.addEventListener('DOMContentLoaded', () => {
       arrow.classList.add('cr-row-arrow');
       var ap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       ap.setAttribute('d', 'M9 18l6-6-6-6'); arrow.appendChild(ap);
-      td1.appendChild(sp); td1.appendChild(arrow);
-      if (r.invNos.length) {
-        var chipsWrap = document.createElement('div'); chipsWrap.className = 'aging-inv-chips';
-        r.invNos.forEach(function(item) {
-          var chip = document.createElement('span');
-          chip.className = 'aging-inv-chip aging-inv-chip-' + item.bi;
-          chip.textContent = item.no;
-          chipsWrap.appendChild(chip);
-        });
-        td1.appendChild(chipsWrap);
-      }
-      tr.appendChild(td1);
+      td1.appendChild(sp); td1.appendChild(arrow); tr.appendChild(td1);
 
       var td2 = document.createElement('td'); td2.className = 'r cr-grand-cell';
       td2.textContent = '₹' + fmtNum(r.total); tr.appendChild(td2);
 
       r.b.forEach(function(v, bi) {
         var td = document.createElement('td'); td.className = 'r';
-        if (v > 0.005) { td.textContent = '₹' + fmtNum(v); td.classList.add('aging-cell-' + bi); }
-        else { td.textContent = '—'; td.style.color = '#c9c4d4'; }
+        if (v > 0.005) {
+          td.classList.add('aging-cell-' + bi);
+          var amtLine = document.createElement('div'); amtLine.textContent = '₹' + fmtNum(v);
+          var cntLine = document.createElement('div'); cntLine.className = 'aging-inv-count';
+          cntLine.textContent = r.bc[bi] + ' inv';
+          td.appendChild(amtLine); td.appendChild(cntLine);
+        } else {
+          td.textContent = '—'; td.style.color = '#c9c4d4';
+        }
         tr.appendChild(td);
       });
 
@@ -8684,9 +8680,17 @@ document.addEventListener('DOMContentLoaded', () => {
     var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
     var tt2 = document.createElement('td'); tt2.className = 'r cr-grand-cell';
     tt2.textContent = '₹' + fmtNum(rows.reduce(function(s, r) { return s + r.total; }, 0)); totRow.appendChild(tt2);
-    bucketTotals.forEach(function(v) {
+    bucketTotals.forEach(function(v, i) {
       var td = document.createElement('td'); td.className = 'r';
-      td.textContent = v > 0 ? '₹' + fmtNum(v) : '—'; totRow.appendChild(td);
+      if (v > 0) {
+        var amtLine = document.createElement('div'); amtLine.textContent = '₹' + fmtNum(v);
+        var cntLine = document.createElement('div'); cntLine.className = 'aging-inv-count';
+        cntLine.textContent = bucketInvCounts[i] + ' inv';
+        td.appendChild(amtLine); td.appendChild(cntLine);
+      } else {
+        td.textContent = '—';
+      }
+      totRow.appendChild(td);
     });
     var tdBlank = document.createElement('td'); totRow.appendChild(tdBlank);
     fragment.appendChild(totRow);
