@@ -8624,13 +8624,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     $('crAgingEmpty').style.display = 'none';
 
+    function agingTd(extraClass) {
+      var td = document.createElement('td');
+      if (extraClass) td.className = extraClass;
+      td.style.verticalAlign = 'top';
+      td.style.paddingTop = '10px';
+      return td;
+    }
+
     var fragment = document.createDocumentFragment();
     rows.forEach(function(r, i) {
       var tr = document.createElement('tr'); tr.className = 'cr-clickable-row';
 
-      var td0 = document.createElement('td'); td0.textContent = i + 1; tr.appendChild(td0);
+      var td0 = agingTd(''); td0.textContent = i + 1; tr.appendChild(td0);
 
-      var td1 = document.createElement('td'); td1.className = 'cr-name-td';
+      var td1 = agingTd('cr-name-td');
       var sp = document.createElement('span'); sp.className = 'cr-name-cell'; sp.textContent = r.name;
       var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       arrow.setAttribute('viewBox', '0 0 24 24'); arrow.setAttribute('fill', 'none');
@@ -8640,7 +8648,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ap.setAttribute('d', 'M9 18l6-6-6-6'); arrow.appendChild(ap);
       td1.appendChild(sp); td1.appendChild(arrow); tr.appendChild(td1);
 
-      var td2 = document.createElement('td'); td2.className = 'r cr-grand-cell';
+      var td2 = agingTd('r cr-grand-cell');
       var outAmt = document.createElement('div'); outAmt.textContent = '₹' + fmtNum(r.total);
       var outCnt = document.createElement('div'); outCnt.className = 'aging-inv-count';
       var totalInvCount = r.bc[0] + r.bc[1] + r.bc[2] + r.bc[3];
@@ -8648,7 +8656,7 @@ document.addEventListener('DOMContentLoaded', () => {
       td2.appendChild(outAmt); td2.appendChild(outCnt); tr.appendChild(td2);
 
       r.b.forEach(function(v, bi) {
-        var td = document.createElement('td'); td.className = 'r';
+        var td = agingTd('r');
         if (v > 0.005) {
           td.classList.add('aging-cell-' + bi);
           var amtLine = document.createElement('div'); amtLine.textContent = '₹' + fmtNum(v);
@@ -8661,7 +8669,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.appendChild(td);
       });
 
-      var td7 = document.createElement('td'); td7.className = 'r';
+      var td7 = agingTd('r');
       td7.textContent = r.oldestDate ? formatShortDate(r.oldestDate) : '—'; tr.appendChild(td7);
 
       (function(row) {
