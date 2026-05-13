@@ -8641,7 +8641,11 @@ document.addEventListener('DOMContentLoaded', () => {
       td1.appendChild(sp); td1.appendChild(arrow); tr.appendChild(td1);
 
       var td2 = document.createElement('td'); td2.className = 'r cr-grand-cell';
-      td2.textContent = '₹' + fmtNum(r.total); tr.appendChild(td2);
+      var outAmt = document.createElement('div'); outAmt.textContent = '₹' + fmtNum(r.total);
+      var outCnt = document.createElement('div'); outCnt.className = 'aging-inv-count';
+      var totalInvCount = r.bc[0] + r.bc[1] + r.bc[2] + r.bc[3];
+      outCnt.textContent = totalInvCount + ' inv';
+      td2.appendChild(outAmt); td2.appendChild(outCnt); tr.appendChild(td2);
 
       r.b.forEach(function(v, bi) {
         var td = document.createElement('td'); td.className = 'r';
@@ -8679,7 +8683,11 @@ document.addEventListener('DOMContentLoaded', () => {
     var totRow = document.createElement('tr'); totRow.className = 'analytics-totals-row';
     var tt1 = document.createElement('td'); tt1.colSpan = 2; tt1.textContent = 'Totals'; totRow.appendChild(tt1);
     var tt2 = document.createElement('td'); tt2.className = 'r cr-grand-cell';
-    tt2.textContent = '₹' + fmtNum(rows.reduce(function(s, r) { return s + r.total; }, 0)); totRow.appendChild(tt2);
+    var totOutAmt = document.createElement('div');
+    totOutAmt.textContent = '₹' + fmtNum(rows.reduce(function(s, r) { return s + r.total; }, 0));
+    var totOutCnt = document.createElement('div'); totOutCnt.className = 'aging-inv-count';
+    totOutCnt.textContent = bucketInvCounts.reduce(function(s, v) { return s + v; }, 0) + ' inv';
+    tt2.appendChild(totOutAmt); tt2.appendChild(totOutCnt); totRow.appendChild(tt2);
     bucketTotals.forEach(function(v, i) {
       var td = document.createElement('td'); td.className = 'r';
       if (v > 0) {
