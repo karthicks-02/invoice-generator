@@ -9362,26 +9362,25 @@ document.addEventListener('DOMContentLoaded', () => {
       end   = new Date(d.getFullYear(), d.getMonth() + 1, 0);
       label = start.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
     } else if (mode === 'quarterly') {
-      var m = now.getMonth();
-      var curQtr = m >= 3 ? Math.floor((m - 3) / 3) : 3;
-      var curFY  = m >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-      var total  = curFY * 4 + curQtr + offset;
-      var fy  = Math.floor(total / 4);
-      var qtr = ((total % 4) + 4) % 4;
-      var qSM = [3, 6, 9, 0][qtr];
-      var qEM = [5, 8, 11, 2][qtr];
-      var sY  = qtr === 3 ? fy + 1 : fy;
-      var eY  = qtr === 3 ? fy + 1 : fy;
+      let m = now.getMonth();
+      let curQtr = m >= 3 ? Math.floor((m - 3) / 3) : 3;
+      let curFY  = m >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+      let total  = curFY * 4 + curQtr + offset;
+      let fy  = Math.floor(total / 4);
+      let qtr = ((total % 4) + 4) % 4;
+      let qSM = [3, 6, 9, 0][qtr];
+      let qEM = [5, 8, 11, 2][qtr];
+      let sY  = qtr === 3 ? fy + 1 : fy;
       start = new Date(sY, qSM, 1);
-      end   = new Date(eY, qEM + 1, 0);
-      var qNames = ['Q1 (Apr–Jun)', 'Q2 (Jul–Sep)', 'Q3 (Oct–Dec)', 'Q4 (Jan–Mar)'];
+      end   = new Date(sY, qEM + 1, 0);
+      let qNames = ['Q1 (Apr–Jun)', 'Q2 (Jul–Sep)', 'Q3 (Oct–Dec)', 'Q4 (Jan–Mar)'];
       label = qNames[qtr] + ' FY ' + fy + '–' + String(fy + 1).slice(-2);
     } else {
-      var m2 = now.getMonth();
-      var fy2 = (m2 >= 3 ? now.getFullYear() : now.getFullYear() - 1) + offset;
-      start = new Date(fy2, 3, 1);
-      end   = new Date(fy2 + 1, 2, 31);
-      label = 'FY ' + fy2 + '–' + String(fy2 + 1).slice(-2);
+      let m = now.getMonth();
+      let fy = (m >= 3 ? now.getFullYear() : now.getFullYear() - 1) + offset;
+      start = new Date(fy, 3, 1);
+      end   = new Date(fy + 1, 3, 0);
+      label = 'FY ' + fy + '–' + String(fy + 1).slice(-2);
     }
     return { start: start, end: end, label: label };
   }
@@ -9426,7 +9425,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function gstDeltaBadge(curr, prev) {
-    if (!prev) return { text: ' ', cls: 'gr-delta-neutral' };
+    if (!prev) return { text: '—', cls: 'gr-delta-neutral' };
     var pct = Math.round(((curr - prev) / prev) * 100);
     if (pct > 0) return { text: '↑ ' + pct + '%', cls: 'gr-delta-up' };
     if (pct < 0) return { text: '↓ ' + Math.abs(pct) + '%', cls: 'gr-delta-down' };
