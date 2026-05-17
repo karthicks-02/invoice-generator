@@ -9354,8 +9354,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getGstPeriodRange(mode, offset) {
-    var now = new Date();
-    var start, end, label;
+    let now = new Date();
+    let start, end, label;
     if (mode === 'monthly') {
       var d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
       start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -9425,7 +9425,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function gstDeltaBadge(curr, prev) {
-    if (!prev) return { text: '—', cls: 'gr-delta-neutral' };
+    if (prev == null) return { text: '—', cls: 'gr-delta-neutral' };
+    if (prev === 0) return curr > 0 ? { text: '↑ New', cls: 'gr-delta-up' } : { text: '—', cls: 'gr-delta-neutral' };
     var pct = Math.round(((curr - prev) / prev) * 100);
     if (pct > 0) return { text: '↑ ' + pct + '%', cls: 'gr-delta-up' };
     if (pct < 0) return { text: '↓ ' + Math.abs(pct) + '%', cls: 'gr-delta-down' };
