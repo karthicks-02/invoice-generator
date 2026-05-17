@@ -9708,4 +9708,130 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadGstCsv(computeGstReportData(grPeriodMode, grPeriodOffset));
   });
 
+  // ── GST Report: PDF export ────────────────────────────────────────────────
+
+  async function downloadGstPdf(data) {
+    var rows = getGstFilteredRows(data);
+
+    var totTaxable = rows.reduce(function(s, r) { return s + (r.taxableValue || 0); }, 0);
+    var totCgst    = rows.reduce(function(s, r) { return s + (r.cgst    || 0); }, 0);
+    var totSgst    = rows.reduce(function(s, r) { return s + (r.sgst    || 0); }, 0);
+    var totIgst    = rows.reduce(function(s, r) { return s + (r.igst    || 0); }, 0);
+    var totTax     = totCgst + totSgst + totIgst;
+
+    var segLabel = grSegment === 'b2b' ? 'B2B Invoices' : grSegment === 'b2c' ? 'B2C Invoices' : 'All Invoices';
+    var th  = 'padding:7px 10px;background:#1a3a5c;color:#fff;font-size:11px;font-weight:700;text-align:left;white-space:nowrap;';
+    var thR = th + 'text-align:right;';
+    var td  = 'padding:6px 10px;font-size:11px;border-bottom:1px solid #e2e6ed;color:#1e293b;';
+    var tdR = td + 'text-align:right;';
+    var tfS = td + 'font-weight:800;background:#f4f6f9;border-top:2px solid #1a3a5c;border-bottom:none;';
+    var tfR = tfS + 'text-align:right;';
+
+    // Build table using DOM (safe for user data)
+    var table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;margin-bottom:14px';
+
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    [['#',th],['Party & GSTIN',th],['Invoice No.',th],['Date',th],['Taxable (\u20b9)',thR],['CGST / SGST',thR],['IGST',thR]].forEach(function(col) {
+      var th2 = document.createElement('th');
+      th2.style.cssText = col[1];
+      th2.textContent = col[0];
+      headRow.appendChild(th2);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody2 = document.createElement('tbody');
+    rows.forEach(function(inv, i) {
+      var row = document.createElement('tr');
+      var cgstTxt = inv.gstType === 'inter' ? '\u2014' : '\u20b9' + fmtNum(inv.cgst || 0) + ' each';
+      var igstTxt = inv.gstType === 'inter' ? '\u20b9' + fmtNum(inv.igst || 0) : '\u2014';
+      var partyTxt = (inv.buyerName || '\u2014');
+      var gstinSuffix = inv.buyerGstin ? ' (' + inv.buyerGstin + ')' : '';
+      [
+        [String(i + 1), td],
+        [partyTxt + gstinSuffix, td],
+        [inv.invoiceNumber || inv.id || '\u2014', td],
+        [formatShortDate(inv.invoiceDate), td],
+        ['\u20b9' + fmtNum(inv.taxableValue || 0), tdR],
+        [cgstTxt, tdR],
+        [igstTxt, tdR]
+      ].forEach(function(col) {
+        var cell = document.createElement('td');
+        cell.style.cssText = col[1];
+        cell.textContent = col[0];
+        row.appendChild(cell);
+      });
+      tbody2.appendChild(row);
+    });
+    table.appendChild(tbody2);
+
+    var tfoot2 = document.createElement('tfoot');
+    var totRow = document.createElement('tr');
+    [
+      ['Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')', tfS, 4],
+      ['\u20b9' + fmtNum(totTaxable || 0), tfR, 1],
+      ['\u20b9' + fmtNum(totCgst || 0) + ' each', tfR, 1],
+      ['\u20b9' + fmtNum(totIgst || 0), tfR, 1]
+    ].forEach(function(col) {
+      var cell = document.createElement('td');
+      cell.style.cssText = col[1];
+      cell.colSpan = col[2];
+      cell.textContent = col[0];
+      totRow.appendChild(cell);
+    });
+    tfoot2.appendChild(totRow);
+    table.appendChild(tfoot2);
+
+    // Assemble full container
+    var container = $('grPdfContainer');
+    container.innerHTML = '';
+    container.style.display = 'block';
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'font-family:Inter,system-ui,sans-serif;padding:20px;background:#fff';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'background:linear-gradient(135deg,#1a3a5c,#2d5a87);color:#fff;padding:16px 22px;border-radius:10px;margin-bottom:18px';
+    var tagLine = document.createElement('div');
+    tagLine.style.cssText = 'font-size:10px;color:#93c5fd;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px';
+    tagLine.textContent = 'GSTR-1 Style Report';
+    var titleLine = document.createElement('div');
+    titleLine.style.cssText = 'font-size:18px;font-weight:800';
+    titleLine.textContent = 'GST Tax Report';
+    var subLine = document.createElement('div');
+    subLine.style.cssText = 'font-size:11px;color:#bfdbfe;margin-top:3px';
+    subLine.textContent = $('grCompanyName').textContent + '  \u00b7  ' + data.label + '  \u00b7  ' + segLabel;
+    header.appendChild(tagLine);
+    header.appendChild(titleLine);
+    header.appendChild(subLine);
+
+    var footer = document.createElement('div');
+    footer.style.cssText = 'font-size:10px;color:#94a3b8;border-top:1px solid #e2e6ed;padding-top:8px';
+    footer.textContent = 'Total Tax Collected: \u20b9' + fmtNum(totTax || 0) + '  |  Generated: ' + new Date().toLocaleDateString('en-IN');
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(table);
+    wrapper.appendChild(footer);
+    container.appendChild(wrapper);
+
+    var fname = 'GST_Report_' + data.label.replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
+    var opt = Object.assign({}, PDF_OPT, {
+      margin: [0.35, 0.42, 0.35, 0.42],
+      html2canvas: Object.assign({}, PDF_OPT.html2canvas, { scale: 1.65, scrollX: 0, scrollY: 0 }),
+      filename: fname
+    });
+    try {
+      await html2pdf().set(opt).from(container).save();
+    } finally {
+      container.style.display = 'none';
+      container.innerHTML = '';
+    }
+  }
+
+  $('grPdfBtn').addEventListener('click', async function() {
+    await downloadGstPdf(computeGstReportData(grPeriodMode, grPeriodOffset));
+  });
+
 });
