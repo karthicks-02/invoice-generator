@@ -9446,6 +9446,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let grPeriodOffset = 0;
   let grSegment      = 'b2b';
 
+  function getGstFilteredRows(data) {
+    var segRows = grSegment === 'b2b' ? data.b2b : grSegment === 'b2c' ? data.b2c : data.invoices;
+    var q = ($('grSearch').value || '').trim().toLowerCase();
+    var rows = q ? segRows.filter(function(inv) {
+      return (inv.buyerName  || '').toLowerCase().indexOf(q) !== -1 ||
+             (inv.buyerGstin || '').toLowerCase().indexOf(q) !== -1;
+    }) : segRows;
+    return rows.slice().sort(function(a, b) {
+      var da = a.invoiceDate || '';
+      var db = b.invoiceDate || '';
+      return db < da ? -1 : db > da ? 1 : 0;
+    });
+  }
+
   function setKpi(valId, deltaId, curr, prev) {
     $(valId).textContent = '₹' + fmtNum(curr || 0);
     var d = gstDeltaBadge(curr, prev);
@@ -9478,17 +9492,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Get rows for active segment + search
-    var segRows = grSegment === 'b2b' ? data.b2b : grSegment === 'b2c' ? data.b2c : data.invoices;
     var q = ($('grSearch').value || '').trim().toLowerCase();
-    var rows = q ? segRows.filter(function(inv) {
-      return (inv.buyerName   || '').toLowerCase().indexOf(q) !== -1 ||
-             (inv.buyerGstin  || '').toLowerCase().indexOf(q) !== -1;
-    }) : segRows;
-    rows = rows.slice().sort(function(a, b) {
-      var da = a.invoiceDate || '';
-      var db = b.invoiceDate || '';
-      return db < da ? -1 : db > da ? 1 : 0;
-    });
+    var rows = getGstFilteredRows(data);
 
     // Render tbody using safe DOM construction (no user data in innerHTML)
     var tbody = $('grTableBody');
@@ -9664,17 +9669,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── GST Report: CSV export ────────────────────────────────────────────────
 
   function downloadGstCsv(data) {
-    var segRows = grSegment === 'b2b' ? data.b2b : grSegment === 'b2c' ? data.b2c : data.invoices;
-    var q = ($('grSearch').value || '').trim().toLowerCase();
-    var rows = q ? segRows.filter(function(inv) {
-      return (inv.buyerName  || '').toLowerCase().indexOf(q) !== -1 ||
-             (inv.buyerGstin || '').toLowerCase().indexOf(q) !== -1;
-    }) : segRows;
-    rows = rows.slice().sort(function(a, b) {
-      var da = a.invoiceDate || '';
-      var db = b.invoiceDate || '';
-      return db < da ? -1 : db > da ? 1 : 0;
-    });
+    var rows = getGstFilteredRows(data);
 
     var headers = [
       'Invoice No', 'Invoice Date', 'Party Name', 'Party GSTIN',
@@ -9683,7 +9678,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var lines = [headers.join(',')];
     rows.forEach(function(inv) {
       var cols = [
-        inv.invoiceNumber || inv.id || '',
+        '"' + (inv.invoiceNumber || inv.id || '').replace(/"/g, '""') + '"',
         inv.invoiceDate   || '',
         '"' + (inv.buyerName  || '').replace(/"/g, '""') + '"',
         '"' + (inv.buyerGstin || '').replace(/"/g, '""') + '"',
@@ -9692,13 +9687,13 @@ document.addEventListener('DOMContentLoaded', () => {
         (inv.sgst    || 0).toFixed(2),
         (inv.igst    || 0).toFixed(2),
         (inv.totalTax || 0).toFixed(2),
-        inv.gstRate  || '',
-        inv.gstType  || ''
+        '"' + (inv.gstRate  || '') + '"',
+        '"' + (inv.gstType  || '') + '"'
       ];
       lines.push(cols.join(','));
     });
 
-    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var blob = new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8;' });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement('a');
     a.href   = url;
