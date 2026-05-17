@@ -9587,9 +9587,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render tfoot totals
     var tfoot = $('grTableFoot');
     tfoot.innerHTML = '';
-    var totTaxable = rows.reduce(function(s, r) { return s + r.taxableValue; }, 0);
-    var totCgst    = rows.reduce(function(s, r) { return s + r.cgst; }, 0);
-    var totIgst    = rows.reduce(function(s, r) { return s + r.igst; }, 0);
+    var totTaxable = rows.reduce(function(s, r) { return s + (r.taxableValue || 0); }, 0);
+    var totCgst    = rows.reduce(function(s, r) { return s + (r.cgst    || 0); }, 0);
+    var totIgst    = rows.reduce(function(s, r) { return s + (r.igst    || 0); }, 0);
 
     var tfTr = document.createElement('tr');
     tfTr.className = 'gr-tfoot-row';
