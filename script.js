@@ -9445,6 +9445,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let grPeriodMode   = 'monthly';
   let grPeriodOffset = 0;
   let grSegment      = 'b2b';
+  var grCurrentGroups = {};
 
   function getGstFilteredRows(data) {
     var segRows = grSegment === 'b2b' ? data.b2b : grSegment === 'b2c' ? data.b2c : data.invoices;
@@ -9458,6 +9459,27 @@ document.addEventListener('DOMContentLoaded', () => {
       var db = b.invoiceDate || '';
       return db < da ? -1 : db > da ? 1 : 0;
     });
+  }
+
+  function groupGstByCompany(rows) {
+    var map = {}, order = [];
+    rows.forEach(function(inv) {
+      var key = (inv.buyerGstin && inv.buyerGstin.trim()) ? inv.buyerGstin.trim() : (inv.buyerName || '—');
+      if (!map[key]) {
+        map[key] = { key: key, buyerName: inv.buyerName || '—', buyerGstin: (inv.buyerGstin || '').trim(),
+                     taxableValue: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, invoices: [] };
+        order.push(key);
+      }
+      var g = map[key];
+      if (inv.buyerName && (!g.buyerName || g.buyerName === '—')) g.buyerName = inv.buyerName;
+      g.taxableValue += (inv.taxableValue || 0);
+      g.cgst         += (inv.cgst    || 0);
+      g.sgst         += (inv.sgst    || 0);
+      g.igst         += (inv.igst    || 0);
+      g.totalTax     += (inv.totalTax || 0);
+      g.invoices.push(inv);
+    });
+    return order.map(function(k) { return map[k]; });
   }
 
   function setKpi(valId, deltaId, curr, prev) {
@@ -9495,108 +9517,81 @@ document.addEventListener('DOMContentLoaded', () => {
     var q = ($('grSearch').value || '').trim().toLowerCase();
     var rows = getGstFilteredRows(data);
 
-    // Render tbody using safe DOM construction (no user data in innerHTML)
+    // Group invoices by company and render one row per company
+    var groups = groupGstByCompany(rows);
+    grCurrentGroups = {};
+    groups.forEach(function(g) { grCurrentGroups[g.key] = g; });
+
     var tbody = $('grTableBody');
     tbody.innerHTML = '';
 
-    if (rows.length === 0) {
+    if (groups.length === 0) {
       var emptyTr = document.createElement('tr');
       var emptyTd = document.createElement('td');
-      emptyTd.colSpan = 8;
+      emptyTd.colSpan = 6;
       emptyTd.className = 'gr-empty-msg';
       emptyTd.textContent = q ? 'No invoices match your search.' : 'No invoices found for this period.';
       emptyTr.appendChild(emptyTd);
       tbody.appendChild(emptyTr);
     } else {
-      rows.forEach(function(inv, i) {
+      groups.forEach(function(g, i) {
         var tr = document.createElement('tr');
-        tr.className = 'gr-tr';
+        tr.className = 'gr-tr gr-group-row';
+        tr.dataset.key = g.key;
 
-        // # cell
         var tdNum = document.createElement('td');
         tdNum.className = 'gr-td gr-td-num';
         tdNum.textContent = String(i + 1);
         tr.appendChild(tdNum);
 
-        // Party & GSTIN cell
         var tdParty = document.createElement('td');
         tdParty.className = 'gr-td';
         var nameDiv = document.createElement('div');
         nameDiv.className = 'gr-party-name';
-        nameDiv.textContent = inv.buyerName || '—';
+        nameDiv.textContent = g.buyerName;
         tdParty.appendChild(nameDiv);
         var chip = document.createElement('span');
-        if (inv.buyerGstin && inv.buyerGstin.trim()) {
-          chip.className = 'gr-gstin-chip';
-          chip.textContent = inv.buyerGstin;
-        } else {
-          chip.className = 'gr-b2c-chip';
-          chip.textContent = 'B2C';
-        }
+        chip.className = g.buyerGstin ? 'gr-gstin-chip' : 'gr-b2c-chip';
+        chip.textContent = g.buyerGstin || 'B2C';
         tdParty.appendChild(chip);
         tr.appendChild(tdParty);
 
-        // Invoice No. cell
-        var tdInv = document.createElement('td');
-        tdInv.className = 'gr-td gr-td-inv';
-        tdInv.textContent = inv.invoiceNumber || inv.id || '—';
-        tr.appendChild(tdInv);
+        var tdCount = document.createElement('td');
+        tdCount.className = 'gr-td';
+        var badge = document.createElement('span');
+        badge.className = 'gr-count-badge';
+        badge.textContent = g.invoices.length + (g.invoices.length === 1 ? ' invoice' : ' invoices');
+        tdCount.appendChild(badge);
+        tr.appendChild(tdCount);
 
-        // Date cell
-        var tdDate = document.createElement('td');
-        tdDate.className = 'gr-td gr-td-date';
-        tdDate.textContent = formatShortDate(inv.invoiceDate);
-        tr.appendChild(tdDate);
-
-        // Taxable cell
         var tdTax = document.createElement('td');
         tdTax.className = 'gr-td gr-td-right';
-        tdTax.textContent = '₹' + fmtNum(inv.taxableValue || 0);
+        tdTax.textContent = '₹' + fmtNum(g.taxableValue);
         tr.appendChild(tdTax);
 
-        // CGST/SGST cell
         var tdCgst = document.createElement('td');
-        tdCgst.className = 'gr-td gr-td-right';
-        if (inv.gstType === 'inter') {
-          var nilCgst = document.createElement('span');
-          nilCgst.className = 'gr-nil';
-          nilCgst.textContent = '—';
-          tdCgst.appendChild(nilCgst);
+        tdCgst.className = 'gr-td gr-td-right' + (g.cgst > 0 ? ' gr-td-cgst' : '');
+        if (g.cgst > 0) {
+          tdCgst.textContent = '₹' + fmtNum(g.cgst);
         } else {
-          tdCgst.className += ' gr-td-cgst';
-          tdCgst.textContent = '₹' + fmtNum(inv.cgst || 0) + ' each';
+          var n1 = document.createElement('span'); n1.className = 'gr-nil'; n1.textContent = '—'; tdCgst.appendChild(n1);
         }
         tr.appendChild(tdCgst);
 
-        // IGST cell
         var tdIgst = document.createElement('td');
-        tdIgst.className = 'gr-td gr-td-right';
-        if (inv.gstType === 'inter') {
-          tdIgst.className += ' gr-td-igst';
-          tdIgst.textContent = '₹' + fmtNum(inv.igst || 0);
+        tdIgst.className = 'gr-td gr-td-right' + (g.igst > 0 ? ' gr-td-igst' : '');
+        if (g.igst > 0) {
+          tdIgst.textContent = '₹' + fmtNum(g.igst);
         } else {
-          var nilIgst = document.createElement('span');
-          nilIgst.className = 'gr-nil';
-          nilIgst.textContent = '—';
-          tdIgst.appendChild(nilIgst);
+          var n2 = document.createElement('span'); n2.className = 'gr-nil'; n2.textContent = '—'; tdIgst.appendChild(n2);
         }
         tr.appendChild(tdIgst);
-
-        // Action cell
-        var tdAction = document.createElement('td');
-        tdAction.className = 'gr-td gr-td-right';
-        var viewBtn = document.createElement('button');
-        viewBtn.className = 'gr-view-btn';
-        viewBtn.dataset.id = inv.id;
-        viewBtn.textContent = 'View ↗';
-        tdAction.appendChild(viewBtn);
-        tr.appendChild(tdAction);
 
         tbody.appendChild(tr);
       });
     }
 
-    // Render tfoot totals
+    // Tfoot — totals across all visible rows (6 columns)
     var tfoot = $('grTableFoot');
     tfoot.innerHTML = '';
     var totTaxable = rows.reduce(function(s, r) { return s + (r.taxableValue || 0); }, 0);
@@ -9605,24 +9600,137 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var tfTr = document.createElement('tr');
     tfTr.className = 'gr-tfoot-row';
-
-    var cells = [
+    [
       { cls: 'gr-td gr-td-num', text: '' },
-      { cls: 'gr-td gr-tfoot-label', text: 'Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')' },
-      { cls: 'gr-td', text: '' },
+      { cls: 'gr-td gr-tfoot-label', text: groups.length + (groups.length === 1 ? ' company' : ' companies') + ' · ' + rows.length + (rows.length === 1 ? ' invoice' : ' invoices') },
       { cls: 'gr-td', text: '' },
       { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-taxable', text: '₹' + fmtNum(totTaxable || 0) },
-      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-cgst',    text: '₹' + fmtNum(totCgst || 0) + ' each' },
-      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-igst',    text: '₹' + fmtNum(totIgst || 0)    },
-      { cls: 'gr-td', text: '' }
-    ];
-    cells.forEach(function(c) {
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-cgst',    text: '₹' + fmtNum(totCgst    || 0) },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-igst',    text: '₹' + fmtNum(totIgst    || 0) }
+    ].forEach(function(c) {
       var td = document.createElement('td');
       td.className = c.cls;
       td.textContent = c.text;
       tfTr.appendChild(td);
     });
     tfoot.appendChild(tfTr);
+  }
+
+  // ── GST Report: company drawer ────────────────────────────────────────────
+
+  function closeGstDrawer() {
+    $('grDrawer').classList.remove('gr-drawer-open');
+    setTimeout(function() {
+      $('grDrawer').classList.add('hidden');
+      $('grDrawerOverlay').classList.add('hidden');
+    }, 260);
+  }
+
+  function closeGstDrawerInstant() {
+    $('grDrawer').classList.remove('gr-drawer-open');
+    $('grDrawer').classList.add('hidden');
+    $('grDrawerOverlay').classList.add('hidden');
+  }
+
+  function openGstDrawer(key) {
+    var g = grCurrentGroups[key];
+    if (!g) return;
+
+    $('grDrawerCompany').textContent = g.buyerName;
+
+    var gstinWrap = $('grDrawerGstinWrap');
+    gstinWrap.innerHTML = '';
+    var chip = document.createElement('span');
+    chip.className = g.buyerGstin ? 'gr-gstin-chip' : 'gr-b2c-chip';
+    chip.textContent = g.buyerGstin || 'B2C';
+    gstinWrap.appendChild(chip);
+
+    var kpiEl = $('grDrawerKpi');
+    kpiEl.innerHTML = '';
+    [
+      { label: 'Invoices',    val: String(g.invoices.length) },
+      { label: 'Taxable',     val: '₹' + fmtNum(g.taxableValue) },
+      { label: 'CGST / SGST', val: g.cgst > 0 ? '₹' + fmtNum(g.cgst) : '—' },
+      { label: 'IGST',        val: g.igst > 0 ? '₹' + fmtNum(g.igst) : '—' },
+      { label: 'Total Tax',   val: '₹' + fmtNum(g.totalTax) }
+    ].forEach(function(item) {
+      var card = document.createElement('div');
+      card.className = 'gr-drawer-kpi-card';
+      var lbl = document.createElement('div');
+      lbl.className = 'gr-drawer-kpi-label';
+      lbl.textContent = item.label;
+      var val = document.createElement('div');
+      val.className = 'gr-drawer-kpi-val';
+      val.textContent = item.val;
+      card.appendChild(lbl);
+      card.appendChild(val);
+      kpiEl.appendChild(card);
+    });
+
+    var tbody = $('grDrawerBody');
+    tbody.innerHTML = '';
+    g.invoices.slice().sort(function(a, b) {
+      var da = a.invoiceDate || '', db = b.invoiceDate || '';
+      return db < da ? -1 : db > da ? 1 : 0;
+    }).forEach(function(inv, i) {
+      var tr = document.createElement('tr');
+      tr.className = 'gr-tr';
+
+      var tdNum = document.createElement('td');
+      tdNum.className = 'gr-td gr-td-num';
+      tdNum.textContent = String(i + 1);
+      tr.appendChild(tdNum);
+
+      var tdInv = document.createElement('td');
+      tdInv.className = 'gr-td gr-td-inv';
+      tdInv.textContent = inv.invoiceNumber || inv.id || '—';
+      tr.appendChild(tdInv);
+
+      var tdDate = document.createElement('td');
+      tdDate.className = 'gr-td gr-td-date';
+      tdDate.textContent = formatShortDate(inv.invoiceDate);
+      tr.appendChild(tdDate);
+
+      var tdTax = document.createElement('td');
+      tdTax.className = 'gr-td gr-td-right';
+      tdTax.textContent = '₹' + fmtNum(inv.taxableValue || 0);
+      tr.appendChild(tdTax);
+
+      var tdCgst = document.createElement('td');
+      tdCgst.className = 'gr-td gr-td-right';
+      if (inv.gstType === 'inter') {
+        var n1 = document.createElement('span'); n1.className = 'gr-nil'; n1.textContent = '—'; tdCgst.appendChild(n1);
+      } else {
+        tdCgst.className += ' gr-td-cgst';
+        tdCgst.textContent = '₹' + fmtNum(inv.cgst || 0);
+      }
+      tr.appendChild(tdCgst);
+
+      var tdIgst = document.createElement('td');
+      tdIgst.className = 'gr-td gr-td-right';
+      if (inv.gstType === 'inter') {
+        tdIgst.className += ' gr-td-igst';
+        tdIgst.textContent = '₹' + fmtNum(inv.igst || 0);
+      } else {
+        var n2 = document.createElement('span'); n2.className = 'gr-nil'; n2.textContent = '—'; tdIgst.appendChild(n2);
+      }
+      tr.appendChild(tdIgst);
+
+      var tdAction = document.createElement('td');
+      tdAction.className = 'gr-td gr-td-right';
+      var viewBtn = document.createElement('button');
+      viewBtn.className = 'gr-view-btn';
+      viewBtn.dataset.id = inv.id;
+      viewBtn.textContent = 'View ↗';
+      tdAction.appendChild(viewBtn);
+      tr.appendChild(tdAction);
+
+      tbody.appendChild(tr);
+    });
+
+    $('grDrawerOverlay').classList.remove('hidden');
+    $('grDrawer').classList.remove('hidden');
+    requestAnimationFrame(function() { $('grDrawer').classList.add('gr-drawer-open'); });
   }
 
   // ── GST Report: navigation + interaction events ───────────────────────────
@@ -9662,8 +9770,16 @@ document.addEventListener('DOMContentLoaded', () => {
   $('grSearch').addEventListener('input', function() { renderGstReport(); });
 
   $('grTableBody').addEventListener('click', function(e) {
+    var row = e.target.closest('.gr-group-row');
+    if (row) openGstDrawer(row.dataset.key);
+  });
+
+  $('grDrawerClose').addEventListener('click', closeGstDrawer);
+  $('grDrawerOverlay').addEventListener('click', closeGstDrawer);
+
+  $('grDrawerBody').addEventListener('click', function(e) {
     var btn = e.target.closest('.gr-view-btn');
-    if (btn) viewInvoiceFromGstReport(btn.dataset.id);
+    if (btn) { closeGstDrawerInstant(); viewInvoiceFromGstReport(btn.dataset.id); }
   });
 
   // ── GST Report: CSV export ────────────────────────────────────────────────
