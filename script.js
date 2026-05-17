@@ -9715,9 +9715,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var totTaxable = rows.reduce(function(s, r) { return s + (r.taxableValue || 0); }, 0);
     var totCgst    = rows.reduce(function(s, r) { return s + (r.cgst    || 0); }, 0);
-    var totSgst    = rows.reduce(function(s, r) { return s + (r.sgst    || 0); }, 0);
     var totIgst    = rows.reduce(function(s, r) { return s + (r.igst    || 0); }, 0);
-    var totTax     = totCgst + totSgst + totIgst;
+    var totTax     = totCgst * 2 + totIgst;
 
     var segLabel = grSegment === 'b2b' ? 'B2B Invoices' : grSegment === 'b2c' ? 'B2C Invoices' : 'All Invoices';
     var th  = 'padding:7px 10px;background:#1a3a5c;color:#fff;font-size:11px;font-weight:700;text-align:left;white-space:nowrap;';
@@ -9827,11 +9826,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       container.style.display = 'none';
       container.innerHTML = '';
+      var tmp = document.getElementById('html2pdf__container');
+      if (tmp) tmp.remove();
     }
   }
 
   $('grPdfBtn').addEventListener('click', async function() {
-    await downloadGstPdf(computeGstReportData(grPeriodMode, grPeriodOffset));
+    var d = computeGstReportData(grPeriodMode, grPeriodOffset);
+    if (!getGstFilteredRows(d).length) { alert('No data to download.'); return; }
+    await downloadGstPdf(d);
   });
 
 });
