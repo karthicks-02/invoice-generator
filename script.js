@@ -9336,4 +9336,101 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ── GST Report: core data functions ──────────────────────────────────────
+
+  function computeGstForInvoice(inv) {
+    var taxableValue = (inv.items || []).reduce(function(sum, item) {
+      return sum + ((parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0));
+    }, 0);
+    var rate = parseFloat(inv.gstRate) || 0;
+    var cgst = 0, sgst = 0, igst = 0;
+    if (inv.gstType === 'inter') {
+      igst = taxableValue * (rate / 100);
+    } else {
+      cgst = taxableValue * (rate / 200);
+      sgst = taxableValue * (rate / 200);
+    }
+    return { taxableValue: taxableValue, cgst: cgst, sgst: sgst, igst: igst, totalTax: cgst + sgst + igst };
+  }
+
+  function getGstPeriodRange(mode, offset) {
+    var now = new Date();
+    var start, end, label;
+    if (mode === 'monthly') {
+      var d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      start = new Date(d.getFullYear(), d.getMonth(), 1);
+      end   = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      label = start.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    } else if (mode === 'quarterly') {
+      var m = now.getMonth();
+      var curQtr = m >= 3 ? Math.floor((m - 3) / 3) : 3;
+      var curFY  = m >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+      var total  = curFY * 4 + curQtr + offset;
+      var fy  = Math.floor(total / 4);
+      var qtr = ((total % 4) + 4) % 4;
+      var qSM = [3, 6, 9, 0][qtr];
+      var qEM = [5, 8, 11, 2][qtr];
+      var sY  = qtr === 3 ? fy + 1 : fy;
+      var eY  = qtr === 3 ? fy + 1 : fy;
+      start = new Date(sY, qSM, 1);
+      end   = new Date(eY, qEM + 1, 0);
+      var qNames = ['Q1 (Apr–Jun)', 'Q2 (Jul–Sep)', 'Q3 (Oct–Dec)', 'Q4 (Jan–Mar)'];
+      label = qNames[qtr] + ' FY ' + fy + '–' + String(fy + 1).slice(-2);
+    } else {
+      var m2 = now.getMonth();
+      var fy2 = (m2 >= 3 ? now.getFullYear() : now.getFullYear() - 1) + offset;
+      start = new Date(fy2, 3, 1);
+      end   = new Date(fy2 + 1, 2, 31);
+      label = 'FY ' + fy2 + '–' + String(fy2 + 1).slice(-2);
+    }
+    return { start: start, end: end, label: label };
+  }
+
+  function computeGstReportData(mode, offset) {
+    var range     = getGstPeriodRange(mode, offset);
+    var prevRange = getGstPeriodRange(mode, offset - 1);
+    var sTs  = range.start.getTime();
+    var eTs  = range.end.getTime() + 86399999;
+    var pSTs = prevRange.start.getTime();
+    var pETs = prevRange.end.getTime() + 86399999;
+
+    function enrichAndFilter(startTs, endTs) {
+      return (invoices || []).filter(function(inv) {
+        if (!inv.invoiceDate) return false;
+        var t = new Date(inv.invoiceDate + 'T00:00:00').getTime();
+        return t >= startTs && t <= endTs;
+      }).map(function(inv) {
+        return Object.assign({}, inv, computeGstForInvoice(inv));
+      });
+    }
+
+    function agg(arr) {
+      return arr.reduce(function(a, inv) {
+        a.taxableValue += inv.taxableValue; a.cgst += inv.cgst;
+        a.sgst += inv.sgst; a.igst += inv.igst;
+        a.totalTax += inv.totalTax; a.count++;
+        return a;
+      }, { taxableValue: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, count: 0 });
+    }
+
+    var curr = enrichAndFilter(sTs, eTs);
+    var prev = enrichAndFilter(pSTs, pETs);
+    var b2b  = curr.filter(function(inv) { return inv.buyerGstin && inv.buyerGstin.trim(); });
+    var b2c  = curr.filter(function(inv) { return !inv.buyerGstin || !inv.buyerGstin.trim(); });
+
+    return {
+      invoices: curr, b2b: b2b, b2c: b2c,
+      kpi: agg(curr), prevKpi: agg(prev),
+      label: range.label, b2bCount: b2b.length, b2cCount: b2c.length
+    };
+  }
+
+  function gstDeltaBadge(curr, prev) {
+    if (!prev) return { text: ' ', cls: 'gr-delta-neutral' };
+    var pct = Math.round(((curr - prev) / prev) * 100);
+    if (pct > 0) return { text: '↑ ' + pct + '%', cls: 'gr-delta-up' };
+    if (pct < 0) return { text: '↓ ' + Math.abs(pct) + '%', cls: 'gr-delta-down' };
+    return { text: '0%', cls: 'gr-delta-neutral' };
+  }
+
 });
