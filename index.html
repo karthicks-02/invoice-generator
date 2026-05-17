@@ -2269,34 +2269,6 @@
       <!-- Hidden PDF render target -->
       <div id="grPdfContainer" style="display:none;position:absolute;left:-9999px;top:0;width:700px"></div>
 
-      <!-- Company drill-down drawer -->
-      <div id="grDrawerOverlay" class="gr-drawer-overlay hidden"></div>
-      <div id="grDrawer" class="gr-drawer hidden">
-        <div class="gr-drawer-header">
-          <div class="gr-drawer-hd-info">
-            <div class="gr-drawer-company" id="grDrawerCompany">—</div>
-            <div id="grDrawerGstinWrap"></div>
-          </div>
-          <button class="gr-drawer-close" id="grDrawerClose" aria-label="Close">&times;</button>
-        </div>
-        <div class="gr-drawer-kpi" id="grDrawerKpi"></div>
-        <div class="gr-drawer-scroll">
-          <table class="gr-table gr-drawer-table">
-            <thead>
-              <tr class="gr-thead-row">
-                <th class="gr-th gr-th-num">#</th>
-                <th class="gr-th">Invoice No.</th>
-                <th class="gr-th">Date</th>
-                <th class="gr-th gr-th-right">Taxable (&#8377;)</th>
-                <th class="gr-th gr-th-right">CGST / SGST</th>
-                <th class="gr-th gr-th-right">IGST</th>
-                <th class="gr-th gr-th-right">View</th>
-              </tr>
-            </thead>
-            <tbody id="grDrawerBody"></tbody>
-          </table>
-        </div>
-      </div>
     </div>
 
   </main>
@@ -2350,6 +2322,35 @@
       </div>
       <div class="rate-popover-summary" id="ratePopoverSummary"></div>
       <div class="rate-popover-body" id="ratePopoverBody"></div>
+    </div>
+  </div>
+
+  <!-- GST Report: company drill-down drawer (body-level so position:fixed works correctly) -->
+  <div id="grDrawerOverlay" class="gr-drawer-overlay hidden"></div>
+  <div id="grDrawer" class="gr-drawer hidden">
+    <div class="gr-drawer-header">
+      <div class="gr-drawer-hd-info">
+        <div class="gr-drawer-company" id="grDrawerCompany">—</div>
+        <div id="grDrawerGstinWrap"></div>
+      </div>
+      <button class="gr-drawer-close" id="grDrawerClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="gr-drawer-kpi" id="grDrawerKpi"></div>
+    <div class="gr-drawer-scroll">
+      <table class="gr-table gr-drawer-table">
+        <thead>
+          <tr class="gr-thead-row">
+            <th class="gr-th gr-th-num">#</th>
+            <th class="gr-th">Invoice No.</th>
+            <th class="gr-th">Date</th>
+            <th class="gr-th gr-th-right">Taxable (&#8377;)</th>
+            <th class="gr-th gr-th-right">CGST / SGST</th>
+            <th class="gr-th gr-th-right">IGST</th>
+            <th class="gr-th gr-th-right">View</th>
+          </tr>
+        </thead>
+        <tbody id="grDrawerBody"></tbody>
+      </table>
     </div>
   </div>
 </body>

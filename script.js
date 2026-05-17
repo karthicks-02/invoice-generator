@@ -9620,6 +9620,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeGstDrawer() {
     $('grDrawer').classList.remove('gr-drawer-open');
+    document.body.style.overflow = '';
     setTimeout(function() {
       $('grDrawer').classList.add('hidden');
       $('grDrawerOverlay').classList.add('hidden');
@@ -9630,6 +9631,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('grDrawer').classList.remove('gr-drawer-open');
     $('grDrawer').classList.add('hidden');
     $('grDrawerOverlay').classList.add('hidden');
+    document.body.style.overflow = '';
   }
 
   function openGstDrawer(key) {
@@ -9730,6 +9732,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('grDrawerOverlay').classList.remove('hidden');
     $('grDrawer').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
     requestAnimationFrame(function() { $('grDrawer').classList.add('gr-drawer-open'); });
   }
 
@@ -9771,7 +9774,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('grTableBody').addEventListener('click', function(e) {
     var row = e.target.closest('.gr-group-row');
-    if (row) openGstDrawer(row.dataset.key);
+    if (row) { e.preventDefault(); openGstDrawer(row.dataset.key); }
   });
 
   $('grDrawerClose').addEventListener('click', closeGstDrawer);
