@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let cameFromVendorPayment = false;
   let cameFromAgingReport = false;
   let cameFromCrDrawer = false;
+  let cameFromGstReport = false;
   var lastAgingDrawerRow = null;
   var lastCrDrawerRow = null;
 
@@ -173,6 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
       cameFromInvoiceList = false;
       showView('invoiceListView');
       renderInvoiceList();
+    } else if (cameFromGstReport) {
+      cameFromGstReport = false;
+      showView('gstReportView');
+      renderGstReport();
     } else {
       goHome();
     }
@@ -215,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (v === 'purchaseAnalyticsView') renderPurchaseAnalytics();
       if (v === 'customerReportView')    { switchCrTab('summary'); renderCustomerReport(); }
       if (v === 'vendorReportView')      renderVendorReport();
+      if (v === 'gstReportView')         renderGstReport();
     });
   });
 
@@ -9612,5 +9618,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     tfoot.appendChild(tfTr);
   }
+
+  // ── GST Report: navigation + interaction events ───────────────────────────
+
+  function viewInvoiceFromGstReport(id) {
+    var inv = invoices.find(function(x) { return x.id === id; });
+    if (!inv) return;
+    cameFromGstReport = true;
+    loadInvoiceIntoForm(inv);
+    syncCopyChecks('copyType', 'copyTypePreview');
+    buildAllInvoices();
+    showView('invoiceView');
+    $('formPanel').classList.add('hidden');
+    $('previewPanel').classList.remove('hidden');
+  }
+
+  $('grBackBtn').addEventListener('click', function() { goHome(); });
+
+  document.querySelectorAll('#gstReportView .gr-period-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      grPeriodMode = btn.dataset.mode;
+      grPeriodOffset = 0;
+      renderGstReport();
+    });
+  });
+
+  $('grPrevBtn').addEventListener('click', function() { grPeriodOffset--; renderGstReport(); });
+  $('grNextBtn').addEventListener('click', function() { grPeriodOffset++; renderGstReport(); });
+
+  document.querySelectorAll('#gstReportView .gr-seg-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      grSegment = btn.dataset.seg;
+      renderGstReport();
+    });
+  });
+
+  $('grSearch').addEventListener('input', function() { renderGstReport(); });
+
+  $('grTableBody').addEventListener('click', function(e) {
+    var btn = e.target.closest('.gr-view-btn');
+    if (btn) viewInvoiceFromGstReport(btn.dataset.id);
+  });
 
 });
