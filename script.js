@@ -9435,9 +9435,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── GST Report: state + render ────────────────────────────────────────────
 
-  var grPeriodMode   = 'monthly';
-  var grPeriodOffset = 0;
-  var grSegment      = 'b2b';
+  let grPeriodMode   = 'monthly';
+  let grPeriodOffset = 0;
+  let grSegment      = 'b2b';
+
+  function setKpi(valId, deltaId, curr, prev) {
+    $(valId).textContent = '₹' + fmtNum(curr || 0);
+    var d = gstDeltaBadge(curr, prev);
+    $(deltaId).textContent = d.text;
+    $(deltaId).className = 'gr-kpi-delta ' + d.cls;
+  }
 
   function renderGstReport() {
     var data = computeGstReportData(grPeriodMode, grPeriodOffset);
@@ -9449,12 +9456,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // KPI values
-    function setKpi(valId, deltaId, curr, prev) {
-      $(valId).textContent = '₹' + fmtNum(curr);
-      var d = gstDeltaBadge(curr, prev);
-      $(deltaId).textContent = d.text;
-      $(deltaId).className = 'gr-kpi-delta ' + d.cls;
-    }
     setKpi('grKpiTaxable', 'grKpiTaxableDelta', data.kpi.taxableValue, data.prevKpi.taxableValue);
     setKpi('grKpiCgst',    'grKpiCgstDelta',    data.kpi.cgst,         data.prevKpi.cgst);
     setKpi('grKpiSgst',    'grKpiSgstDelta',    data.kpi.sgst,         data.prevKpi.sgst);
@@ -9477,7 +9478,9 @@ document.addEventListener('DOMContentLoaded', () => {
              (inv.buyerGstin  || '').toLowerCase().indexOf(q) !== -1;
     }) : segRows;
     rows = rows.slice().sort(function(a, b) {
-      return new Date(b.invoiceDate + 'T00:00:00') - new Date(a.invoiceDate + 'T00:00:00');
+      var da = a.invoiceDate || '';
+      var db = b.invoiceDate || '';
+      return db < da ? -1 : db > da ? 1 : 0;
     });
 
     // Render tbody using safe DOM construction (no user data in innerHTML)
@@ -9489,7 +9492,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var emptyTd = document.createElement('td');
       emptyTd.colSpan = 8;
       emptyTd.className = 'gr-empty-msg';
-      emptyTd.textContent = 'No invoices found for this period.';
+      emptyTd.textContent = q ? 'No invoices match your search.' : 'No invoices found for this period.';
       emptyTr.appendChild(emptyTd);
       tbody.appendChild(emptyTr);
     } else {
@@ -9536,7 +9539,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Taxable cell
         var tdTax = document.createElement('td');
         tdTax.className = 'gr-td gr-td-right';
-        tdTax.textContent = '₹' + fmtNum(inv.taxableValue);
+        tdTax.textContent = '₹' + fmtNum(inv.taxableValue || 0);
         tr.appendChild(tdTax);
 
         // CGST/SGST cell
@@ -9549,7 +9552,7 @@ document.addEventListener('DOMContentLoaded', () => {
           tdCgst.appendChild(nilCgst);
         } else {
           tdCgst.className += ' gr-td-cgst';
-          tdCgst.textContent = '₹' + fmtNum(inv.cgst) + ' each';
+          tdCgst.textContent = '₹' + fmtNum(inv.cgst || 0) + ' each';
         }
         tr.appendChild(tdCgst);
 
@@ -9558,7 +9561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tdIgst.className = 'gr-td gr-td-right';
         if (inv.gstType === 'inter') {
           tdIgst.className += ' gr-td-igst';
-          tdIgst.textContent = '₹' + fmtNum(inv.igst);
+          tdIgst.textContent = '₹' + fmtNum(inv.igst || 0);
         } else {
           var nilIgst = document.createElement('span');
           nilIgst.className = 'gr-nil';
@@ -9596,9 +9599,9 @@ document.addEventListener('DOMContentLoaded', () => {
       { cls: 'gr-td gr-tfoot-label', text: 'Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')' },
       { cls: 'gr-td', text: '' },
       { cls: 'gr-td', text: '' },
-      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-taxable', text: '₹' + fmtNum(totTaxable) },
-      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-cgst',    text: '₹' + fmtNum(totCgst)    },
-      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-igst',    text: '₹' + fmtNum(totIgst)    },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-taxable', text: '₹' + fmtNum(totTaxable || 0) },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-cgst',    text: '₹' + fmtNum(totCgst || 0) + ' each' },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-igst',    text: '₹' + fmtNum(totIgst || 0)    },
       { cls: 'gr-td', text: '' }
     ];
     cells.forEach(function(c) {
