@@ -2279,6 +2279,35 @@
   <script src="firebase-config.js"></script>
   <script src="db.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- GST Report: company drill-down drawer (body-level so position:fixed works correctly) -->
+  <div id="grDrawerOverlay" class="gr-drawer-overlay hidden"></div>
+  <div id="grDrawer" class="gr-drawer hidden">
+    <div class="gr-drawer-header">
+      <div class="gr-drawer-hd-info">
+        <div class="gr-drawer-company" id="grDrawerCompany">—</div>
+        <div id="grDrawerGstinWrap"></div>
+      </div>
+      <button class="gr-drawer-close" id="grDrawerClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="gr-drawer-kpi" id="grDrawerKpi"></div>
+    <div class="gr-drawer-scroll">
+      <table class="gr-table gr-drawer-table">
+        <thead>
+          <tr class="gr-thead-row">
+            <th class="gr-th gr-th-num">#</th>
+            <th class="gr-th">Invoice No.</th>
+            <th class="gr-th">Date</th>
+            <th class="gr-th gr-th-right">Taxable (&#8377;)</th>
+            <th class="gr-th gr-th-right">CGST / SGST</th>
+            <th class="gr-th gr-th-right">IGST</th>
+            <th class="gr-th gr-th-right">View</th>
+          </tr>
+        </thead>
+        <tbody id="grDrawerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
@@ -2325,33 +2354,5 @@
     </div>
   </div>
 
-  <!-- GST Report: company drill-down drawer (body-level so position:fixed works correctly) -->
-  <div id="grDrawerOverlay" class="gr-drawer-overlay hidden"></div>
-  <div id="grDrawer" class="gr-drawer hidden">
-    <div class="gr-drawer-header">
-      <div class="gr-drawer-hd-info">
-        <div class="gr-drawer-company" id="grDrawerCompany">—</div>
-        <div id="grDrawerGstinWrap"></div>
-      </div>
-      <button class="gr-drawer-close" id="grDrawerClose" aria-label="Close">&times;</button>
-    </div>
-    <div class="gr-drawer-kpi" id="grDrawerKpi"></div>
-    <div class="gr-drawer-scroll">
-      <table class="gr-table gr-drawer-table">
-        <thead>
-          <tr class="gr-thead-row">
-            <th class="gr-th gr-th-num">#</th>
-            <th class="gr-th">Invoice No.</th>
-            <th class="gr-th">Date</th>
-            <th class="gr-th gr-th-right">Taxable (&#8377;)</th>
-            <th class="gr-th gr-th-right">CGST / SGST</th>
-            <th class="gr-th gr-th-right">IGST</th>
-            <th class="gr-th gr-th-right">View</th>
-          </tr>
-        </thead>
-        <tbody id="grDrawerBody"></tbody>
-      </table>
-    </div>
-  </div>
 </body>
 </html>
