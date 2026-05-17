@@ -3320,3 +3320,4 @@ input.inv-rate-input {
   .aging-buckets-row { grid-template-columns: repeat(2, 1fr); }
   .cr-tab { padding: 8px 12px; font-size: 12px; }
 }
+.analytics-header-actions { display: flex; gap: 8px; align-items: center; }
