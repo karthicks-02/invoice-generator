@@ -9433,4 +9433,181 @@ document.addEventListener('DOMContentLoaded', () => {
     return { text: '0%', cls: 'gr-delta-neutral' };
   }
 
+  // ── GST Report: state + render ────────────────────────────────────────────
+
+  var grPeriodMode   = 'monthly';
+  var grPeriodOffset = 0;
+  var grSegment      = 'b2b';
+
+  function renderGstReport() {
+    var data = computeGstReportData(grPeriodMode, grPeriodOffset);
+
+    // Period label + tab active state
+    $('grPeriodLabel').textContent = data.label;
+    document.querySelectorAll('#gstReportView .gr-period-tab').forEach(function(btn) {
+      btn.classList.toggle('gr-period-tab-active', btn.dataset.mode === grPeriodMode);
+    });
+
+    // KPI values
+    function setKpi(valId, deltaId, curr, prev) {
+      $(valId).textContent = '₹' + fmtNum(curr);
+      var d = gstDeltaBadge(curr, prev);
+      $(deltaId).textContent = d.text;
+      $(deltaId).className = 'gr-kpi-delta ' + d.cls;
+    }
+    setKpi('grKpiTaxable', 'grKpiTaxableDelta', data.kpi.taxableValue, data.prevKpi.taxableValue);
+    setKpi('grKpiCgst',    'grKpiCgstDelta',    data.kpi.cgst,         data.prevKpi.cgst);
+    setKpi('grKpiSgst',    'grKpiSgstDelta',    data.kpi.sgst,         data.prevKpi.sgst);
+    setKpi('grKpiIgst',    'grKpiIgstDelta',    data.kpi.igst,         data.prevKpi.igst);
+    setKpi('grKpiTotal',   'grKpiTotalDelta',   data.kpi.totalTax,     data.prevKpi.totalTax);
+    $('grKpiCount').textContent = String(data.kpi.count);
+    $('grKpiCountSub').textContent = 'B2B: ' + data.b2bCount + ' · B2C: ' + data.b2cCount;
+    $('grKpiCountSub').className = 'gr-kpi-delta gr-delta-neutral';
+
+    // Segment active state
+    document.querySelectorAll('#gstReportView .gr-seg-btn').forEach(function(btn) {
+      btn.classList.toggle('gr-seg-active', btn.dataset.seg === grSegment);
+    });
+
+    // Get rows for active segment + search
+    var segRows = grSegment === 'b2b' ? data.b2b : grSegment === 'b2c' ? data.b2c : data.invoices;
+    var q = ($('grSearch').value || '').trim().toLowerCase();
+    var rows = q ? segRows.filter(function(inv) {
+      return (inv.buyerName   || '').toLowerCase().indexOf(q) !== -1 ||
+             (inv.buyerGstin  || '').toLowerCase().indexOf(q) !== -1;
+    }) : segRows;
+    rows = rows.slice().sort(function(a, b) {
+      return new Date(b.invoiceDate + 'T00:00:00') - new Date(a.invoiceDate + 'T00:00:00');
+    });
+
+    // Render tbody using safe DOM construction (no user data in innerHTML)
+    var tbody = $('grTableBody');
+    tbody.innerHTML = '';
+
+    if (rows.length === 0) {
+      var emptyTr = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      emptyTd.colSpan = 8;
+      emptyTd.className = 'gr-empty-msg';
+      emptyTd.textContent = 'No invoices found for this period.';
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+    } else {
+      rows.forEach(function(inv, i) {
+        var tr = document.createElement('tr');
+        tr.className = 'gr-tr';
+
+        // # cell
+        var tdNum = document.createElement('td');
+        tdNum.className = 'gr-td gr-td-num';
+        tdNum.textContent = String(i + 1);
+        tr.appendChild(tdNum);
+
+        // Party & GSTIN cell
+        var tdParty = document.createElement('td');
+        tdParty.className = 'gr-td';
+        var nameDiv = document.createElement('div');
+        nameDiv.className = 'gr-party-name';
+        nameDiv.textContent = inv.buyerName || '—';
+        tdParty.appendChild(nameDiv);
+        var chip = document.createElement('span');
+        if (inv.buyerGstin && inv.buyerGstin.trim()) {
+          chip.className = 'gr-gstin-chip';
+          chip.textContent = inv.buyerGstin;
+        } else {
+          chip.className = 'gr-b2c-chip';
+          chip.textContent = 'B2C';
+        }
+        tdParty.appendChild(chip);
+        tr.appendChild(tdParty);
+
+        // Invoice No. cell
+        var tdInv = document.createElement('td');
+        tdInv.className = 'gr-td gr-td-inv';
+        tdInv.textContent = inv.invoiceNumber || inv.id || '—';
+        tr.appendChild(tdInv);
+
+        // Date cell
+        var tdDate = document.createElement('td');
+        tdDate.className = 'gr-td gr-td-date';
+        tdDate.textContent = formatShortDate(inv.invoiceDate);
+        tr.appendChild(tdDate);
+
+        // Taxable cell
+        var tdTax = document.createElement('td');
+        tdTax.className = 'gr-td gr-td-right';
+        tdTax.textContent = '₹' + fmtNum(inv.taxableValue);
+        tr.appendChild(tdTax);
+
+        // CGST/SGST cell
+        var tdCgst = document.createElement('td');
+        tdCgst.className = 'gr-td gr-td-right';
+        if (inv.gstType === 'inter') {
+          var nilCgst = document.createElement('span');
+          nilCgst.className = 'gr-nil';
+          nilCgst.textContent = '—';
+          tdCgst.appendChild(nilCgst);
+        } else {
+          tdCgst.className += ' gr-td-cgst';
+          tdCgst.textContent = '₹' + fmtNum(inv.cgst) + ' each';
+        }
+        tr.appendChild(tdCgst);
+
+        // IGST cell
+        var tdIgst = document.createElement('td');
+        tdIgst.className = 'gr-td gr-td-right';
+        if (inv.gstType === 'inter') {
+          tdIgst.className += ' gr-td-igst';
+          tdIgst.textContent = '₹' + fmtNum(inv.igst);
+        } else {
+          var nilIgst = document.createElement('span');
+          nilIgst.className = 'gr-nil';
+          nilIgst.textContent = '—';
+          tdIgst.appendChild(nilIgst);
+        }
+        tr.appendChild(tdIgst);
+
+        // Action cell
+        var tdAction = document.createElement('td');
+        tdAction.className = 'gr-td gr-td-right';
+        var viewBtn = document.createElement('button');
+        viewBtn.className = 'gr-view-btn';
+        viewBtn.dataset.id = inv.id;
+        viewBtn.textContent = 'View ↗';
+        tdAction.appendChild(viewBtn);
+        tr.appendChild(tdAction);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Render tfoot totals
+    var tfoot = $('grTableFoot');
+    tfoot.innerHTML = '';
+    var totTaxable = rows.reduce(function(s, r) { return s + r.taxableValue; }, 0);
+    var totCgst    = rows.reduce(function(s, r) { return s + r.cgst; }, 0);
+    var totIgst    = rows.reduce(function(s, r) { return s + r.igst; }, 0);
+
+    var tfTr = document.createElement('tr');
+    tfTr.className = 'gr-tfoot-row';
+
+    var cells = [
+      { cls: 'gr-td gr-td-num', text: '' },
+      { cls: 'gr-td gr-tfoot-label', text: 'Total (' + rows.length + ' invoice' + (rows.length !== 1 ? 's' : '') + ')' },
+      { cls: 'gr-td', text: '' },
+      { cls: 'gr-td', text: '' },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-taxable', text: '₹' + fmtNum(totTaxable) },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-cgst',    text: '₹' + fmtNum(totCgst)    },
+      { cls: 'gr-td gr-td-right gr-tfoot-val gr-tfoot-igst',    text: '₹' + fmtNum(totIgst)    },
+      { cls: 'gr-td', text: '' }
+    ];
+    cells.forEach(function(c) {
+      var td = document.createElement('td');
+      td.className = c.cls;
+      td.textContent = c.text;
+      tfTr.appendChild(td);
+    });
+    tfoot.appendChild(tfTr);
+  }
+
 });
