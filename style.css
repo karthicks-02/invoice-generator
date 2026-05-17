@@ -3555,7 +3555,7 @@ input.inv-rate-input {
   font-size: 0.82rem;
   color: var(--text);
   background: transparent;
-  width: 160px;
+  width: 260px;
   font-family: inherit;
 }
 .gr-search-input::placeholder { color: var(--text-muted); }

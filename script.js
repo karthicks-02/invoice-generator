@@ -9444,7 +9444,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let grPeriodMode   = 'monthly';
   let grPeriodOffset = 0;
-  let grSegment      = 'b2b';
+  let grSegment      = 'all';
   var grCurrentGroups = {};
 
   function getGstFilteredRows(data) {
