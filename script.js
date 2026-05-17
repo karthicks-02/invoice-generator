@@ -9661,4 +9661,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) viewInvoiceFromGstReport(btn.dataset.id);
   });
 
+  // ── GST Report: CSV export ────────────────────────────────────────────────
+
+  function downloadGstCsv(data) {
+    var segRows = grSegment === 'b2b' ? data.b2b : grSegment === 'b2c' ? data.b2c : data.invoices;
+    var q = ($('grSearch').value || '').trim().toLowerCase();
+    var rows = q ? segRows.filter(function(inv) {
+      return (inv.buyerName  || '').toLowerCase().indexOf(q) !== -1 ||
+             (inv.buyerGstin || '').toLowerCase().indexOf(q) !== -1;
+    }) : segRows;
+    rows = rows.slice().sort(function(a, b) {
+      var da = a.invoiceDate || '';
+      var db = b.invoiceDate || '';
+      return db < da ? -1 : db > da ? 1 : 0;
+    });
+
+    var headers = [
+      'Invoice No', 'Invoice Date', 'Party Name', 'Party GSTIN',
+      'Taxable Value', 'CGST', 'SGST', 'IGST', 'Total Tax', 'GST Rate %', 'GST Type'
+    ];
+    var lines = [headers.join(',')];
+    rows.forEach(function(inv) {
+      var cols = [
+        inv.invoiceNumber || inv.id || '',
+        inv.invoiceDate   || '',
+        '"' + (inv.buyerName  || '').replace(/"/g, '""') + '"',
+        '"' + (inv.buyerGstin || '').replace(/"/g, '""') + '"',
+        (inv.taxableValue || 0).toFixed(2),
+        (inv.cgst    || 0).toFixed(2),
+        (inv.sgst    || 0).toFixed(2),
+        (inv.igst    || 0).toFixed(2),
+        (inv.totalTax || 0).toFixed(2),
+        inv.gstRate  || '',
+        inv.gstType  || ''
+      ];
+      lines.push(cols.join(','));
+    });
+
+    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    a.download = 'GST_Report_' + data.label.replace(/[^a-zA-Z0-9\-]/g, '_') + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  $('grCsvBtn').addEventListener('click', function() {
+    downloadGstCsv(computeGstReportData(grPeriodMode, grPeriodOffset));
+  });
+
 });
