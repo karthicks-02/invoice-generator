@@ -9357,7 +9357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let now = new Date();
     let start, end, label;
     if (mode === 'monthly') {
-      var d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      let d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
       start = new Date(d.getFullYear(), d.getMonth(), 1);
       end   = new Date(d.getFullYear(), d.getMonth() + 1, 0);
       label = start.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
