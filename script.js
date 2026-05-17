@@ -990,6 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editingInvoiceId = null;
     cameFromInvoiceList = false;
     cameFromPayment = false;
+    cameFromGstReport = false;
     $('invoiceNumber').value = getNextInvoiceNumber();
     const invNoErr = $('invoiceNumberError');
     if (invNoErr) {
@@ -9633,7 +9634,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('previewPanel').classList.remove('hidden');
   }
 
-  $('grBackBtn').addEventListener('click', function() { goHome(); });
+  $('grBackBtn').addEventListener('click', goHome);
 
   document.querySelectorAll('#gstReportView .gr-period-tab').forEach(function(btn) {
     btn.addEventListener('click', function() {
