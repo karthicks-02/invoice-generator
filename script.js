@@ -9413,6 +9413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function enrichAndFilter(startTs, endTs) {
       return (invoices || []).filter(function(inv) {
         if (!inv.invoiceDate) return false;
+        if (isProformaInvoice(inv)) return false;
         var t = new Date(inv.invoiceDate + 'T00:00:00').getTime();
         return t >= startTs && t <= endTs;
       }).map(function(inv) {
