@@ -269,7 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function customerGstTypeLabel(v) {
-    return v === 'inter' ? 'Inter (IGST)' : 'Intra (CGST+SGST)';
+    if (v === 'inter') return 'Inter (IGST)';
+    if (v === 'none') return 'None (No GST)';
+    return 'Intra (CGST+SGST)';
   }
 
   function renderCustomers() {
@@ -475,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const conNames = (c.consignees || []).map(cn => cn.name).join('; ');
       rows.push([
         i + 1, c.name, c.gstin,
-        c.gstType === 'inter' ? 'Inter-State' : 'Intra-State',
+        c.gstType === 'inter' ? 'Inter-State' : c.gstType === 'none' ? 'None' : 'Intra-State',
         c.address, c.contact, c.phone,
         c.poNumber || '', c.poDate || '', conNames
       ]);
@@ -547,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       $('custPoNumber').value = c.poNumber || '';
       $('custPoDate').value = c.poDate || '';
-      $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
+      $('custGstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
       tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
@@ -945,8 +947,9 @@ document.addEventListener('DOMContentLoaded', () => {
     $('accountNumber').value = inv.accountNumber || '';
     $('ifscCode').value = inv.ifscCode || '';
     $('transportMode').value = inv.transportMode || '';
-    $('gstRate').value = inv.gstRate || 0;
     $('gstType').value = inv.gstType || 'intra';
+    $('gstRate').value = inv.gstRate || 0;
+    $('gstRate').disabled = ($('gstType').value === 'none');
     $('invoiceReminder').value = inv.reminderDate || '';
 
     items = (inv.items && inv.items.length)
@@ -1022,6 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('ifscCode').value = 'BARBOVJNOOT';
     $('transportMode').value = 'By Road';
     $('gstRate').value = 9;
+    $('gstRate').disabled = false;
     $('gstType').value = 'intra';
     const rem30 = new Date();
     rem30.setDate(rem30.getDate() + 30);
@@ -1042,7 +1046,8 @@ document.addEventListener('DOMContentLoaded', () => {
       subtotal += q * (Number(it.rate) || 0);
     });
     const rate = inv.gstRate || 0;
-    const tax = inv.gstType === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
+    const gstT = inv.gstType || 'intra';
+    const tax = gstT === 'none' ? 0 : gstT === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
     return Math.round(subtotal + tax);
   }
 
@@ -1112,6 +1117,8 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
     if ($('invSelectAll')) $('invSelectAll').checked = false;
+    if ($('bulkDownloadWrap')) $('bulkDownloadWrap').style.display = 'none';
+    if (typeof syncInvExportOptions === 'function') syncInvExportOptions();
     const periodLabel = getInvoiceListSummaryPeriodLabel();
     const periodEl = $('invTotalSummaryPeriod');
     const valueEl = $('invTotalSummaryValue');
@@ -1160,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasAnyDate = !!(from || to);
     const hasFullRange = !!(from && to);
     if ($('invPresetClear')) $('invPresetClear').style.display = hasAnyDate ? 'inline-flex' : 'none';
-    if ($('downloadFilteredPair')) $('downloadFilteredPair').style.display = hasFullRange ? 'inline-flex' : 'none';
+    setInvFilteredVisible(hasFullRange);
   }
 
   function onInvListDateRangeChange() {
@@ -1227,8 +1234,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Select All checkbox ──
+  function syncInvExportOptions() {
+    const hasFilter = $('downloadFilteredPair') && $('downloadFilteredPair').style.display !== 'none';
+    const hasSel = !!document.querySelector('.inv-check:checked');
+    if ($('filteredExportOptions')) $('filteredExportOptions').style.display = (hasFilter || hasSel) ? '' : 'none';
+  }
+
+  function setInvFilteredVisible(show) {
+    if ($('downloadFilteredPair')) $('downloadFilteredPair').style.display = show ? 'inline-flex' : 'none';
+    syncInvExportOptions();
+  }
+
+  function updateBulkDownloadWrap() {
+    const anyChecked = document.querySelector('.inv-check:checked') !== null;
+    $('bulkDownloadWrap').style.display = anyChecked ? '' : 'none';
+    syncInvExportOptions();
+  }
+
   $('invSelectAll').addEventListener('change', e => {
     document.querySelectorAll('.inv-check').forEach(cb => { cb.checked = e.target.checked; });
+    updateBulkDownloadWrap();
+  });
+
+  document.addEventListener('change', e => {
+    if (e.target.classList.contains('inv-check')) updateBulkDownloadWrap();
   });
 
   // ── Date preset helpers ──
@@ -1269,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#invoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
     activePreset = null;
     $('invPresetClear').style.display = 'none';
-    $('downloadFilteredPair').style.display = 'none';
+    setInvFilteredVisible(false);
   }
 
   function applyPresetFilter(range, btnId) {
@@ -1287,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('invDateTo').value = range.to;
     renderInvoiceList();
     $('invPresetClear').style.display = 'inline-flex';
-    $('downloadFilteredPair').style.display = 'inline-flex';
+    setInvFilteredVisible(true);
   }
 
   $('invPresetToday').addEventListener('click', () => applyPresetFilter(getDayRange(0), 'invPresetToday'));
@@ -1376,11 +1405,22 @@ document.addEventListener('DOMContentLoaded', () => {
     $('customFrom').focus();
   });
 
+  function getCustomSortOrder() {
+    return $('customSortAsc') && $('customSortAsc').classList.contains('active') ? 'asc' : 'desc';
+  }
+
   function getCustomFilteredInvoices() {
     const from = $('customFrom').value;
     const to = $('customTo').value;
     if (!from || !to) return [];
-    return invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    const list = invoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+    const asc = getCustomSortOrder() === 'asc';
+    return list.sort((a, b) => {
+      const dateCmp = (a.invoiceDate || '').localeCompare(b.invoiceDate || '');
+      if (dateCmp !== 0) return asc ? dateCmp : -dateCmp;
+      const na = parseInt(a.invoiceNumber) || 0, nb = parseInt(b.invoiceNumber) || 0;
+      return asc ? na - nb : nb - na;
+    });
   }
 
   function updateCustomCount() {
@@ -1397,6 +1437,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('customFrom').addEventListener('change', updateCustomCount);
   $('customTo').addEventListener('change', updateCustomCount);
+
+  ['customSortAsc', 'customSortDesc'].forEach(id => {
+    $(id).addEventListener('click', () => {
+      $('customSortAsc').classList.toggle('active', id === 'customSortAsc');
+      $('customSortDesc').classList.toggle('active', id === 'customSortDesc');
+      updateCustomCount();
+    });
+  });
 
   $('customCancelBtn').addEventListener('click', () => {
     $('customRangeOverlay').classList.add('hidden');
@@ -1416,7 +1464,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poInvDateTo').value = to;
       renderPoInvoiceList();
       $('poPresetClear').style.display = 'inline-flex';
-      $('poDownloadFilteredPair').style.display = 'inline-flex';
+      setPoFilteredVisible(true);
     } else {
       clearPresetActive();
       activePreset = 'invPresetCustom';
@@ -1425,31 +1473,60 @@ document.addEventListener('DOMContentLoaded', () => {
       $('invDateTo').value = to;
       renderInvoiceList();
       $('invPresetClear').style.display = 'inline-flex';
-      $('downloadFilteredPair').style.display = 'inline-flex';
+      setInvFilteredVisible(true);
     }
   });
 
   $('customDownloadBtn').addEventListener('click', () => {
+    const from = $('customFrom').value;
+    const to = $('customTo').value;
+    const includeInvoices = !!($('customIncludePages') && $('customIncludePages').checked);
     if (typeof poCustomRangeOpen !== 'undefined' && poCustomRangeOpen) {
-      const from = $('customFrom').value;
-      const to = $('customTo').value;
       if (!from || !to) return;
-      const selected = poInvoices.filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to);
+      const asc = getCustomSortOrder() === 'asc';
+      const selected = poInvoices
+        .filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to)
+        .sort((a, b) => {
+          const d = (a.invoiceDate || '').localeCompare(b.invoiceDate || '');
+          return asc ? d : -d;
+        });
       if (!selected.length) { alert('No PO invoices found in this date range'); return; }
       $('customRangeOverlay').classList.add('hidden');
       poCustomRangeOpen = false;
-      downloadBulkPoPDF(selected, `po-invoices-${from}-to-${to}.pdf`);
+      downloadBulkPoPDF(selected, `po-invoices-${from}-to-${to}.pdf`, { includeInvoices });
     } else {
-      const from = $('customFrom').value;
-      const to = $('customTo').value;
       const selected = getCustomFilteredInvoices();
       if (!selected.length) { alert('No invoices found in this date range'); return; }
       $('customRangeOverlay').classList.add('hidden');
       downloadFilteredInvoicesPDF(
         selected,
         `invoices-${from}-to-${to}.pdf`,
-        { from, to, periodLabel: `${formatShortDate(from)} – ${formatShortDate(to)}` }
+        { from, to, periodLabel: `${formatShortDate(from)} – ${formatShortDate(to)}`, includeInvoices }
       );
+    }
+  });
+
+  $('customDownloadExcelBtn').addEventListener('click', () => {
+    const from = $('customFrom').value;
+    const to = $('customTo').value;
+    if (typeof poCustomRangeOpen !== 'undefined' && poCustomRangeOpen) {
+      if (!from || !to) return;
+      const asc = getCustomSortOrder() === 'asc';
+      const selected = poInvoices
+        .filter(inv => inv.invoiceDate && inv.invoiceDate >= from && inv.invoiceDate <= to)
+        .sort((a, b) => {
+          const d = (a.invoiceDate || '').localeCompare(b.invoiceDate || '');
+          return asc ? d : -d;
+        });
+      if (!selected.length) { alert('No PO invoices found in this date range'); return; }
+      $('customRangeOverlay').classList.add('hidden');
+      poCustomRangeOpen = false;
+      exportPoInvoiceListToExcel(selected, `po-invoices-${from}-to-${to}.xlsx`);
+    } else {
+      const selected = getCustomFilteredInvoices();
+      if (!selected.length) { alert('No invoices found in this date range'); return; }
+      $('customRangeOverlay').classList.add('hidden');
+      exportInvoiceListToExcel(selected, `invoices-${from}-to-${to}.xlsx`);
     }
   });
 
@@ -3725,7 +3802,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       $('custPoNumber').value = c.poNumber || '';
       $('custPoDate').value = c.poDate || '';
-      $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
+      $('custGstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
       tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
@@ -3749,7 +3826,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custPhone').value = c.phone;
       $('custPoNumber').value = c.poNumber || '';
       $('custPoDate').value = c.poDate || '';
-      $('custGstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
+      $('custGstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
       tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
@@ -3872,7 +3949,9 @@ document.addEventListener('DOMContentLoaded', () => {
       lines.push(`${lineNo}. ${(it.description || '').trim() || '—'} | HSN: ${(it.hsn || '').trim() || '—'} | Qty: ${qty} ${uqc}${bagNote} | Taxable ₹: ${fmtNum(taxable)}`);
     });
     lines.push(`Subtotal (taxable): ₹${fmtNum(subtotal)}`);
-    if (gstType === 'intra') {
+    if (gstType === 'none') {
+      lines.push('GST: None');
+    } else if (gstType === 'intra') {
       lines.push(`GST: CGST ${gstRate}% + SGST ${gstRate}% (intra-state)`);
     } else {
       lines.push(`GST: IGST ${gstRate}% (inter-state)`);
@@ -3892,10 +3971,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('gstType').addEventListener('change', e => {
-    if (e.target.value === 'inter') {
-      $('gstRate').value = 18;
+    const v = e.target.value;
+    if (v === 'none') {
+      $('gstRate').value = 0;
+      $('gstRate').disabled = true;
     } else {
-      $('gstRate').value = 9;
+      $('gstRate').disabled = false;
+      $('gstRate').value = v === 'inter' ? 18 : 9;
     }
   });
 
@@ -4065,7 +4147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('contactPhone').value = c.phone;
       $('poNumber').value = c.poNumber || '';
       $('poDate').value = c.poDate || '';
-      $('gstType').value = c.gstType === 'inter' ? 'inter' : 'intra';
+      $('gstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       $('gstType').dispatchEvent(new Event('change'));
       if (c.consignees && c.consignees.length > 0) {
         $('sameAsBuyer').checked = false;
@@ -4227,13 +4309,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let totalTax = 0;
     let cgstAmt = 0, sgstAmt = 0, igstAmt = 0;
-    if (gstType === 'intra') {
-      cgstAmt = subtotal * (gstRate / 100);
-      sgstAmt = subtotal * (gstRate / 100);
-      totalTax = cgstAmt + sgstAmt;
-    } else {
-      igstAmt = subtotal * (gstRate / 100);
-      totalTax = igstAmt;
+    if (gstType !== 'none') {
+      if (gstType === 'intra') {
+        cgstAmt = subtotal * (gstRate / 100);
+        sgstAmt = subtotal * (gstRate / 100);
+        totalTax = cgstAmt + sgstAmt;
+      } else {
+        igstAmt = subtotal * (gstRate / 100);
+        totalTax = igstAmt;
+      }
     }
     const grandTotal = Math.round(subtotal + totalTax);
     const wordsStr = numberToWords(grandTotal);
@@ -4351,7 +4435,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="r">TOTAL AMOUNT BEFORE TAX</td>
             <td class="r">${fmtNum(subtotal)}</td>
           </tr>
-          ${gstType === 'intra' ? `
+          ${gstType === 'none' ? `
+          <tr>
+            <td colspan="2" class="c"><strong>INVOICE Value :</strong><br><strong>Rupees ${wordsStr} Only</strong></td>
+            <td class="r"><strong>TAX AMOUNT: NIL</strong></td>
+            <td class="r"><strong>0.00</strong></td>
+          </tr>
+          ` : gstType === 'intra' ? `
           <tr>
             <td rowspan="3" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
             <td rowspan="3" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
@@ -4509,7 +4599,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="r">TOTAL AMOUNT BEFORE TAX</td>
             <td class="r">${fmtNum(subtotal)}</td>
           </tr>
-          ${gstType === 'intra' ? `
+          ${gstType === 'none' ? `
+          <tr>
+            <td colspan="2" class="c"><strong>INVOICE Value :</strong><br><strong>Rupees ${wordsStr} Only</strong></td>
+            <td class="r"><strong>TAX AMOUNT: NIL</strong></td><td class="r"><strong>0.00</strong></td>
+          </tr>
+          ` : gstType === 'intra' ? `
           <tr>
             <td rowspan="3" class="c"><strong>INVOICE Value :</strong><br>Rupees</td>
             <td rowspan="3" class="c"><strong>Rupees ${wordsStr} Only</strong></td>
@@ -5268,11 +5363,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const gstRate = Number(inv.gstRate) || 0;
     const gstType = inv.gstType || 'intra';
     let cgst = 0, sgst = 0, igst = 0;
-    if (gstType === 'intra') {
-      cgst = subtotal * gstRate / 100;
-      sgst = subtotal * gstRate / 100;
-    } else {
-      igst = subtotal * gstRate / 100;
+    if (gstType !== 'none') {
+      if (gstType === 'intra') {
+        cgst = subtotal * gstRate / 100;
+        sgst = subtotal * gstRate / 100;
+      } else {
+        igst = subtotal * gstRate / 100;
+      }
     }
     return { subtotal, cgst, sgst, igst, total: subtotal + cgst + sgst + igst };
   }
@@ -6551,7 +6648,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('vendPhone').value = v.phone;
     const vt = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
     document.querySelectorAll('.vendTypeCheck').forEach(cb => cb.checked = vt.includes(cb.value));
-    $('vendGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
+    $('vendGstType').value = ['inter','none'].includes(v.gstType) ? v.gstType : 'intra';
     const pm = v.paymentMode || 'bank';
     if (pm === 'gpay') { $('vendPayGpay').checked = true; } else { $('vendPayBank').checked = true; }
     $('vendBankFields').classList.toggle('hidden', pm !== 'bank');
@@ -6595,10 +6692,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('poGstType').addEventListener('change', e => {
-    if (e.target.value === 'inter') {
-      $('poGstRate').value = 18;
+    const v = e.target.value;
+    if (v === 'none') {
+      $('poGstRate').value = 0;
+      $('poGstRate').disabled = true;
     } else {
-      $('poGstRate').value = 9;
+      $('poGstRate').disabled = false;
+      $('poGstRate').value = v === 'inter' ? 18 : 9;
     }
   });
 
@@ -6633,7 +6733,8 @@ document.addEventListener('DOMContentLoaded', () => {
       subtotal += q * (Number(it.rate) || 0);
     });
     const rate = inv.gstRate || 0;
-    const tax = inv.gstType === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
+    const gstT2 = inv.gstType || 'intra';
+    const tax = gstT2 === 'none' ? 0 : gstT2 === 'intra' ? subtotal * rate / 100 * 2 : subtotal * rate / 100;
     return Math.round(subtotal + tax);
   }
 
@@ -6724,8 +6825,9 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poIfscCode').value = inv.ifscCode || '';
     $('poGpayNumber').value = inv.gpayNumber || '';
     $('poTransportMode').value = inv.transportMode || '';
-    $('poGstRate').value = inv.gstRate || 0;
     $('poGstType').value = inv.gstType || 'intra';
+    $('poGstRate').value = inv.gstRate || 0;
+    $('poGstRate').disabled = ($('poGstType').value === 'none');
     $('poInvoiceReminder').value = inv.reminderDate || '';
 
     poItems = (inv.items && inv.items.length)
@@ -6779,6 +6881,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poGpayNumber').value = '';
     $('poTransportMode').value = 'By Road';
     $('poGstRate').value = 9;
+    $('poGstRate').disabled = false;
     $('poGstType').value = 'intra';
     const rem30 = new Date();
     rem30.setDate(rem30.getDate() + 30);
@@ -6922,7 +7025,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poPoDate').value = v.poDate || '';
       const vendTypes = Array.isArray(v.vendorType) ? v.vendorType : (v.vendorType ? [v.vendorType] : []);
       document.querySelectorAll('.poBillType').forEach(cb => cb.checked = vendTypes.includes(cb.value));
-      $('poGstType').value = v.gstType === 'inter' ? 'inter' : 'intra';
+      $('poGstType').value = ['inter','none'].includes(v.gstType) ? v.gstType : 'intra';
       $('poGstType').dispatchEvent(new Event('change'));
       const vpm = v.paymentMode || 'bank';
       if (vpm === 'gpay') { $('poPayGpay').checked = true; } else { $('poPayBank').checked = true; }
@@ -7064,21 +7167,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let totalTax = 0;
     let cgstAmt = 0, sgstAmt = 0, igstAmt = 0;
-    if (gstType === 'intra') {
-      cgstAmt = subtotal * (gstRate / 100);
-      sgstAmt = subtotal * (gstRate / 100);
-      totalTax = cgstAmt + sgstAmt;
-    } else {
-      igstAmt = subtotal * (gstRate / 100);
-      totalTax = igstAmt;
+    if (gstType !== 'none') {
+      if (gstType === 'intra') {
+        cgstAmt = subtotal * (gstRate / 100);
+        sgstAmt = subtotal * (gstRate / 100);
+        totalTax = cgstAmt + sgstAmt;
+      } else {
+        igstAmt = subtotal * (gstRate / 100);
+        totalTax = igstAmt;
+      }
     }
     const grandTotal = Math.round(subtotal + totalTax);
     const wordsStr = numberToWords(grandTotal);
 
-    const taxRows = gstType === 'intra'
-      ? '<tr><td class="r" colspan="2">CGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(cgstAmt) + '</td></tr>'
-        + '<tr><td class="r" colspan="2">SGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(sgstAmt) + '</td></tr>'
-      : '<tr><td class="r" colspan="2">IGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(igstAmt) + '</td></tr>';
+    const taxRows = gstType === 'none'
+      ? ''
+      : gstType === 'intra'
+        ? '<tr><td class="r" colspan="2">CGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(cgstAmt) + '</td></tr>'
+          + '<tr><td class="r" colspan="2">SGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(sgstAmt) + '</td></tr>'
+        : '<tr><td class="r" colspan="2">IGST @ ' + gstRate + '%</td><td class="r">' + fmtNum(igstAmt) + '</td></tr>';
 
     const payModeVal = document.querySelector('input[name="poPayMode"]:checked').value;
     const paymentRows = payModeVal === 'gpay'
@@ -7228,6 +7335,8 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
     if ($('poInvSelectAll')) $('poInvSelectAll').checked = false;
+    if ($('poBulkDownloadWrap')) $('poBulkDownloadWrap').style.display = 'none';
+    if (typeof syncPoExportOptions === 'function') syncPoExportOptions();
     $('poInvTotalSummaryValue').textContent = '\u20B9' + fmtNum(sum);
     $('poInvTotalSummaryPeriod').textContent = getPoInvoiceListSummaryPeriodLabel();
     $('poInvTotalSummaryCount').textContent = filtered.length + ' PO invoice' + (filtered.length !== 1 ? 's' : '');
@@ -7241,8 +7350,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('poInvListBackBtn').addEventListener('click', goHome);
 
+  function syncPoExportOptions() {
+    const hasFilter = $('poDownloadFilteredPair') && $('poDownloadFilteredPair').style.display !== 'none';
+    const hasSel = !!document.querySelector('.po-inv-check:checked');
+    if ($('poFilteredExportOptions')) $('poFilteredExportOptions').style.display = (hasFilter || hasSel) ? '' : 'none';
+  }
+
+  function setPoFilteredVisible(show) {
+    if ($('poDownloadFilteredPair')) $('poDownloadFilteredPair').style.display = show ? 'inline-flex' : 'none';
+    syncPoExportOptions();
+  }
+
+  function updatePoBulkDownloadWrap() {
+    const anyChecked = document.querySelector('.po-inv-check:checked') !== null;
+    $('poBulkDownloadWrap').style.display = anyChecked ? '' : 'none';
+    syncPoExportOptions();
+  }
+
   $('poInvSelectAll').addEventListener('change', e => {
     document.querySelectorAll('.po-inv-check').forEach(cb => cb.checked = e.target.checked);
+    updatePoBulkDownloadWrap();
+  });
+
+  document.addEventListener('change', e => {
+    if (e.target.classList.contains('po-inv-check')) updatePoBulkDownloadWrap();
   });
 
   // ── PO Invoice List: presets, period labels, downloads ──
@@ -7271,14 +7402,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const from = $('poInvDateFrom').value;
     const to = $('poInvDateTo').value;
     if ($('poPresetClear')) $('poPresetClear').style.display = (from || to) ? 'inline-flex' : 'none';
-    if ($('poDownloadFilteredPair')) $('poDownloadFilteredPair').style.display = (from && to) ? 'inline-flex' : 'none';
+    setPoFilteredVisible(!!(from && to));
   }
 
   function clearPoPresetActive() {
     document.querySelectorAll('#poInvoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
     poActivePreset = null;
     $('poPresetClear').style.display = 'none';
-    $('poDownloadFilteredPair').style.display = 'none';
+    setPoFilteredVisible(false);
   }
 
   function onPoInvListDateRangeChange() {
@@ -7301,7 +7432,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poInvDateTo').value = range.to;
     renderPoInvoiceList();
     $('poPresetClear').style.display = 'inline-flex';
-    $('poDownloadFilteredPair').style.display = 'inline-flex';
+    setPoFilteredVisible(true);
   }
 
   $('poPresetToday').addEventListener('click', () => applyPoPresetFilter(getDayRange(0), 'poPresetToday'));
@@ -8374,6 +8505,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return sub;
   }
   function crInvGst(inv) {
+    if (inv.gstType === 'none') return 0;
     var sub = crInvTaxable(inv), rate = inv.gstRate || 0;
     return inv.gstType === 'intra' ? sub * rate / 100 * 2 : sub * rate / 100;
   }
@@ -8593,9 +8725,11 @@ document.addEventListener('DOMContentLoaded', () => {
       var gst      = crInvGst(inv);
       var grand    = taxable + gst;
       var gstRate  = inv.gstRate || 0;
-      var gstLabel = inv.gstType === 'intra'
-        ? 'CGST+SGST @' + gstRate + '%'
-        : 'IGST @' + gstRate + '%';
+      var gstLabel = inv.gstType === 'none'
+        ? 'None'
+        : inv.gstType === 'intra'
+          ? 'CGST+SGST @' + gstRate + '%'
+          : 'IGST @' + gstRate + '%';
 
       var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
       (function(invId) { tr.addEventListener('click', function() { viewInvoiceFromCrDrawer(invId); }); }(inv.id));
@@ -9131,6 +9265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return sub;
   }
   function vrInvGst(inv) {
+    if (inv.gstType === 'none') return 0;
     var sub = vrInvTaxable(inv), rate = inv.gstRate || 0;
     return inv.gstType === 'intra' ? sub * rate / 100 * 2 : sub * rate / 100;
   }
@@ -9200,9 +9335,11 @@ document.addEventListener('DOMContentLoaded', () => {
       var gst      = vrInvGst(inv);
       var grand    = taxable + gst;
       var gstRate  = inv.gstRate || 0;
-      var gstLabel = inv.gstType === 'intra'
-        ? 'CGST+SGST @' + gstRate + '%'
-        : 'IGST @' + gstRate + '%';
+      var gstLabel = inv.gstType === 'none'
+        ? 'None'
+        : inv.gstType === 'intra'
+          ? 'CGST+SGST @' + gstRate + '%'
+          : 'IGST @' + gstRate + '%';
 
       var tr = document.createElement('tr');
       var c0 = document.createElement('td'); c0.textContent = i + 1; tr.appendChild(c0);

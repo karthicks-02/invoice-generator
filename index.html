@@ -1101,7 +1101,7 @@
           <div class="download-toolbar-hint">Download PDF or Excel for the current date range or selected rows.</div>
           <div class="download-option-sub">Tip: keep unchecked to export only the summary list.</div>
         </div>
-        <label class="download-option-check" for="includeFilteredInvoices" id="filteredExportOptions">
+        <label class="download-option-check" for="includeFilteredInvoices" id="filteredExportOptions" style="display:none">
           <input type="checkbox" id="includeFilteredInvoices" checked />
           <span>Include invoice pages</span>
         </label>
@@ -1113,7 +1113,7 @@
               <button class="dl-item dl-item--excel" id="downloadFilteredExcelBtn">⬇ Excel (.xlsx)</button>
             </div>
           </div>
-          <div class="dl-wrap">
+          <div class="dl-wrap" id="bulkDownloadWrap" style="display:none">
             <button class="btn btn-primary btn-sm dl-trigger">⬇ Download Selected <span class="dl-caret">▾</span></button>
             <div class="dl-menu">
               <button class="dl-item" id="bulkDownloadBtn">⬇ PDF</button>
@@ -1172,18 +1172,44 @@
 
     <!-- Custom Date Range Overlay -->
     <div id="customRangeOverlay" class="overlay hidden">
-      <div class="overlay-box">
-        <h3>Custom Date Range</h3>
-        <p class="overlay-subtitle">Select a date range to filter invoices</p>
-        <div class="row">
-          <div class="field"><label>From</label><input type="date" id="customFrom" /></div>
-          <div class="field"><label>To</label><input type="date" id="customTo" /></div>
+      <div class="overlay-box custom-range-box">
+        <div class="custom-range-header">
+          <h3>Custom Date Range</h3>
+          <p class="overlay-subtitle">Select a range to filter and download invoices</p>
         </div>
-        <p id="customRangeCount" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem"></p>
-        <div class="overlay-actions">
-          <button class="btn btn-primary" id="customApplyBtn">Apply Filter</button>
-          <button class="btn btn-primary" id="customDownloadBtn">⬇ Download PDF</button>
+        <div class="custom-date-row">
+          <div class="custom-date-field">
+            <span class="custom-date-label">FROM</span>
+            <input type="date" id="customFrom" class="custom-date-input" />
+          </div>
+          <span class="custom-date-arrow">→</span>
+          <div class="custom-date-field">
+            <span class="custom-date-label">TO</span>
+            <input type="date" id="customTo" class="custom-date-input" />
+          </div>
+        </div>
+        <p id="customRangeCount" class="custom-range-count"></p>
+        <div class="custom-sort-row">
+          <span class="custom-date-label">SORT ORDER</span>
+          <div class="custom-sort-toggle">
+            <button class="custom-sort-btn active" id="customSortAsc" data-order="asc">↑ Oldest First</button>
+            <button class="custom-sort-btn" id="customSortDesc" data-order="desc">↓ Newest First</button>
+          </div>
+        </div>
+        <label class="download-option-check custom-include-check" for="customIncludePages">
+          <input type="checkbox" id="customIncludePages" checked />
+          <span>Include individual invoice pages in PDF</span>
+        </label>
+        <div class="overlay-actions custom-range-actions">
           <button class="btn btn-secondary" id="customCancelBtn">Cancel</button>
+          <button class="btn btn-secondary custom-apply-btn" id="customApplyBtn">Apply Filter</button>
+          <div class="dl-wrap">
+            <button class="btn btn-primary dl-trigger">⬇ Download <span class="dl-caret">▾</span></button>
+            <div class="dl-menu">
+              <button class="dl-item" id="customDownloadBtn">⬇ PDF</button>
+              <button class="dl-item dl-item--excel" id="customDownloadExcelBtn">⬇ Excel (.xlsx)</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1507,6 +1533,7 @@
               <select id="custGstType">
                 <option value="intra">Intra-State (CGST + SGST)</option>
                 <option value="inter">Inter-State (IGST)</option>
+                <option value="none">None (No GST)</option>
               </select>
             </div>
           </div>
@@ -1744,6 +1771,7 @@
               <select id="gstType">
                 <option value="intra">Intra-State (CGST + SGST)</option>
                 <option value="inter">Inter-State (IGST)</option>
+                <option value="none">None (No GST)</option>
               </select>
             </div>
           </div>
@@ -1814,6 +1842,7 @@
               <select id="vendGstType">
                 <option value="intra">Intra-State (CGST + SGST)</option>
                 <option value="inter">Inter-State (IGST)</option>
+                <option value="none">None (No GST)</option>
               </select>
             </div>
           </div>
@@ -1982,7 +2011,7 @@
           <div class="download-toolbar-hint">Download PDF or Excel for the current date range or selected rows.</div>
           <div class="download-option-sub">Tip: keep unchecked to export only the summary list.</div>
         </div>
-        <label class="download-option-check" for="includePoFilteredInvoices">
+        <label class="download-option-check" for="includePoFilteredInvoices" id="poFilteredExportOptions" style="display:none">
           <input type="checkbox" id="includePoFilteredInvoices" checked />
           <span>Include invoice pages</span>
         </label>
@@ -1994,7 +2023,7 @@
               <button class="dl-item dl-item--excel" id="poDownloadFilteredExcelBtn">⬇ Excel (.xlsx)</button>
             </div>
           </div>
-          <div class="dl-wrap">
+          <div class="dl-wrap" id="poBulkDownloadWrap" style="display:none">
             <button class="btn btn-primary btn-sm dl-trigger">⬇ Download Selected <span class="dl-caret">▾</span></button>
             <div class="dl-menu">
               <button class="dl-item" id="poBulkDownloadBtn">⬇ PDF</button>
@@ -2149,6 +2178,7 @@
               <select id="poGstType">
                 <option value="intra">Intra-State (CGST + SGST)</option>
                 <option value="inter">Inter-State (IGST)</option>
+                <option value="none">None (No GST)</option>
               </select>
             </div>
           </div>

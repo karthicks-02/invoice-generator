@@ -732,6 +732,9 @@ input.inv-rate-input {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   flex-wrap: wrap;
+  overflow: visible;
+  position: relative;
+  z-index: 100;
 }
 .download-toolbar-copy {
   display: flex;
@@ -1303,6 +1306,85 @@ input.inv-rate-input {
   gap: .5rem;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+/* ── Custom Date Range dialog ── */
+.custom-range-box {
+  width: 480px;
+  padding: 1.75rem;
+  background: #ffffff !important;
+}
+.custom-sort-row {
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: 1rem;
+}
+.custom-sort-toggle {
+  display: flex; gap: .4rem;
+}
+.custom-sort-btn {
+  padding: .35rem .85rem; border-radius: 8px; font-size: .8rem;
+  font-weight: 600; font-family: inherit; cursor: pointer;
+  border: 1.5px solid rgba(99,102,241,0.25);
+  background: rgba(99,102,241,0.05); color: #6366f1;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.custom-sort-btn:hover {
+  background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.4);
+}
+.custom-sort-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 3px 10px rgba(99,102,241,0.3);
+}
+.custom-range-header { margin-bottom: 1.25rem; }
+.custom-range-header h3 {
+  font-size: 1.15rem; font-weight: 800;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: .3rem;
+}
+.custom-date-row {
+  display: flex; align-items: flex-end; gap: .75rem; margin-bottom: 1rem;
+}
+.custom-date-field { display: flex; flex-direction: column; gap: .35rem; flex: 1; }
+.custom-date-label {
+  font-size: .72rem; font-weight: 800; letter-spacing: 1.2px;
+  text-transform: uppercase; color: #6366f1;
+}
+.custom-date-input {
+  width: 100%; padding: .6rem .75rem; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: .9rem; font-family: inherit;
+  background: rgba(255,255,255,0.8); color: var(--text);
+  transition: border-color .18s, box-shadow .18s;
+}
+.custom-date-input:focus {
+  outline: none; border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.custom-date-arrow {
+  font-size: 1.1rem; color: #a5b4fc; padding-bottom: .7rem; flex-shrink: 0;
+}
+.custom-range-count {
+  font-size: .83rem; font-weight: 600; color: #6366f1;
+  min-height: 1.2em; margin-bottom: .65rem;
+}
+.custom-include-check {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .65rem .9rem; border-radius: 10px;
+  background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.16);
+  margin-bottom: .25rem; cursor: pointer; width: fit-content;
+}
+.custom-include-check span { font-size: .85rem; font-weight: 500; color: var(--text); }
+.custom-include-check input[type="checkbox"] { accent-color: #6366f1; }
+.custom-range-actions { align-items: center; justify-content: space-between; }
+.custom-apply-btn {
+  background: rgba(99,102,241,0.08) !important;
+  border-color: rgba(99,102,241,0.3) !important;
+  color: #6366f1 !important;
+}
+.custom-apply-btn:hover {
+  background: rgba(99,102,241,0.16) !important;
+  border-color: #6366f1 !important;
 }
 
 /* ===== Consignee Section (Customer Form) ===== */
