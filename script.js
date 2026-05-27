@@ -5397,7 +5397,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function exportPoInvoiceListToExcel(list, filename) {
     const wb = XLSX.utils.book_new();
-    const header = ['Invoice No.', 'Date', 'Vendor', 'Bill Type', 'Taxable (Rs)', 'GST (Rs)', 'Grand Total (Rs)'];
+    const header = ['Invoice No.', 'Date', 'Vendor', 'GSTIN', 'Bill Type', 'Taxable (Rs)', 'GST (Rs)', 'Grand Total (Rs)'];
     const rows = list.map(inv => {
       const t = computeInvTotals(inv);
       const bt = (Array.isArray(inv.billType) ? inv.billType : []).join(', ');
@@ -5405,6 +5405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inv.invoiceNumber || '',
         inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '',
         inv.vendorName || '',
+        inv.vendorGstin || '',
         bt || '',
         +t.subtotal.toFixed(2),
         +(t.cgst + t.sgst + t.igst).toFixed(2),
@@ -5412,7 +5413,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
     });
     const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 28 }, { wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
+    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
     XLSX.utils.book_append_sheet(wb, ws, 'PO Invoices');
     XLSX.writeFile(wb, filename);
   }
