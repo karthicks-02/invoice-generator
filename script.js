@@ -10066,4 +10066,18 @@ document.addEventListener('DOMContentLoaded', () => {
     await downloadGstPdf(d);
   });
 
+  // ── Download dropdown toggle ──
+  document.addEventListener('click', e => {
+    if (e.target.closest('.dl-trigger')) {
+      const menu = e.target.closest('.dl-wrap').querySelector('.dl-menu');
+      const isOpen = menu.classList.contains('open');
+      document.querySelectorAll('.dl-menu.open').forEach(m => m.classList.remove('open'));
+      if (!isOpen) menu.classList.add('open');
+      return;
+    }
+    if (!e.target.closest('.dl-menu')) {
+      document.querySelectorAll('.dl-menu.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+
 });

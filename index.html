@@ -1106,14 +1106,20 @@
           <span>Include invoice pages</span>
         </label>
         <div class="download-actions">
-          <span class="btn-pair" id="downloadFilteredPair" style="display:none">
-            <button class="btn btn-primary btn-sm" id="downloadFilteredBtn">⬇ PDF (Filtered)</button>
-            <button class="btn btn-secondary btn-sm btn-excel" id="downloadFilteredExcelBtn">⬇ Excel (Filtered)</button>
-          </span>
-          <span class="btn-pair">
-            <button class="btn btn-primary btn-sm" id="bulkDownloadBtn">⬇ PDF (Selected)</button>
-            <button class="btn btn-secondary btn-sm btn-excel" id="bulkDownloadExcelBtn">⬇ Excel (Selected)</button>
-          </span>
+          <div class="dl-wrap" id="downloadFilteredPair" style="display:none">
+            <button class="btn btn-primary btn-sm dl-trigger">⬇ Download Filtered <span class="dl-caret">▾</span></button>
+            <div class="dl-menu">
+              <button class="dl-item" id="downloadFilteredBtn">⬇ PDF</button>
+              <button class="dl-item dl-item--excel" id="downloadFilteredExcelBtn">⬇ Excel (.xlsx)</button>
+            </div>
+          </div>
+          <div class="dl-wrap">
+            <button class="btn btn-primary btn-sm dl-trigger">⬇ Download Selected <span class="dl-caret">▾</span></button>
+            <div class="dl-menu">
+              <button class="dl-item" id="bulkDownloadBtn">⬇ PDF</button>
+              <button class="dl-item dl-item--excel" id="bulkDownloadExcelBtn">⬇ Excel (.xlsx)</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="data-table-wrap analytics-table-wrap invoice-analytics-table-wrap">
@@ -1981,14 +1987,20 @@
           <span>Include invoice pages</span>
         </label>
         <div class="download-actions">
-          <span class="btn-pair" id="poDownloadFilteredPair" style="display:none">
-            <button class="btn btn-primary btn-sm" id="poDownloadFilteredBtn">⬇ PDF (Filtered)</button>
-            <button class="btn btn-secondary btn-sm btn-excel" id="poDownloadFilteredExcelBtn">⬇ Excel (Filtered)</button>
-          </span>
-          <span class="btn-pair">
-            <button class="btn btn-primary btn-sm" id="poBulkDownloadBtn">⬇ PDF (Selected)</button>
-            <button class="btn btn-secondary btn-sm btn-excel" id="poBulkDownloadExcelBtn">⬇ Excel (Selected)</button>
-          </span>
+          <div class="dl-wrap" id="poDownloadFilteredPair" style="display:none">
+            <button class="btn btn-primary btn-sm dl-trigger">⬇ Download Filtered <span class="dl-caret">▾</span></button>
+            <div class="dl-menu">
+              <button class="dl-item" id="poDownloadFilteredBtn">⬇ PDF</button>
+              <button class="dl-item dl-item--excel" id="poDownloadFilteredExcelBtn">⬇ Excel (.xlsx)</button>
+            </div>
+          </div>
+          <div class="dl-wrap">
+            <button class="btn btn-primary btn-sm dl-trigger">⬇ Download Selected <span class="dl-caret">▾</span></button>
+            <div class="dl-menu">
+              <button class="dl-item" id="poBulkDownloadBtn">⬇ PDF</button>
+              <button class="dl-item dl-item--excel" id="poBulkDownloadExcelBtn">⬇ Excel (.xlsx)</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="data-table-wrap">
