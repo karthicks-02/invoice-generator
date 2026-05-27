@@ -3686,3 +3686,7 @@ input.inv-rate-input {
   display: inline-block; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.18);
   color: #6366f1; padding: 2px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
 }
+.btn-pair { display: inline-flex; gap: 6px; align-items: center; }
+.btn-excel { background: #16a34a; color: #fff; border-color: #15803d; }
+.btn-excel:hover { background: #15803d; border-color: #166534; }
+.btn-excel:active { background: #166534; }

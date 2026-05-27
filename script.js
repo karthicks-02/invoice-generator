@@ -1160,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasAnyDate = !!(from || to);
     const hasFullRange = !!(from && to);
     if ($('invPresetClear')) $('invPresetClear').style.display = hasAnyDate ? 'inline-flex' : 'none';
-    if ($('downloadFilteredBtn')) $('downloadFilteredBtn').style.display = hasFullRange ? 'inline-flex' : 'none';
+    if ($('downloadFilteredPair')) $('downloadFilteredPair').style.display = hasFullRange ? 'inline-flex' : 'none';
   }
 
   function onInvListDateRangeChange() {
@@ -1269,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#invoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
     activePreset = null;
     $('invPresetClear').style.display = 'none';
-    $('downloadFilteredBtn').style.display = 'none';
+    $('downloadFilteredPair').style.display = 'none';
   }
 
   function applyPresetFilter(range, btnId) {
@@ -1287,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('invDateTo').value = range.to;
     renderInvoiceList();
     $('invPresetClear').style.display = 'inline-flex';
-    $('downloadFilteredBtn').style.display = 'inline-flex';
+    $('downloadFilteredPair').style.display = 'inline-flex';
   }
 
   $('invPresetToday').addEventListener('click', () => applyPresetFilter(getDayRange(0), 'invPresetToday'));
@@ -1356,6 +1356,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  $('downloadFilteredExcelBtn').addEventListener('click', () => {
+    const filtered = getFilteredInvoices();
+    if (!filtered.length) { alert('No invoices in the current filter.'); return; }
+    const from = $('invDateFrom').value;
+    const to = $('invDateTo').value;
+    const filename = from && to
+      ? `invoices-${from}-to-${to}.xlsx`
+      : `invoices-filtered-${formatDateYMDLocal(new Date())}.xlsx`;
+    exportInvoiceListToExcel(filtered, filename);
+  });
+
   $('invPresetCustom').addEventListener('click', () => {
     $('customFrom').value = $('invDateFrom').value || '';
     $('customTo').value = $('invDateTo').value || '';
@@ -1405,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('poInvDateTo').value = to;
       renderPoInvoiceList();
       $('poPresetClear').style.display = 'inline-flex';
-      $('poDownloadFilteredBtn').style.display = 'inline-flex';
+      $('poDownloadFilteredPair').style.display = 'inline-flex';
     } else {
       clearPresetActive();
       activePreset = 'invPresetCustom';
@@ -1414,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('invDateTo').value = to;
       renderInvoiceList();
       $('invPresetClear').style.display = 'inline-flex';
-      $('downloadFilteredBtn').style.display = 'inline-flex';
+      $('downloadFilteredPair').style.display = 'inline-flex';
     }
   });
 
@@ -1451,6 +1462,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!selected.length) return;
     const filename = selected.length === 1 ? `${selected[0].invoiceNumber || 'invoice'}.pdf` : `invoices-${formatDateYMDLocal(new Date())}.pdf`;
     downloadBulkPDF(selected, filename);
+  });
+
+  $('bulkDownloadExcelBtn').addEventListener('click', () => {
+    const checked = document.querySelectorAll('.inv-check:checked');
+    if (!checked.length) { alert('Select at least one invoice'); return; }
+    const ids = Array.from(checked).map(cb => cb.dataset.invId);
+    const selected = applySortOrder(invoices.filter(inv => ids.includes(inv.id)));
+    if (!selected.length) return;
+    const filename = selected.length === 1
+      ? `${selected[0].invoiceNumber || 'invoice'}.xlsx`
+      : `invoices-selected-${formatDateYMDLocal(new Date())}.xlsx`;
+    exportInvoiceListToExcel(selected, filename);
   });
 
   // ── Revenue Graph (Dialog) ──
@@ -5237,6 +5260,66 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${dd}/${mm}/${yyyy}`;
   }
 
+  function computeInvTotals(inv) {
+    let subtotal = 0;
+    (inv.items || []).forEach(it => {
+      subtotal += (Number(it.qty) || 0) * (Number(it.rate) || 0);
+    });
+    const gstRate = Number(inv.gstRate) || 0;
+    const gstType = inv.gstType || 'intra';
+    let cgst = 0, sgst = 0, igst = 0;
+    if (gstType === 'intra') {
+      cgst = subtotal * gstRate / 100;
+      sgst = subtotal * gstRate / 100;
+    } else {
+      igst = subtotal * gstRate / 100;
+    }
+    return { subtotal, cgst, sgst, igst, total: subtotal + cgst + sgst + igst };
+  }
+
+  function exportInvoiceListToExcel(list, filename) {
+    const wb = XLSX.utils.book_new();
+    const header = ['Invoice No.', 'Date', 'Customer', 'GSTIN', 'Taxable (Rs)', 'GST (Rs)', 'Grand Total (Rs)'];
+    const rows = list.map(inv => {
+      const t = computeInvTotals(inv);
+      return [
+        inv.invoiceNumber || '',
+        inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '',
+        inv.buyerName || '',
+        inv.buyerGstin || '',
+        +t.subtotal.toFixed(2),
+        +(t.cgst + t.sgst + t.igst).toFixed(2),
+        +t.total.toFixed(2),
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
+    XLSX.writeFile(wb, filename);
+  }
+
+  function exportPoInvoiceListToExcel(list, filename) {
+    const wb = XLSX.utils.book_new();
+    const header = ['Invoice No.', 'Date', 'Vendor', 'Bill Type', 'Taxable (Rs)', 'GST (Rs)', 'Grand Total (Rs)'];
+    const rows = list.map(inv => {
+      const t = computeInvTotals(inv);
+      const bt = (Array.isArray(inv.billType) ? inv.billType : []).join(', ');
+      return [
+        inv.invoiceNumber || '',
+        inv.invoiceDate ? formatShortDate(inv.invoiceDate) : '',
+        inv.vendorName || '',
+        bt || '',
+        +t.subtotal.toFixed(2),
+        +(t.cgst + t.sgst + t.igst).toFixed(2),
+        +t.total.toFixed(2),
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 28 }, { wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'PO Invoices');
+    XLSX.writeFile(wb, filename);
+  }
+
   function numberToWords(num) {
     if (num === 0) return 'Zero';
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
@@ -7188,14 +7271,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const from = $('poInvDateFrom').value;
     const to = $('poInvDateTo').value;
     if ($('poPresetClear')) $('poPresetClear').style.display = (from || to) ? 'inline-flex' : 'none';
-    if ($('poDownloadFilteredBtn')) $('poDownloadFilteredBtn').style.display = (from && to) ? 'inline-flex' : 'none';
+    if ($('poDownloadFilteredPair')) $('poDownloadFilteredPair').style.display = (from && to) ? 'inline-flex' : 'none';
   }
 
   function clearPoPresetActive() {
     document.querySelectorAll('#poInvoiceListView .preset-btn').forEach(b => b.classList.remove('active'));
     poActivePreset = null;
     $('poPresetClear').style.display = 'none';
-    $('poDownloadFilteredBtn').style.display = 'none';
+    $('poDownloadFilteredPair').style.display = 'none';
   }
 
   function onPoInvListDateRangeChange() {
@@ -7218,7 +7301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('poInvDateTo').value = range.to;
     renderPoInvoiceList();
     $('poPresetClear').style.display = 'inline-flex';
-    $('poDownloadFilteredBtn').style.display = 'inline-flex';
+    $('poDownloadFilteredPair').style.display = 'inline-flex';
   }
 
   $('poPresetToday').addEventListener('click', () => applyPoPresetFilter(getDayRange(0), 'poPresetToday'));
@@ -7512,11 +7595,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  $('poDownloadFilteredExcelBtn').addEventListener('click', () => {
+    const filtered = getFilteredPoInvoices();
+    if (!filtered.length) { alert('No PO invoices in the current filter.'); return; }
+    const from = $('poInvDateFrom').value;
+    const to = $('poInvDateTo').value;
+    const filename = from && to
+      ? `po-invoices-${from}-to-${to}.xlsx`
+      : `po-invoices-filtered-${formatDateYMDLocal(new Date())}.xlsx`;
+    exportPoInvoiceListToExcel(filtered, filename);
+  });
+
   $('poBulkDownloadBtn').addEventListener('click', () => {
     const checked = Array.from(document.querySelectorAll('.po-inv-check:checked')).map(cb => cb.dataset.invId);
     if (!checked.length) { alert('Select at least one PO invoice'); return; }
     const selected = poInvoices.filter(inv => checked.includes(inv.id));
     downloadBulkPoPDF(selected, 'po-invoices-selected.pdf');
+  });
+
+  $('poBulkDownloadExcelBtn').addEventListener('click', () => {
+    const checked = Array.from(document.querySelectorAll('.po-inv-check:checked')).map(cb => cb.dataset.invId);
+    if (!checked.length) { alert('Select at least one PO invoice'); return; }
+    const selected = poInvoices.filter(inv => checked.includes(inv.id));
+    if (!selected.length) return;
+    const filename = selected.length === 1
+      ? `${selected[0].invoiceNumber || 'po-invoice'}.xlsx`
+      : `po-invoices-selected-${formatDateYMDLocal(new Date())}.xlsx`;
+    exportPoInvoiceListToExcel(selected, filename);
   });
 
   async function downloadBulkPoPDF(list, filename) {
