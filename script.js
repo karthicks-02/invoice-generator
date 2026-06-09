@@ -3785,12 +3785,15 @@ document.addEventListener('DOMContentLoaded', () => {
       list.classList.remove('hidden');
     }
 
+    const emptyLimit = (opts && opts.emptyLimit !== undefined) ? opts.emptyLimit : 5;
+
     function showSuggestions() {
       const val = input.value.trim().toLowerCase();
       if (val) {
         show(getItems(val));
       } else if (showOnEmpty) {
-        show(getItems('').slice(0, 5));
+        const all = getItems('');
+        show(emptyLimit === Infinity ? all : all.slice(0, emptyLimit));
       } else {
         list.classList.add('hidden');
       }
@@ -4151,6 +4154,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  $('itemsBody').addEventListener('focusout', e => {
+    const inp = e.target;
+    if (inp.dataset.f !== 'rate') return;
+    const i = +inp.dataset.i;
+    const desc = (items[i] && items[i].description || '').trim();
+    if (!desc || items[i].rate == null) return;
+    const pIdx = products.findIndex(p => p.name.trim().toLowerCase() === desc.toLowerCase());
+    if (pIdx >= 0 && Number(products[pIdx].rate) !== Number(items[i].rate)) {
+      products[pIdx].rate = items[i].rate;
+      saveProducts();
+      renderProducts();
+    }
+  });
+
   $('itemsBody').addEventListener('click', e => {
     if (e.target.classList.contains('btn-delete')) {
       const i = +e.target.dataset.i;
@@ -4223,6 +4240,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function matchProducts(val) {
     const assocNames = getAssociatedProductNames();
+    if (!val) {
+      const assocProds = products.filter(p => assocNames.includes(p.name));
+      if (assocProds.length) {
+        return assocProds.map(p => ({ label: `${escHtml(p.name)}<small>★ HSN: ${escHtml(p.hsn)}</small>`, data: p }));
+      }
+      return products.slice(0, 5).map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p }));
+    }
     const matched = products
       .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val));
     const assoc = matched.filter(p => assocNames.includes(p.name));
@@ -4246,7 +4270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inp = e.target;
     if ((inp.dataset.f === 'description' || inp.dataset.f === 'hsn') && !inp.dataset.acInit) {
       inp.dataset.acInit = '1';
-      createAutocomplete(inp, matchProducts, p => fillProduct(inp, p), { itemsTable: true });
+      createAutocomplete(inp, matchProducts, p => fillProduct(inp, p), { itemsTable: true, emptyLimit: Infinity });
       inp.focus();
     }
   });
