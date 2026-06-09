@@ -499,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('custGstType').value = 'intra';
     tempConsignees = [];
     tempCustProducts = [];
+    tempAutoAddProducts = [];
     tempWaNumbers = [];
     renderConsigneeList();
     renderCustProdList();
@@ -524,6 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
       gstType: $('custGstType').value,
       consignees: [...tempConsignees],
       associatedProducts: [...tempCustProducts],
+      autoAddProducts: [...tempAutoAddProducts],
       waNumbers: [...tempWaNumbers]
     };
     if (!obj.name) { alert('Company Name is required'); return; }
@@ -553,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custGstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
+      tempAutoAddProducts = c.autoAddProducts ? [...c.autoAddProducts] : [];
       tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
       renderConsigneeList();
       renderCustProdList();
@@ -574,6 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Customer Associated Products ──
   // ══════════════════════════════════════
   let tempCustProducts = [];
+  let tempAutoAddProducts = [];
 
   function renderCustProdList() {
     const wrap = $('custProdList');
@@ -582,6 +586,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const prod = products.find(p => p.name === pName);
       const div = document.createElement('div');
       div.className = 'consignee-item';
+
+      const chkLabel = document.createElement('label');
+      chkLabel.className = 'auto-add-label';
+      chkLabel.title = 'Auto-add to invoice when this customer is selected';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'auto-add-chk';
+      chk.dataset.cpi = i;
+      chk.checked = tempAutoAddProducts.includes(pName);
+      chkLabel.appendChild(chk);
+      const chkText = document.createElement('span');
+      chkText.textContent = 'Auto';
+      chkLabel.appendChild(chkText);
+      div.appendChild(chkLabel);
+
       const info = document.createElement('div');
       info.className = 'consignee-item-info';
       const nameEl = document.createElement('div');
@@ -639,9 +658,22 @@ document.addEventListener('DOMContentLoaded', () => {
     resetCustProdForm();
   });
 
+  $('custProdList').addEventListener('change', e => {
+    if (e.target.classList.contains('auto-add-chk')) {
+      const pName = tempCustProducts[+e.target.dataset.cpi];
+      if (e.target.checked) {
+        if (!tempAutoAddProducts.includes(pName)) tempAutoAddProducts.push(pName);
+      } else {
+        tempAutoAddProducts = tempAutoAddProducts.filter(n => n !== pName);
+      }
+    }
+  });
+
   $('custProdList').addEventListener('click', e => {
     if (e.target.classList.contains('btn-del')) {
+      const pName = tempCustProducts[+e.target.dataset.cpi];
       tempCustProducts.splice(+e.target.dataset.cpi, 1);
+      tempAutoAddProducts = tempAutoAddProducts.filter(n => n !== pName);
       renderCustProdList();
     }
   });
@@ -830,6 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════
   let invoices = [];
   let editingInvoiceId = null;
+  let currentAutoAdded = [];
 
   function normalizeInvoiceNo(s) {
     return (s || '').trim().toLowerCase();
@@ -930,6 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadInvoiceIntoForm(inv) {
     editingInvoiceId = inv.id;
+    currentAutoAdded = [];
     $('invoiceNumber').value = inv.invoiceNumber || '';
     $('invoiceDate').value = inv.invoiceDate || '';
     $('buyerName').value = inv.buyerName || '';
@@ -1032,6 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => {
     rem30.setDate(rem30.getDate() + 30);
     $('invoiceReminder').value = formatDateYMDLocal(rem30);
     items = [{ description: '', hsn: '', packages: 0, qty: null, rate: null }];
+    currentAutoAdded = [];
     renderItems();
     document.querySelectorAll('.copyType').forEach(cb => {
       cb.checked = cb.value === 'ORIGINAL FOR BUYER';
@@ -3842,6 +3877,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custGstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
+      tempAutoAddProducts = c.autoAddProducts ? [...c.autoAddProducts] : [];
       tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
       renderConsigneeList();
       renderCustProdList();
@@ -3866,6 +3902,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('custGstType').value = ['inter','none'].includes(c.gstType) ? c.gstType : 'intra';
       tempConsignees = c.consignees ? c.consignees.map(x => ({...x})) : [];
       tempCustProducts = c.associatedProducts ? [...c.associatedProducts] : [];
+      tempAutoAddProducts = c.autoAddProducts ? [...c.autoAddProducts] : [];
       tempWaNumbers = c.waNumbers ? [...c.waNumbers] : [];
       renderConsigneeList();
       renderCustProdList();
@@ -4171,7 +4208,11 @@ document.addEventListener('DOMContentLoaded', () => {
   $('itemsBody').addEventListener('click', e => {
     if (e.target.classList.contains('btn-delete')) {
       const i = +e.target.dataset.i;
-      if (items.length > 1) { items.splice(i, 1); renderItems(); }
+      const removedDesc = (items[i].description || '').trim().toLowerCase();
+      currentAutoAdded = currentAutoAdded.filter(n => n.trim().toLowerCase() !== removedDesc);
+      items.splice(i, 1);
+      if (items.length === 0) items.push({ description: '', hsn: '', packages: 0, qty: null, rate: null });
+      renderItems();
     }
   });
 
@@ -4191,6 +4232,11 @@ document.addEventListener('DOMContentLoaded', () => {
       .filter(c => c.name.toLowerCase().includes(val))
       .map(c => ({ label: `${escHtml(c.name)}<small>${escHtml(c.gstin)}</small>`, data: c })),
     c => {
+      if (currentAutoAdded.length) {
+        const toRemove = new Set(currentAutoAdded.map(n => n.trim().toLowerCase()));
+        items = items.filter(it => !toRemove.has((it.description || '').trim().toLowerCase()));
+        currentAutoAdded = [];
+      }
       $('buyerName').value = c.name;
       $('buyerGstin').value = c.gstin;
       $('buyerAddress').value = c.address;
@@ -4211,6 +4257,16 @@ document.addEventListener('DOMContentLoaded', () => {
         $('consigneeName').value = '';
         $('consigneeAddress').value = '';
       }
+      if (c.autoAddProducts && c.autoAddProducts.length) {
+        const existing = items.map(it => (it.description || '').trim().toLowerCase());
+        c.autoAddProducts.forEach(pName => {
+          if (existing.includes(pName.trim().toLowerCase())) return;
+          const prod = products.find(p => p.name === pName);
+          items.push({ description: pName, hsn: prod ? prod.hsn : '', packages: 0, qty: 1, rate: prod ? prod.rate : null });
+          currentAutoAdded.push(pName);
+        });
+      }
+      renderItems();
     }
   );
 

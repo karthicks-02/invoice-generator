@@ -1440,6 +1440,9 @@ input.inv-rate-input {
   margin-bottom: .5rem;
 }
 .consignee-item-info { flex: 1; }
+.auto-add-label { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; font-size:.7rem; font-weight:600; color:var(--text-muted); white-space:nowrap; user-select:none; }
+.auto-add-label input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:var(--primary); }
+.auto-add-label:has(input:checked) { color:var(--primary); }
 .consignee-item-name { font-weight: 600; font-size: .9rem; }
 .consignee-item-addr { font-size: .82rem; color: var(--text-muted); margin-top: 2px; }
 .consignee-item-actions {
