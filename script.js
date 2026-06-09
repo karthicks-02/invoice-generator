@@ -1835,6 +1835,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function migrateCustomerAssociatedProducts() {
+    if (localStorage.getItem('assocProdsMigrated') === 'v1') return;
     let custChanged = false;
     let prodChanged = false;
     customers.forEach(c => {
@@ -1865,6 +1866,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (prodChanged) saveProducts();
     if (custChanged) saveCustomers();
+    localStorage.setItem('assocProdsMigrated', 'v1');
   }
 
   function migratePaymentCreditIds() {
@@ -4150,6 +4152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return n === 1 ? '1 Bag' : n + ' Bags';
   }
 
+  function syncAddItemBtn() {
+    const hasEmpty = items.some(it => !(it.description || '').trim());
+    $('addItemBtn').disabled = hasEmpty;
+    $('addItemBtn').style.opacity = hasEmpty ? '0.45' : '';
+    $('addItemBtn').style.cursor = hasEmpty ? 'not-allowed' : '';
+  }
+
   function renderItems() {
     document.querySelectorAll('body > .ac-list[data-items-table]').forEach(el => el.remove());
     const tbody = $('itemsBody');
@@ -4168,6 +4177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       tbody.appendChild(tr);
     });
+    syncAddItemBtn();
   }
 
   $('itemsBody').addEventListener('input', e => {
@@ -4177,6 +4187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!f) return;
     if (f === 'description' || f === 'hsn') {
       items[i][f] = inp.value;
+      if (f === 'description') syncAddItemBtn();
     } else if (f === 'packages') {
       items[i].packages = parsePackagesToStore(inp.value);
     } else if (f === 'qty') {
@@ -4217,10 +4228,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('addItemBtn').addEventListener('click', () => {
-    items.push({ description: '', hsn: '', packages: 0, qty: null, rate: null });
+    const autoSet = new Set(currentAutoAdded.map(n => n.trim().toLowerCase()));
+    const insertAt = autoSet.size
+      ? items.findIndex(it => autoSet.has((it.description || '').trim().toLowerCase()))
+      : -1;
+    if (insertAt >= 0) {
+      items.splice(insertAt, 0, { description: '', hsn: '', packages: 0, qty: null, rate: null });
+    } else {
+      items.push({ description: '', hsn: '', packages: 0, qty: null, rate: null });
+    }
     renderItems();
     const rows = $('itemsBody').querySelectorAll('tr');
-    rows[rows.length - 1].querySelector('input').focus();
+    const focusIdx = insertAt >= 0 ? insertAt : rows.length - 1;
+    rows[focusIdx].querySelector('input').focus();
   });
 
   renderItems();
@@ -4257,10 +4277,13 @@ document.addEventListener('DOMContentLoaded', () => {
         $('consigneeName').value = '';
         $('consigneeAddress').value = '';
       }
+      if (items.length === 0) items.push({ description: '', hsn: '', packages: 0, qty: null, rate: null });
       if (c.autoAddProducts && c.autoAddProducts.length) {
-        const existing = items.map(it => (it.description || '').trim().toLowerCase());
+        const existingSet = new Set(items.map(it => (it.description || '').trim().toLowerCase()));
         c.autoAddProducts.forEach(pName => {
-          if (existing.includes(pName.trim().toLowerCase())) return;
+          const key = pName.trim().toLowerCase();
+          if (existingSet.has(key)) return;
+          existingSet.add(key);
           const prod = products.find(p => p.name === pName);
           items.push({ description: pName, hsn: prod ? prod.hsn : '', packages: 0, qty: 1, rate: prod ? prod.rate : null });
           currentAutoAdded.push(pName);
@@ -4296,12 +4319,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function matchProducts(val) {
     const assocNames = getAssociatedProductNames();
+    const usedDescs = new Set(items.map(it => (it.description || '').trim().toLowerCase()));
     if (!val) {
-      const assocProds = products.filter(p => assocNames.includes(p.name));
+      const assocProds = products.filter(p => assocNames.includes(p.name) && !usedDescs.has(p.name.trim().toLowerCase()));
       if (assocProds.length) {
         return assocProds.map(p => ({ label: `${escHtml(p.name)}<small>★ HSN: ${escHtml(p.hsn)}</small>`, data: p }));
       }
-      return products.slice(0, 5).map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p }));
+      return products.filter(p => !usedDescs.has(p.name.trim().toLowerCase())).slice(0, 5)
+        .map(p => ({ label: `${escHtml(p.name)}<small>HSN: ${escHtml(p.hsn)}</small>`, data: p }));
     }
     const matched = products
       .filter(p => p.name.toLowerCase().includes(val) || p.hsn.toLowerCase().includes(val));
