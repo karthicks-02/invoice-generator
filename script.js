@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
       vendorPayments = await db.loadVendorPayments();
       migratePaymentCreditIds();
       migrateVendorPaymentCreditIds();
+      migrateCustomerAssociatedProducts();
 
       renderCustomers();
       renderProducts();
@@ -1796,6 +1797,39 @@ document.addEventListener('DOMContentLoaded', () => {
   function genCreditId() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+  }
+
+  function migrateCustomerAssociatedProducts() {
+    let custChanged = false;
+    let prodChanged = false;
+    customers.forEach(c => {
+      const key = (c.name || '').trim().toLowerCase();
+      if (!key) return;
+      const custInvoices = invoices.filter(inv => !isProformaInvoice(inv) && (inv.buyerName || '').trim().toLowerCase() === key);
+      if (!custInvoices.length) return;
+      if (!Array.isArray(c.associatedProducts)) { c.associatedProducts = []; custChanged = true; }
+      custInvoices.forEach(inv => {
+        (inv.items || []).forEach(it => {
+          const name = (it.description || '').trim();
+          if (!name) return;
+          const existIdx = products.findIndex(p => p.name.trim().toLowerCase() === name.toLowerCase());
+          if (existIdx < 0) {
+            products.push({ name, hsn: it.hsn || '', rate: it.rate != null ? it.rate : 0 });
+            prodChanged = true;
+          } else {
+            if (it.hsn && !products[existIdx].hsn) { products[existIdx].hsn = it.hsn; prodChanged = true; }
+            if (it.rate != null && it.rate !== '' && (products[existIdx].rate == null || products[existIdx].rate === '')) { products[existIdx].rate = it.rate; prodChanged = true; }
+          }
+          const canonical = existIdx >= 0 ? products[existIdx].name : name;
+          if (!c.associatedProducts.includes(canonical)) {
+            c.associatedProducts.push(canonical);
+            custChanged = true;
+          }
+        });
+      });
+    });
+    if (prodChanged) saveProducts();
+    if (custChanged) saveCustomers();
   }
 
   function migratePaymentCreditIds() {
